@@ -1,0 +1,66 @@
+<html lang="ko" 
+    xmlns:th="http://www.thymeleaf.org" 
+        xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+        layout:decorate="~{layouts/noheader}">
+
+		<section layout:fragment="contents" class="login-section text-center pt-4">
+			<span class="full-logo display-2">BaseBall LOCK</span>
+			<div class="d-flex justify-content-center">
+				<div class="user-box my-5 p-5 rounded-3">
+			    	<h1 class="text-center">로그인</h1>
+			    	<form id="loginForm">
+			      		<input type="text" class="form-control center-input mt-4" placeholder="아이디를 입력하세요" id="loginIdInput" required>
+			      		<input type="password" class="form-control center-input mt-2" placeholder="비밀번호를 입력하세요" id="passwordInput" required>
+			      		<button type="submit" class="btn btn-secondary w-100 mt-3 fw-bold fs-4">Let's LOCK</button>
+			    	</form>
+			    	<div class="text-center mt-4">
+			    		<div class="d-flex justify-content-between px-5 pb-5 fs-3">
+			    			<a href="/user/find-id-view" class="text-decoration-none">아이디 찾기</a>
+			    			<a href="/user/find-password-view" class="text-decoration-none">비밀번호 찾기</a>
+			    		</div>
+			      		<a href="/user/join-view" class="fs-3"><b>회원이 아니신가요?</b></a>
+			    	</div>	
+			  	</div>
+			  </div>
+		</section>
+		
+		<script layout:fragment="script">
+			$(function() {
+				$("#loginForm").on("submit", function(e) {
+					
+					e.preventDefault();
+					
+					let loginId = $("#loginIdInput").val();
+					let password = $("#passwordInput").val();
+					
+					if(loginId == "") {
+						alert("아이디를 입력하세요");
+						return ;
+					}
+					
+					if(password == "") {
+						alert("비밀번호를 입력하세요");
+						return ;
+					}
+					
+					$.ajax({
+						type:"post"
+						, url:"/user/login"
+						, data:{"loginId":loginId, "password":password}
+						, success:function(response) {
+							if(response.result == "success") {
+								location.href = "/user/home";
+							} else {
+								alert("아이디와 패스워드를 확인해주세요");
+							}
+						}
+						, error:function() {
+							alert("로그인 에러!");
+						}
+					});
+				});
+			})
+		
+		</script>
+		
+</html>
