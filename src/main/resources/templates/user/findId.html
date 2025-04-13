@@ -4,32 +4,29 @@
         layout:decorate="~{layouts/noheader}">
 
 		<section layout:fragment="contents" class="login-section text-center pt-4">
-			<span class="full-logo display-2">BaseBall LOCK</span>
-			<div class="d-flex justify-content-center">
-				<div class="user-box my-5 rounded-3">
-					<div class="d-flex flex-column p-5 align-items-center w-100">
-						<h3 class="display-5">아이디 찾기</h3>
-						<div class="my-3 w-100">
-			    			<input type="text" id="nameInput" class="form-control" placeholder="이름을 입력하세요">
-						</div>
-						<div class="mb-5 w-100">
-						    <div class="input-group">
-						        <input type="text" id="emailInput" class="form-control" placeholder="이메일을 입력하세요">
-						        <span class="input-group-text">@</span>
-						        <input type="text" id="emailDomainInput" class="form-control d-none" placeholder="이메일 도메인을 입력하세요">
-						        <select class="form-select" id="emailDomain">
-						        	<option value="" selected disabled>이메일 도메인을 선택하세요</option>
-						            <option value="gmail.com">gmail.com</option>
-							        <option value="naver.com">naver.com</option>
-							        <option value="daum.net">daum.net</option>
-							        <option value="custom">직접입력</option>
-						        </select>
-						    </div>
-						</div>
-						<button type="button" class="btn fw-bold w-100 mt-4 fs-4" id="findBtn">FIND the LOCK</button>
-				</div>
-			  	</div>
+			<span class="full-logo-noheader display-2 mb-4">BaseBall LOCK</span>
+			<div class="user-box mx-auto rounded-3">
+			  <div class="d-flex flex-column p-4 align-items-center w-100">
+			    <h3 class="display-5 mb-4">아이디 찾기</h3>
+			
+			    <input type="text" id="nameInput" class="form-control mb-3" placeholder="이름을 입력하세요">
+			
+			    <div class="input-group mb-4">
+			      <input type="text" id="emailInput" class="form-control" placeholder="이메일을 입력하세요">
+			      <span class="input-group-text">@</span>
+			      <input type="text" id="emailDomainInput" class="form-control d-none" placeholder="이메일 도메인을 입력하세요">
+			      <select class="form-select" id="emailDomain">
+			        <option value="" selected disabled>이메일 도메인을 선택하세요</option>
+			        <option value="gmail.com">gmail.com</option>
+			        <option value="naver.com">naver.com</option>
+			        <option value="daum.net">daum.net</option>
+			        <option value="custom">직접입력</option>
+			      </select>
+			    </div>
+			
+			    <button type="button" class="btn fw-bold w-100 fs-4" id="findBtn">FIND the LOCK</button>
 			  </div>
+			</div>
 		</section>
 		
 		<script layout:fragment="script">

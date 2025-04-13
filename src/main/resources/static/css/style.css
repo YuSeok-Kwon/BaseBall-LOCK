@@ -1,57 +1,167 @@
 @charset "UTF-8";
 
-@charset "UTF-8";
-
+/* 전체 레이아웃 wrapper */
 #wrap {
-	width:1200px;
-	margin: 0 auto;
+  width: 1200px;
+  margin: 0 auto;
 }
 
+/* 헤더 영역에 하단 경계선 */
 header {
-	height:100px;
-	background-color:#cccccc;
+  background-color: #f5f5f5;
+  border-bottom: 2px solid #FACC15;
 }
 
-a {
-	text-decoration : none;
-	color: black
+/* 전체 기본 글꼴 및 폰트 크기 */
+body {
+  font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+  font-size: 1.1rem;
+  background-color: #f5f5f5;
 }
 
-.full-logo{
-	font-weight: bold;
-	color: #FACC15;
-	text-shadow:
-    -3px -3px 0 black,
-     3px -3px 0 black,
-    -3px  3px 0 black,
-     3px  3px 0 black;
+/* 로고 텍스트 */
+.full-logo-noheader {
+  font-family: 'Dokdo', cursive;
+  font-size: 90px;
+  font-weight: 900;
+  color: #FACC15;
+  text-shadow:
+    -2px -2px 0 black,
+     2px -2px 0 black,
+    -2px  2px 0 black,
+     2px  2px 0 black;
 }
 
+.full-logo-default {
+  font-family: 'Dokdo', cursive;
+  font-size: 100px;
+  font-weight: 900;
+  color: #FACC15;
+  text-shadow:
+    -2px -2px 0 black,
+     2px -2px 0 black,
+    -2px  2px 0 black,
+     2px  2px 0 black;
+}
+
+/* 경기 로고 이미지 */
+.team-logo-box {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+}
+
+.team-logo-row {
+  height: 48px;
+}
+
+/* 순위 로고 이미지 */
+.table-team-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+/* 메뉴 텍스트 외곽선 */
+.nav-outline {
+  color: #111;
+  font-weight: bold;
+  text-decoration: none;
+  text-shadow:
+    0 0 2px #FACC15;
+}
+
+/* 추가 마진 정렬용 */
 .center-input {
   height: 40px;
   text-align: center;
   line-height: 40px;
 }
 
+/* 로그인 섹션 */
 .login-section {
-	background-color:#C6C6C8;
+  background-color: #f0f0f0;
+  min-height: calc(100vh - 70px);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 16px;
+  box-sizing: border-box;
 }
 
-.login-section .user-box{
-	width:900px;
-	background-color:#D9D9D9;
-	border: #FACC15 solid 3px;
+/* 로그인 박스 스타일 */
+.user-box {
+  width: 100%;
+  max-width: 700px;
+  background-color: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 40px;
 }
 
+/* 커스텀 버튼 */
 .btn {
-	background-color:#FACC15;
-	color : black;
-	border : black solid 1px;
+  background-color: #FACC15;
+  color: black;
+  border: 1px solid black;
 }
+
+/* 링크 공통 처리 */
+a {
+  color: #333;
+  text-decoration: none;
+}
+
+/* 콘텐츠 박스 (별도 지정할 경우 사용) */
 .contents-box {
-	width: 800px;
+  width: 800px;
 }
+
+/* 임시 box 클래스 (이전 호환용) */
+.box {
+  background-color: white;
+  border-radius: 12px;
+  padding: 24px;
+  min-height: 250px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+/* 팀 순위 테이블 높이 조절 */
+.rank-box {
+  min-height: 600px;
+}
+
+/* 승/패 표시 */
+.record {
+  color: green;
+  font-weight: bold;
+  margin-right: 5px;
+}
+.record.loss {
+  color: red;
+}
+
+/* 애니메이션 카드 */
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: scale(1.01);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+/* 푸터 */
 footer {
-	height:70px;
-	background-color:#cccccc;
+  height: 70px;
+  background-color: #eaeaea;
+  text-align: center;
+  line-height: 70px;
+  font-size: 0.95rem;
+  color: #666;
 }
