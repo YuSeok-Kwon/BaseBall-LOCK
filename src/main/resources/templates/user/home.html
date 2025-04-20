@@ -7,192 +7,144 @@
   <div class="container-fluid bg-light-gray min-vh-100 py-5" style="background-color: #D9D9D9;">
     <div class="row justify-content-center px-3 gap-4">
 
-	<!-- 팀 순위 카드 -->
-	<div class="col-12 col-md-6 col-lg-5 mb-4">
-	  <div class="card border-warning shadow-sm h-100">
-		  <div class="card-body py-3 px-4">
-		    <h5 class="card-title text-center fs-1 fw-bold my-4">KBO 리그 팀 순위</h5>
-		    <table class="table table-hover table-striped text-center mt-2 mb-0">
-	        <thead class="table-light">
-	          <tr>
-	            <th>순위</th><th>팀</th><th>경기</th><th>승</th><th>패</th><th>무</th><th>승률</th><th>승차</th>
-	          </tr>
-	        </thead>
-	        <tbody>
-				<tr>
-				  <td>1</td>
-				  <td class="d-flex align-items-center gap-2">
-				    <img src="/static/emblems/LG.png" alt="LG 트윈스" class="table-team-logo">
-				    LG 트윈스
-				  </td>
-				  <td>144</td><td>88</td><td>50</td><td>6</td><td>.638</td><td>-</td>
-				</tr>
-				<tr>
-				  <td>2</td>
-				  <td class="d-flex align-items-center gap-2">
-				    <img src="/static/emblems/SSG.png" alt="SSG 랜더스" class="table-team-logo">
-				    SSG 랜더스
-				  </td>
-				  <td>144</td><td>83</td><td>56</td><td>5</td><td>.597</td><td>5.5</td>
-				</tr>
-				<tr>
-				  <td>3</td>
-				  <td class="d-flex align-items-center gap-2">
-				    <img src="/static/emblems/KIWOOM.png" alt="키움 히어로즈" class="table-team-logo">
-				    키움 히어로즈
-				  </td>
-				  <td>144</td><td>79</td><td>61</td><td>4</td><td>.564</td><td>10</td>
-				</tr>
-				<tr>
-				  <td>4</td>
-				  <td class="d-flex align-items-center gap-2">
-				    <img src="/static/emblems/KT.png" alt="KT 위즈" class="table-team-logo">
-				    KT 위즈
-				  </td>
-				  <td>144</td><td>75</td><td>65</td><td>4</td><td>.536</td><td>13.5</td>
-				</tr>
-				<tr>
-				  <td>5</td>
-				  <td class="d-flex align-items-center gap-2">
-				    <img src="/static/emblems/NC.png" alt="NC 다이노스" class="table-team-logo">
-				    NC 다이노스
-				  </td>
-				  <td>144</td><td>72</td><td>68</td><td>4</td><td>.514</td><td>16.5</td>
-				</tr>
-				<tr>
-				  <td>6</td>
-				  <td class="d-flex align-items-center gap-2">
-				    <img src="/static/emblems/DOOSAN.png" alt="두산 베어스" class="table-team-logo">
-				    두산 베어스
-				  </td>
-				  <td>144</td><td>70</td><td>70</td><td>4</td><td>.500</td><td>18.5</td>
-				</tr>
-				<tr>
-				  <td>7</td>
-				  <td class="d-flex align-items-center gap-2">
-				    <img src="/static/emblems/LOTTE.png" alt="롯데 자이언츠" class="table-team-logo">
-				    롯데 자이언츠
-				  </td>
-				  <td>144</td><td>68</td><td>73</td><td>3</td><td>.482</td><td>21</td>
-				</tr>
-				<tr>
-				  <td>8</td>
-				  <td class="d-flex align-items-center gap-2">
-				    <img src="/static/emblems/KIA.png" alt="기아 타이거즈" class="table-team-logo">
-				    기아 타이거즈
-				  </td>
-				  <td>144</td><td>66</td><td>75</td><td>3</td><td>.468</td><td>23</td>
-				</tr>
-				<tr>
-				  <td>9</td>
-				  <td class="d-flex align-items-center gap-2">
-				    <img src="/static/emblems/HANHWA.png" alt="한화 이글스" class="table-team-logo">
-				    한화 이글스
-				  </td>
-				  <td>144</td><td>60</td><td>80</td><td>4</td><td>.429</td><td>28.5</td>
-				</tr>
-				<tr>
-				  <td>10</td>
-				  <td class="d-flex align-items-center gap-2">
-				    <img src="/static/emblems/SAMSUNG.png" alt="삼성 라이온즈" class="table-team-logo">
-				    삼성 라이온즈
-				  </td>
-				  <td>144</td><td>55</td><td>85</td><td>4</td><td>.393</td><td>33.5</td>
-				</tr>
+      <!-- 팀 순위 카드 -->
+      <div class="col-12 col-md-6 col-lg-5 mb-4">
+        <div class="card border-warning shadow-sm h-100">
+          <div class="card-body py-3 px-4">
+            <h5 class="card-title text-center fs-1 fw-bold my-4">KBO 리그 팀 순위</h5>
+            <table class="table table-hover table-striped text-center mt-2 mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>순위</th><th>팀</th><th>경기</th><th>승</th><th>패</th><th>무</th><th>승률</th><th>승차</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="team : ${rankingList}">
+                  <td th:text="${team.ranking}">1</td>
+                  <td class="d-flex align-items-center gap-2">
+                    <img th:src="@{/static/emblems/{logo}.png(logo=${team.logoName})}" alt="로고" class="table-team-logo">
+                    <span th:text="${team.teamName}">팀명</span>
+                  </td>
+                  <td th:text="${team.games}">144</td>
+                  <td th:text="${team.wins}">88</td>
+                  <td th:text="${team.losses}">50</td>
+                  <td th:text="${team.draws}">6</td>
+                  <td th:text="${team.winRate}">.638</td>
+                  <td th:text="${team.gamesBehind}">-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
-	        </tbody>
-	      </table>
-	    </div>
-	  </div>
-	</div>
-	
-    <!-- My Team + 주요 선수 카드 -->
-    <div class="col-12 col-md-6 col-lg-5 d-flex flex-column gap-3">
+      <!-- 오른쪽 박스 묶음 (My Team + 주요 선수) -->
+      <div class="col-12 col-md-6 col-lg-5 d-flex flex-column gap-3">
 
-    	<!-- My Team -->
-      	<div class="card border-0 shadow-sm">
-			<div class="card-body px-4 py-4">
-		    	<h5 class="card-title text-center fw-bold fs-4 mb-4">My Team</h5>
-		
-		    <!-- 날짜 및 경기장 -->
-		    <div class="text-center text-muted mb-3">2025.4.2 잠실 종합 운동장</div>
-		
-		    <!-- 경기 대진 -->
-			<div class="text-center mb-4">
-			<!-- 로고 -->
-			<div class="d-flex justify-content-center align-items-center mb-3 team-logo-row">
-			  <!-- 왼쪽 로고 -->
-			  <img src="/static/emblems/DOOSAN.png" alt="두산 로고" class="rounded me-5 team-logo-box">
-			  
-			  <!-- 오른쪽 로고 -->
-			  <img src="/static/emblems/SSG.png" alt="SSG 로고" class="rounded ms-5 team-logo-box">
-			</div>
-			  	<!-- 팀 이름 텍스트 (아래 한 줄) -->
-			  	<div class="fs-2 fw-bold ps-2">두산 베어스 <span class="text-secondary">VS</span> SSG 랜더스</div>
-			</div>
-		
-		    <!-- 최근 전적 비교 -->
-		    <div class="d-flex justify-content-between gap-3">
-		
-		      	<!-- 두산 -->
-		      	<div class="flex-fill bg-light rounded p-3 text-center">
-		        	<div class="fw-semibold mb-2 fs-3">두산 베어스</div>
-		        	<div class="fs-4">
-			          <span class="text-success fw-bold">승</span>
-			          <span class="text-danger fw-bold">패</span>
-			          <span class="text-success fw-bold">승</span>
-			          <span class="text-success fw-bold">승</span>
-			          <span class="text-success fw-bold">승</span>
-			        </div>
-		      	</div>
-		
-		      	<!-- SSG -->
-		      	<div class="flex-fill bg-light rounded p-3 text-center">
-		        	<div class="fw-semibold mb-2 fs-3">SSG 랜더스</div>
-		        	<div class="fs-4">
-		          		<span class="text-success fw-bold">승</span>
-		          		<span class="text-danger fw-bold">패</span>
-		          		<span class="text-success fw-bold">승</span>
-		          		<span class="text-danger fw-bold">패</span>
-		          		<span class="text-success fw-bold">승</span>
-		        	</div>
-		      	</div>
-		    </div>
-		  </div>
-		</div>
+        <!-- My Team -->
+        <div class="card border-0 shadow-sm">
+          <div class="card-body px-4 py-4">
+            <h5 class="card-title text-center fw-bold fs-4 mb-4">My Team 오늘의 경기</h5>
+
+            <!-- 경기가 있는 경우 -->
+            <div th:if="${schedule != null}">
+
+              <!-- 날짜 및 경기장 -->
+              <div class="text-center text-muted mb-3" 
+                   th:text="${#temporals.format(schedule.matchDate, 'yyyy.MM.dd')} + ' ' + ${schedule.stadium}">
+                2025.4.2 잠실 종합 운동장
+              </div>
+
+              <!-- 경기 대진 -->
+              <div class="text-center mb-4">
+
+                <div class="d-flex justify-content-center gap-5 align-items-start">
+                  <!-- My Team -->
+                  <div class="text-center ">
+                  	<img th:src="@{/static/emblems/{logo}.png(logo=${myTeam.logoName})}" class="rounded team-logo-box">
+                    <div class="fs-2 fw-bold" th:text="${myTeam.name}">우리팀</div>
+                    <div class="fs-6 mb-2 text-muted" th:text="'(' + ${myRecord} + ')'">(5승 3패)</div>
+                    <div class="fs-4 d-flex justify-content-center gap-2"><br>
+                      <span th:each="result : ${myRecentResults}" th:switch="${result}">
+                        <span th:case="'승'" class="text-success fw-bold">승</span>
+                        <span th:case="'패'" class="text-danger fw-bold">패</span>
+                        <span th:case="'무'" class="text-secondary fw-bold">무</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- VS -->
+                  <div class="fs-2 mt-5 text-secondary d-flex align-items-center">VS</div>
+
+                  <!-- Opponent Team -->
+                  <div class="text-center">
+                  	<img th:src="@{/static/emblems/{logo}.png(logo=${opponentTeam.logoName})}" class="rounded team-logo-box">
+                    <div class="fs-2 fw-bold" th:text="${opponentTeam.name}">상대팀</div>
+                    <div class="fs-6 mb-2 text-muted" th:text="'(' + ${opponentRecord} + ')'">(3승 5패)</div>
+                    <div class="fs-4 d-flex justify-content-center gap-2">
+                      <span th:each="result : ${opponentRecentResults}" th:switch="${result}">
+                        <span th:case="'승'" class="text-success fw-bold">승</span>
+                        <span th:case="'패'" class="text-danger fw-bold">패</span>
+                        <span th:case="'무'" class="text-secondary fw-bold">무</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- 경기가 없는 경우 -->
+            <div class="text-center text-muted py-5" th:if="${schedule == null}">
+              오늘은 경기가 없습니다.
+            </div>
+
+          </div>
+        </div>
 
         <!-- 주요 선수 -->
-        <!-- 주요 선수 카드 -->
 		<div class="card border-0 shadow-sm">
-			<div class="card-body px-4 py-4">	
-		    	<h5 class="card-title fw-bold text-center fs-4 mb-4">주요 선수</h5>
-		    	<div class="d-flex justify-content-between text-center gap-4">
+		  <div class="card-body px-4 py-4">  
+		    <h5 class="card-title fw-bold text-center fs-4 mb-4">주요 선수</h5>
+		    <div class="d-flex justify-content-between text-center gap-4">
 		
-		      	<!-- 타자 -->
-		      	<div class="flex-fill bg-light rounded py-3 px-2">
-		        	<div class="text-secondary fw-semibold mb-1">타자</div>
-		        	<div class="fs-4 fw-bold mb-1">케이브</div>
-		        	<div class="text-primary fw-bold mb-1">WAR : 96.5 
-		        		<span class="text-muted small">(1위)</span>
-		        	</div>
-		        	<div class="text-muted small">.365 / 18HR / OPS .967</div>
-		      	</div>
+		      <!-- 타자 -->
+		      <div class="flex-fill bg-light rounded py-3 px-2" th:if="${topHitter != null}">
+		        <div class="text-secondary fw-semibold mb-1">타자</div>
+		        <div class="fs-4 fw-bold mb-1" th:text="${topHitter.name}">타자이름</div>
+		        <div class="text-primary fw-bold mb-1">
+		          WAR : <span th:text="${topHitter.war}">0.0</span>
+		          <span class="text-muted small">( <span th:text="${topHitter.warRank}">1</span>위 )</span>
+		        </div>
+		        <div class="text-muted small">
+		          <span th:text="${topHitter.avg}">.000</span> /
+		          <span th:text="${topHitter.hr}">0</span>HR /
+		          OPS <span th:text="${topHitter.ops}">.000</span>
+		        </div>
+		      </div>
 		
-		      	<!-- 투수 -->
-		      	<div class="flex-fill bg-light rounded py-3 px-2">
-		        	<div class="text-secondary fw-semibold mb-1">투수</div>
-		        	<div class="fs-4 fw-bold mb-1">김택연</div>
-		        	<div class="text-primary fw-bold mb-1">WAR : 89.3 
-		        		<span class="text-muted small">(3위)</span>
-		        	</div>
-		        	<div class="text-muted small">WHIP 0.64 / 3W / 27SV</div>
-		      	</div>
+		      <!-- 투수 -->
+		      <div class="flex-fill bg-light rounded py-3 px-2" th:if="${topPitcher != null}">
+		        <div class="text-secondary fw-semibold mb-1">투수</div>
+		        <div class="fs-4 fw-bold mb-1" th:text="${topPitcher.name}">투수이름</div>
+		        <div class="text-primary fw-bold mb-1">
+		          WAR : <span th:text="${topPitcher.war}">0.0</span>
+		          <span class="text-muted small">( <span th:text="${topPitcher.warRank}">1</span>위 )</span>
+		        </div>
+		        <div class="text-muted small">
+		          WHIP <span th:text="${topPitcher.whip}">0.00</span> /
+		          <span th:text="${topPitcher.bestStatLabel}">W</span>
+		          <span th:text="${topPitcher.bestStatValue}">0</span> /
+		          ERA <span th:text="${topPitcher.era}">0.00</span>
+		        </div>
+		      </div>
+		
 		    </div>
-		
 		  </div>
 		</div>
-		
+        
       </div>
+
     </div>
   </div>
 </th:block>

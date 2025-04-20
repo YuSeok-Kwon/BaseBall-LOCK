@@ -43,7 +43,7 @@ public class StatizePitcherCrawler {
                 "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=ASC&year=%d&lt=10100&reg=A"
         };
 
-        int[] years = {2020, 2021, 2022, 2023, 2024, 2025};
+        int[] years = {2020, 2021, 2022, 2023, 2024};
 
         try (Connection conn = DriverManager.getConnection(jdbcUrl, username, password)) {
 
@@ -79,10 +79,10 @@ public class StatizePitcherCrawler {
                                 String position = "P";
 
                                 // 색상 기반 teamId 추출
+                                Element teamColorElement = row.select("td").get(2).selectFirst("span[style]");
                                 int teamId = 0;
-                                Element colorElement = cols.get(1).selectFirst("span[style]");
-                                if (colorElement != null) {
-                                    String style = colorElement.attr("style");
+                                if (teamColorElement != null) {
+                                    String style = teamColorElement.attr("style");
                                     if (style.contains("background:")) {
                                         String bgColor = style.split("background:")[1].split(";")[0].trim();
                                         teamId = colorToTeamIdMap.getOrDefault(bgColor, 0);
@@ -97,28 +97,28 @@ public class StatizePitcherCrawler {
 
                                 int playerId = playerDAO.findOrCreatePlayerIdBySeason(player);
 
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "G", Integer.parseInt(cols.get(4).text()), null);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "W", Integer.parseInt(cols.get(10).text()), null);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "L", Integer.parseInt(cols.get(11).text()), null);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "SV", Integer.parseInt(cols.get(12).text()), null);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "HLD", Integer.parseInt(cols.get(13).text()), null);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "IP", Double.parseDouble(cols.get(14).text()), null);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "H", Integer.parseInt(cols.get(19).text()), null);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "HR", Integer.parseInt(cols.get(22).text()), null);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "BB", Integer.parseInt(cols.get(23).text()), null);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "SO", Integer.parseInt(cols.get(26).text()), null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "G", Integer.parseInt(cols.get(4).text()), null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "W", Integer.parseInt(cols.get(10).text()), null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "L", Integer.parseInt(cols.get(11).text()), null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "SV", Integer.parseInt(cols.get(12).text()), null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "HLD", Integer.parseInt(cols.get(13).text()), null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "IP", Double.parseDouble(cols.get(14).text()), null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "H", Integer.parseInt(cols.get(19).text()), null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "HR", Integer.parseInt(cols.get(22).text()), null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "BB", Integer.parseInt(cols.get(23).text()), null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "SO", Integer.parseInt(cols.get(26).text()), null);
 
                                 String eraText = cols.get(30).text().trim();
                                 double ERA = eraText.isEmpty() ? 0.0 : Double.parseDouble(eraText);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "ERA", ERA, null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "ERA", ERA, null);
 
                                 String whipText = cols.get(35).text().trim();
                                 double WHIP = whipText.isEmpty() ? 0.0 : Double.parseDouble(whipText);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "WHIP", WHIP, null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "WHIP", WHIP, null);
 
                                 String warText = cols.get(36).text().trim();
                                 double WAR = warText.isEmpty() ? 0.0 : Double.parseDouble(warText);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "WAR", WAR, null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "WAR", WAR, null);
                             }
                         }
 

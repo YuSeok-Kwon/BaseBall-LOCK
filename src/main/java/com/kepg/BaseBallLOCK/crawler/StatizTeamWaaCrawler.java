@@ -1,11 +1,11 @@
 package com.kepg.BaseBallLOCK.crawler;
 
-import com.kepg.BaseBallLOCK.team.teamStatsDao.TeamStatsDAO;
-
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+
+import com.kepg.BaseBallLOCK.team.teamStats.teamStatsDao.TeamStatsDAO;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

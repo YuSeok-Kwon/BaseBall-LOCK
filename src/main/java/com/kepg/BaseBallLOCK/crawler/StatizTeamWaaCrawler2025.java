@@ -1,7 +1,5 @@
 package com.kepg.BaseBallLOCK.crawler;
 
-import com.kepg.BaseBallLOCK.team.teamStatsDao.TeamStatsDAO;
-
 import jakarta.annotation.PostConstruct;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -10,6 +8,8 @@ import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import com.kepg.BaseBallLOCK.team.teamStats.teamStatsDao.TeamStatsDAO;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -39,8 +39,7 @@ public class StatizTeamWaaCrawler2025 {
         teamNameToId.put("키움", 10);
     }
 
-    // 매일 오후 12시 실행
-    @Scheduled(cron = "0 0 12 * * *")
+    @Scheduled(cron = "0 0 0 * * *") // 매일 00:00 (자정)
     public void updateTeamWaa() {
         String url = "https://statiz.sporki.com/season/?m=teamoverall&year=2025";
 

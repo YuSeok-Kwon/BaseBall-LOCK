@@ -1,4 +1,4 @@
-package com.kepg.BaseBallLOCK.team.teamRankingDto;
+package com.kepg.BaseBallLOCK.team.teamRanking.teamRankingDto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

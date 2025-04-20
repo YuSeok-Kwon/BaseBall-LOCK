@@ -105,37 +105,37 @@ public class StatizBetterCrawler {
                                 int playerId = playerDAO.findOrCreatePlayerIdBySeason(player);
                                 
                                 // DB 저장: stats
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "G", Integer.parseInt(cols.get(4).text()), null);       // 경기수
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "PA", Integer.parseInt(cols.get(7).text()), null);     // 타석
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "WAR", Double.parseDouble(cols.get(3).text()), null);  // WAR
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "H", Integer.parseInt(cols.get(11).text()), null);     // 안타
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "2B", Integer.parseInt(cols.get(12).text()), null);    // 2루타
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "3B", Integer.parseInt(cols.get(13).text()), null);    // 3루타
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "HR", Integer.parseInt(cols.get(14).text()), null);    // 홈런
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "RBI", Integer.parseInt(cols.get(16).text()), null);   // 타점
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "SB", Integer.parseInt(cols.get(17).text()), null);    // 도루
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "BB", Integer.parseInt(cols.get(19).text()), null);    // 볼넷
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "SO", Integer.parseInt(cols.get(22).text()), null);    // 삼진
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "G", Integer.parseInt(cols.get(4).text()), null);       // 경기수
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "PA", Integer.parseInt(cols.get(7).text()), null);     // 타석
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "WAR", Double.parseDouble(cols.get(3).text()), null);  // WAR
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "H", Integer.parseInt(cols.get(11).text()), null);     // 안타
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "2B", Integer.parseInt(cols.get(12).text()), null);    // 2루타
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "3B", Integer.parseInt(cols.get(13).text()), null);    // 3루타
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "HR", Integer.parseInt(cols.get(14).text()), null);    // 홈런
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "RBI", Integer.parseInt(cols.get(16).text()), null);   // 타점
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "SB", Integer.parseInt(cols.get(17).text()), null);    // 도루
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "BB", Integer.parseInt(cols.get(19).text()), null);    // 볼넷
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "SO", Integer.parseInt(cols.get(22).text()), null);    // 삼진
 
                                 String avgText = cols.get(26).text().trim();
                                 double AVG = avgText.isEmpty() ? 0.0 : Double.parseDouble(avgText);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "AVG", AVG, null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "AVG", AVG, null);
 
                                 String obpText = cols.get(27).text().trim();
                                 double OBP = obpText.isEmpty() ? 0.0 : Double.parseDouble(obpText);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "OBP", OBP, null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "OBP", OBP, null);
 
                                 String slgText = cols.get(28).text().trim();
                                 double SLG = slgText.isEmpty() ? 0.0 : Double.parseDouble(slgText);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "SLG", SLG, null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "SLG", SLG, null);
 
                                 String opsText = cols.get(29).text().trim();
                                 double OPS = opsText.isEmpty() ? 0.0 : Double.parseDouble(opsText);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "OPS", OPS, null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "OPS", OPS, null);
 
                                 String wrcText = cols.get(31).text().trim();
                                 double wRCplus = wrcText.isEmpty() ? 0.0 : Double.parseDouble(wrcText);
-                                statsDAO.insertStat(playerId, Integer.parseInt(season), "wRC+", wRCplus, null);
+                                statsDAO.insertOrUpdateStat(playerId, Integer.parseInt(season), "wRC+", wRCplus, null);
                             }
                         }
 

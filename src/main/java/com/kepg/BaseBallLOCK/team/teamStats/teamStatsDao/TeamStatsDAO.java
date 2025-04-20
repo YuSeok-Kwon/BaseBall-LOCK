@@ -1,4 +1,4 @@
-package com.kepg.BaseBallLOCK.team.teamStatsDao;
+package com.kepg.BaseBallLOCK.team.teamStats.teamStatsDao;
 
 import java.sql.Connection;
 

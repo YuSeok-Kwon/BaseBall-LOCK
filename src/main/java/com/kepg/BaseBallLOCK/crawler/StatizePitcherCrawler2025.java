@@ -37,7 +37,7 @@ public class StatizePitcherCrawler2025 {
         colorToTeamIdMap.put("#86001f", 10); // 키움
     }
 
-    @Scheduled(cron = "0 0 12 * * *") // 매일 12시 정각 실행
+    @Scheduled(cron = "0 0 0 * * *") // 매일 00:00 (자정)
     public void runPitcherCrawler() {
         String[] urls = {
             "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=DESC&year=%d&lt=10100&reg=A",
@@ -77,10 +77,10 @@ public class StatizePitcherCrawler2025 {
                                 String season = sp.length > 0 ? sp[0] : "";
                                 String position = "P";
 
+                                Element teamColorElement = row.select("td").get(2).selectFirst("span[style]");
                                 int teamId = 0;
-                                Element colorElement = cols.get(1).selectFirst("span[style]");
-                                if (colorElement != null) {
-                                    String style = colorElement.attr("style");
+                                if (teamColorElement != null) {
+                                    String style = teamColorElement.attr("style");
                                     if (style.contains("background:")) {
                                         String bgColor = style.split("background:")[1].split(";")[0].trim();
                                         teamId = colorToTeamIdMap.getOrDefault(bgColor, 0);

@@ -5,13 +5,14 @@ import java.sql.DriverManager;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.kepg.BaseBallLOCK.team.teamStatsDao.TeamStatsDAO;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import com.kepg.BaseBallLOCK.team.teamStats.teamStatsDao.TeamStatsDAO;
 
 @Component
 public class StatizeTeamDetailedstatsCrawler2025 {
@@ -41,7 +42,7 @@ public class StatizeTeamDetailedstatsCrawler2025 {
         teamNameToId.put("키움", 10);
     }
 
-    @Scheduled(cron = "0 0 12 * * *") // 매일 12시 정각 실행
+    @Scheduled(cron = "0 0 0 * * *") // 매일 00:00 (자정)
     public void runTeamStatsCrawler() {
         try (Connection conn = DriverManager.getConnection(jdbcUrl, username, password)) {
             TeamStatsDAO teamStatsDAO = new TeamStatsDAO(conn);

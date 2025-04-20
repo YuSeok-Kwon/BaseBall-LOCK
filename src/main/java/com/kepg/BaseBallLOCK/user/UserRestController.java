@@ -1,6 +1,7 @@
 package com.kepg.BaseBallLOCK.user;
 
 import java.util.HashMap;
+
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.kepg.BaseBallLOCK.user.userDomain.User;
 import com.kepg.BaseBallLOCK.user.userService.UserService;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 
@@ -28,14 +28,14 @@ public class UserRestController {
 	public Map<String, String> login(
 			@RequestParam String loginId
 			, @RequestParam String password
-			, HttpServletRequest request) {
+			, HttpSession session) {
 		
 		User user = userService.getUser(loginId, password);
 		
 		Map<String, String> resultMap = new HashMap<>();
 		
 		if(user != null) {
-			HttpSession session = request.getSession();
+			session.setAttribute("loginUser", user);
 			
 			session.setAttribute("userId", user.getId());
 			session.setAttribute("userName", user.getName());

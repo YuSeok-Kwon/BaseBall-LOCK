@@ -38,7 +38,7 @@ public class StatizBetterCrawler2025 {
         colorToTeamIdMap.put("#86001f", 10); // 키움
     }
 
-    @Scheduled(cron = "0 0 12 * * *") // 매일 12시 정각에 실행
+    @Scheduled(cron = "0 0 0 * * *") // 매일 00:00 (자정)
     public void runBattingCrawler() {
         String baseUrl = "https://statiz.sporki.com/stats/?m=main&m2=batting&m3=default&so=WAR&ob=DESC"
                 + "&year=%d&po=%d&lt=10100&reg=A";

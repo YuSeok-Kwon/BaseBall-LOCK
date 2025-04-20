@@ -11,7 +11,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import com.kepg.BaseBallLOCK.team.teamStatsDao.TeamStatsDAO;
+import com.kepg.BaseBallLOCK.team.teamStats.teamStatsDao.TeamStatsDAO;
 
 public class StatizeTeamDetailedstatsCrawler {
 	

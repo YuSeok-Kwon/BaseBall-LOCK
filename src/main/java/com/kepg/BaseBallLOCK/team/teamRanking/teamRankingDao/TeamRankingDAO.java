@@ -1,11 +1,11 @@
-package com.kepg.BaseBallLOCK.team.teamRankingDao;
+package com.kepg.BaseBallLOCK.team.teamRanking.teamRankingDao;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
 
-import com.kepg.BaseBallLOCK.team.teamRankingDto.TeamRankingDTO;
+import com.kepg.BaseBallLOCK.team.teamRanking.teamRankingDto.TeamRankingDTO;
 
 import lombok.RequiredArgsConstructor;
 

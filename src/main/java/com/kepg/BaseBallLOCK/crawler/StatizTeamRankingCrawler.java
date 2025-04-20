@@ -1,8 +1,8 @@
 package com.kepg.BaseBallLOCK.crawler;
 
-import com.kepg.BaseBallLOCK.team.teamRankingDto.TeamRankingDTO;
+import com.kepg.BaseBallLOCK.team.teamRanking.teamRankingDao.TeamRankingDAO;
+import com.kepg.BaseBallLOCK.team.teamRanking.teamRankingDto.TeamRankingDTO;
 
-import com.kepg.BaseBallLOCK.team.teamRankingDao.TeamRankingDAO;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;

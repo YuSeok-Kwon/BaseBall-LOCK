@@ -1,7 +1,8 @@
 package com.kepg.BaseBallLOCK.crawler;
 
-import com.kepg.BaseBallLOCK.team.teamRankingDao.*;
-import com.kepg.BaseBallLOCK.team.teamRankingDto.*;
+import com.kepg.BaseBallLOCK.team.teamRanking.teamRankingDao.TeamRankingDAO;
+
+import com.kepg.BaseBallLOCK.team.teamRanking.teamRankingDto.TeamRankingDTO;
 import jakarta.annotation.PostConstruct;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -17,7 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
-public class StatizTeamRanking2025Crawler {
+public class StatizTeamRankingCrawler2025 {
 
     @Autowired
     private DataSource dataSource;
@@ -39,7 +40,7 @@ public class StatizTeamRanking2025Crawler {
         teamNameToId.put("키움", 10);
     }
 
-    @Scheduled(cron = "0 0 12 * * *")  // 매일 12시 정각
+    @Scheduled(cron = "0 0 0 * * *") // 매일 00:00 (자정)
     public void updateTeamRanking() {
         String url = "https://statiz.sporki.com/season/?m=teamoverall&year=2025";
 
@@ -84,11 +85,11 @@ public class StatizTeamRanking2025Crawler {
                 dto.setWinRate(winRate);
 
                 teamRankingDAO.saveOrUpdate(dto);
-                System.out.printf("✅ 저장 완료 - 팀: %s (%d위)\n", teamName, rank);
+                System.out.printf("저장 완료 - 팀: %s (%d위)\n", teamName, rank);
             }
 
         } catch (Exception e) {
-            System.out.println("❌ 에러 발생: " + e.getMessage());
+            System.out.println("에러 발생: " + e.getMessage());
             e.printStackTrace();
         }
     }

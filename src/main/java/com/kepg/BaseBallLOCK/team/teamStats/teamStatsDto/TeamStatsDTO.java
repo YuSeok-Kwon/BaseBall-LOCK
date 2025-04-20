@@ -1,4 +1,4 @@
-package com.kepg.BaseBallLOCK.team.teamStatsDto;
+package com.kepg.BaseBallLOCK.team.teamStats.teamStatsDto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
