@@ -7,32 +7,30 @@ import lombok.*;
 @Table(name = "teamRanking")
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class TeamRanking {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    private Integer teamId;
+    private int season;
 
-    private Integer season;
+    private int teamId;
 
-    private Integer ranking;
+    private int ranking;
 
-    private Integer games;
+    private int games;
 
-    private Integer wins;
+    private int wins;
 
-    private Integer losses;
+    private int draws;
 
-    private Integer draws;
+    private int losses;
 
-    private Double winRate;
+    private double gamesBehind;
 
-    private Double gamesBehind;
-    
-
+    private double winRate;
 }

@@ -51,7 +51,7 @@
 
               <!-- 날짜 및 경기장 -->
               <div class="text-center text-muted mb-3" 
-                   th:text="${#temporals.format(schedule.matchDate, 'yyyy.MM.dd')} + ' ' + ${schedule.stadium}">
+     				th:text="${#dates.format(schedule.matchDate, 'yyyy.MM.dd')} + ' ' + ${schedule.stadium}">
                 2025.4.2 잠실 종합 운동장
               </div>
 

@@ -1,0 +1,68 @@
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/default}">
+
+<th:block layout:fragment="contents">
+  <div class="container py-5">
+
+    <!-- 월 이동 -->
+    <div class="text-center mb-4 d-flex align-items-center">
+      <a th:href="@{/game/result-view(year=${prevYear}, month=${prevMonth})}" class="btn btn-outline-secondary me-2">&laquo; 이전</a>
+      <strong class="fs-3" th:text="${year} + '년 ' + ${month} + '월'">2025년 4월</strong>
+      <a th:href="@{/game/result-view(year=${nextYear}, month=${nextMonth})}" class="btn btn-outline-secondary ms-2">다음 &raquo;</a>
+    </div>
+
+    <!-- 날짜별 카드 -->
+    <div th:each="entry : ${groupedSchedule}" class="mb-4">
+      <div class="card shadow-sm">
+
+        <!-- 날짜 헤더 -->
+        <div class="card-header bg-warning text-dark fw-bold fs-5 py-2"
+             th:text="${#temporals.format(entry.key, 'M월 d일 (E)')}">
+          4월 20일 (일)
+        </div>
+
+        <!-- 카드 바디 -->
+        <div class="card-body px-3 py-2">
+
+          <!-- 경기 한 줄 -->
+          <div th:each="game : ${entry.value}" class="mb-3 border-bottom pb-2" style="cursor: pointer;"
+               th:onclick="|location.href='@{/game/detail(matchId=${game.id})}'|">
+
+            <!-- 경기장 -->
+            <div class="text-center text-muted fs-6 ps-3 mt-2" th:text="${game.stadium}">
+              서울 잠실야구장
+            </div>
+
+            <!-- 팀 & VS 정보 -->
+            <div class="row align-items-center">
+
+              <!-- 원정팀 -->
+              <div class="col-5 text-end d-flex align-items-center justify-content-end gap-2 fs-3">
+				  <span th:classappend="${game.awayTeamScore > game.homeTeamScore} ? 'fw-bold' : 'fw-light'">
+				    <span th:text="${game.awayTeamName}">SSG</span>
+				    <span th:if="${game.awayTeamScore != null}" th:text="'(' + ${game.awayTeamScore} + ')'"> (2)</span>
+				  </span>
+				  <img th:src="@{/static/emblems/{logo}.png(logo=${game.awayTeamLogo})}" class="table-team-logo">
+			  </div>
+              <!-- VS -->
+              <div class="col-2 text-center text-secondary fs-3 fw-bold">VS</div>
+
+              <!-- 홈팀 -->
+              <div class="col-5 text-start d-flex align-items-center justify-content-start gap-2 fs-3">
+				  <img th:src="@{/static/emblems/{logo}.png(logo=${game.homeTeamLogo})}" class="table-team-logo">
+				  <span th:classappend="${game.homeTeamScore > game.awayTeamScore} ? 'fw-bold' : 'fw-light'">
+				    <span th:if="${game.homeTeamScore != null}" th:text="'(' + ${game.homeTeamScore} + ')'"> (3)</span>
+				    <span th:text="${game.homeTeamName}">두산</span>
+				  </span>
+			  </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</th:block>

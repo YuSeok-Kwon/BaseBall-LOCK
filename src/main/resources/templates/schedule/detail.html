@@ -1,0 +1,35 @@
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/default}">
+
+<th:block layout:fragment="contents">
+<div class="container py-5">
+  <div class="card shadow-sm p-4">
+
+    <div class="text-center fs-3 fw-bold mb-3" th:text="${game.matchDate}">4월 20일 (일)</div>
+
+    <div class="d-flex justify-content-center align-items-center gap-5 mb-3">
+      <!-- 원정팀 -->
+      <div class="text-end">
+        <span class="fs-4 fw-bold" th:text="${game.awayTeamName}">SSG</span>
+        <img th:src="@{/static/emblems/{logo}.png(logo=${game.awayTeamLogo})}" class="table-team-logo mx-2">
+        <span class="fs-4 text-muted" th:if="${game.awayTeamScore != null}" th:text="'(' + ${game.awayTeamScore} + ')'">(2)</span>
+      </div>
+
+      <!-- VS -->
+      <div class="fs-3 text-secondary fw-bold">VS</div>
+
+      <!-- 홈팀 -->
+      <div class="text-start">
+        <span class="fs-4 fw-bold" th:if="${game.homeTeamScore != null}" th:text="'(' + ${game.homeTeamScore} + ')'">(3)</span>
+        <img th:src="@{/static/emblems/{logo}.png(logo=${game.homeTeamLogo})}" class="table-team-logo mx-2">
+        <span class="fs-4 fw-bold" th:text="${game.homeTeamName}">두산</span>
+      </div>
+    </div>
+
+    <div class="text-center text-muted fs-5" th:text="${game.stadium}">서울 잠실종합운동장</div>
+
+  </div>
+</div>
+</th:block>

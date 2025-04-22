@@ -1,25 +1,24 @@
 package com.kepg.BaseBallLOCK.crawler;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import com.kepg.BaseBallLOCK.team.teamStats.teamStatsDao.TeamStatsDAO;
+import com.kepg.BaseBallLOCK.team.teamStats.service.TeamStatsService;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.util.HashMap;
-import java.util.Map;
+import lombok.RequiredArgsConstructor;
 
-public class StatizTeamWaaCrawler {
+@RequiredArgsConstructor
+public class StatizTeamWaaCrawler  {
 
-    public static void main(String[] args) {
-        String jdbcUrl = "jdbc:mysql://localhost:3306/BaseBallLOCK?serverTimezone=Asia/Seoul";
-        String username = "root";
-        String password = "rnjs7944";
+    private final TeamStatsService teamStatsService;
 
-        Map<String, Integer> teamNameToId = new HashMap<>();
+    private static final Map<String, Integer> teamNameToId = new HashMap<>();
+    static {
         teamNameToId.put("KIA", 1);
         teamNameToId.put("두산", 2);
         teamNameToId.put("삼성", 3);
@@ -30,66 +29,68 @@ public class StatizTeamWaaCrawler {
         teamNameToId.put("KT", 8);
         teamNameToId.put("롯데", 9);
         teamNameToId.put("키움", 10);
+    }
 
-        try (Connection conn = DriverManager.getConnection(jdbcUrl, username, password)) {
-            TeamStatsDAO teamStatsDAO = new TeamStatsDAO(conn);
+    public void run(String... args) throws Exception {
+        int[] years = {2020, 2021, 2022, 2023, 2024};
+        String baseUrl = "https://statiz.sporki.com/season/?m=teamoverall&year=%d";
 
-            int[] years = {2020, 2021, 2022, 2023};
+        for (int year : years) {
+            String url = String.format(baseUrl, year);
+            System.out.println("시즌 " + year + " 팀 분석(WAA) 시작");
 
-            for (int year : years) {
-                String url = String.format("https://statiz.sporki.com/season/?m=teamoverall&year=%d", year);
-                System.out.println("\n시즌 " + year + " 팀 WAA 데이터 수집 시작");
+            try {
+                Document doc = Jsoup.connect(url)
+                        .userAgent("Mozilla/5.0")
+                        .referrer("https://www.google.com")
+                        .timeout(10000)
+                        .get();
 
-                try {
-                    Document doc = Jsoup.connect(url)
-                            .userAgent("Mozilla/5.0")
-                            .referrer("https://www.google.com")
-                            .timeout(10000)
-                            .get();
-
-                    Elements tables = doc.select("div.item_box table");
-                    if (tables.size() < 2) {
-                        System.out.println("팀 분석(WAA) 테이블 없음 (year: " + year + ")");
-                        continue;
-                    }
-
-                    Element waaTable = tables.get(3);
-                    Elements rows = waaTable.select("tbody > tr");
-
-                    for (Element row : rows) {
-                        Elements cols = row.select("td");
-                        if (cols.size() < 6) continue;
-                        
-                        
-                        String teamName = cols.get(0).text().trim();
-                        int teamId = teamNameToId.getOrDefault(teamName, 0);
-                        if (teamId == 0) continue;
-
-                        double hitting = Double.parseDouble(cols.get(1).text());
-                        double running = Double.parseDouble(cols.get(2).text());
-                        double defense = Double.parseDouble(cols.get(3).text());
-                        double starting = Double.parseDouble(cols.get(4).text());
-                        double bullpen = Double.parseDouble(cols.get(5).text());
-
-                        teamStatsDAO.insertOrUpdateStat(teamId, year, "타격", hitting, null);
-                        teamStatsDAO.insertOrUpdateStat(teamId, year, "주루", running, null);
-                        teamStatsDAO.insertOrUpdateStat(teamId, year, "수비", defense, null);
-                        teamStatsDAO.insertOrUpdateStat(teamId, year, "선발", starting, null);
-                        teamStatsDAO.insertOrUpdateStat(teamId, year, "불펜", bullpen, null);
-
-                        System.out.printf("저장 완료 - [%s] (%d)\n", teamName, year);
-                    }
-
-                    Thread.sleep((int) (1000 + Math.random() * 2000));
-
-                } catch (Exception e) {
-                    System.out.println("에러 발생 (year: " + year + "): " + e.getMessage());
-                    e.printStackTrace();
+                Elements tables = doc.select("div.item_box table");
+                if (tables.size() < 4) {
+                    System.out.println("분석 테이블 없음 (year: " + year + ")");
+                    continue;
                 }
-            }
 
+                Element waaTable = tables.get(3);
+                Elements rows = waaTable.select("tbody > tr");
+
+                for (Element row : rows) {
+                    Elements cols = row.select("td");
+                    if (cols.size() < 6) continue;
+
+                    String teamName = cols.get(0).text().trim();
+                    int teamId = teamNameToId.getOrDefault(teamName, 0);
+                    if (teamId == 0) continue;
+
+                    double hitting  = parse(cols.get(1));
+                    double running  = parse(cols.get(2));
+                    double defense  = parse(cols.get(3));
+                    double starting = parse(cols.get(4));
+                    double bullpen  = parse(cols.get(5));
+
+                    teamStatsService.saveOrUpdate(teamId, year, "타격", hitting, null);
+                    teamStatsService.saveOrUpdate(teamId, year, "주루", running, null);
+                    teamStatsService.saveOrUpdate(teamId, year, "수비", defense, null);
+                    teamStatsService.saveOrUpdate(teamId, year, "선발", starting, null);
+                    teamStatsService.saveOrUpdate(teamId, year, "불펜", bullpen, null);
+
+                    System.out.printf("저장 완료 - [%s] (%d)\n", teamName, year);
+                }
+
+            } catch (Exception e) {
+                System.out.println("크롤링 실패 (year: " + year + "): " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private double parse(Element col) {
+        String text = col.text().trim();
+        try {
+            return Double.parseDouble(text);
         } catch (Exception e) {
-            System.out.println("DB 연결 실패: " + e.getMessage());
+            return 0.0;
         }
     }
 }

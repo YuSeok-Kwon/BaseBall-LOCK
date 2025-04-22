@@ -1,8 +1,8 @@
 package com.kepg.BaseBallLOCK.player.domain;
 
 import jakarta.persistence.*;
+
 import lombok.*;
-import java.time.LocalDate;
 
 @Entity
 @Table(name = "player")
@@ -22,15 +22,4 @@ public class Player {
     @Column(length = 30, nullable = false)
     private String name;
 
-    @Column(length = 10)
-    private String position;
-
-    private LocalDate birth;
-
-    @Column(length = 10)
-    private String hand;
-
-    private Integer uniformNumber;
-
-    private Integer season;
 }

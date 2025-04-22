@@ -8,11 +8,15 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import com.kepg.BaseBallLOCK.game.GameService;
 import com.kepg.BaseBallLOCK.game.schedule.domain.Schedule;
-import com.kepg.BaseBallLOCK.player.playerDto.TopPlayerCardView;
-import com.kepg.BaseBallLOCK.team.teamDomain.Team;
-import com.kepg.BaseBallLOCK.team.teamRanking.teamRankingDto.TeamRankingCardView;
+import com.kepg.BaseBallLOCK.game.schedule.service.ScheduleService;
+import com.kepg.BaseBallLOCK.game.service.GameService;
+import com.kepg.BaseBallLOCK.player.dto.TopPlayerCardView;
+import com.kepg.BaseBallLOCK.player.stats.service.BatterStatsService;
+import com.kepg.BaseBallLOCK.player.stats.service.PitcherStatsService;
+import com.kepg.BaseBallLOCK.team.domain.Team;
+import com.kepg.BaseBallLOCK.team.service.TeamService;
+import com.kepg.BaseBallLOCK.team.teamRanking.dto.TeamRankingCardView;
 import com.kepg.BaseBallLOCK.user.userDomain.User;
 
 import jakarta.servlet.http.HttpSession;
@@ -22,86 +26,80 @@ import lombok.RequiredArgsConstructor;
 @Controller
 @RequiredArgsConstructor
 public class UserController {
-	
-	private final GameService gameService;
 
-	@GetMapping("/login-view")
-	public String loginView() {
-		return "user/login";
-	}
-	
-	@GetMapping("/join-view")
-	public String joinView() {
-		return "user/join";
-	}
-	
-	@GetMapping("/find-id-view")
-	public String findIdView() {
-		return "user/findId";
-	}
-	
-	@GetMapping("/find-password-view")
-	public String findPasswordView() {
-		return "user/findPassword";
-	}
-	
-	@GetMapping("/home")
-	public String homeView(Model model, HttpSession session) {
-	    User user = (User) session.getAttribute("loginUser");
+    private final TeamService teamService;
+    private final ScheduleService scheduleService;
+    private final GameService gameService;
+    private final BatterStatsService batterStatsService;
+    private final PitcherStatsService pitcherStatsService;
 
-	    if (user == null) {
-	        return "redirect:/user/login-view"; // 로그인 안 된 경우 로그인 페이지로 이동
-	    }
+    @GetMapping("/login-view")
+    public String loginView() {
+        return "user/login";
+    }
 
-	    int myTeamId = user.getFavoriteTeamId();
-	    int season = LocalDate.now().getYear();
+    @GetMapping("/join-view")
+    public String joinView() {
+        return "user/join";
+    }
 
-	    // My Team
-	    Team myTeam = gameService.getTeamInfo(myTeamId);
-	    model.addAttribute("myTeam", myTeam);
+    @GetMapping("/find-id-view")
+    public String findIdView() {
+        return "user/findId";
+    }
 
-	    // 오늘 경기
-	    Schedule schedule = gameService.getTodayScheduleByTeam(myTeamId);
-	    model.addAttribute("schedule", schedule);
+    @GetMapping("/find-password-view")
+    public String findPasswordView() {
+        return "user/findPassword";
+    }
 
-	    if (schedule != null) {
-	        int opponentId = 0;
+    @GetMapping("/home")
+    public String homeView(Model model, HttpSession session) {
+        User user = (User) session.getAttribute("loginUser");
 
-	        if (schedule.getHomeTeamId() == myTeamId) {
-	            opponentId = schedule.getAwayTeamId();
-	        } else {
-	            opponentId = schedule.getHomeTeamId();
-	        }
+        if (user == null) {
+            return "redirect:/user/login-view";
+        }
 
-	        Team opponentTeam = gameService.getTeamInfo(opponentId);
-	        model.addAttribute("opponentTeam", opponentTeam);
+        int myTeamId = user.getFavoriteTeamId();
+        int season = LocalDate.now().getYear();
+        
+        // 내 팀 정보
+        Team myTeam = teamService.getTeamById(myTeamId);
+        model.addAttribute("myTeam", myTeam);
 
-	        // 최근 전적
-	        List<String> myRecentResults = gameService.getRecentResults(myTeamId);
-	        List<String> opponentRecentResults = gameService.getRecentResults(opponentId);
+        // 오늘 경기
+        Schedule schedule = scheduleService.getTodayScheduleByTeam(myTeamId);
+        model.addAttribute("schedule", schedule);
 
-	        model.addAttribute("myRecentResults", myRecentResults);
-	        model.addAttribute("opponentRecentResults", opponentRecentResults);
-	        
-	        // 상대 전적
-	        String myRecord = gameService.getHeadToHeadRecord(myTeamId, opponentId);
-	        String opponentRecord = gameService.getHeadToHeadRecord(opponentId, myTeamId);
+        if (schedule != null) {
+            int opponentId = schedule.getHomeTeamId() == myTeamId ? schedule.getAwayTeamId() : schedule.getHomeTeamId();
 
-	        model.addAttribute("myRecord", myRecord);
-	        model.addAttribute("opponentRecord", opponentRecord);
-	    }
-	    
-	    // 주요 선수 추가
-	    TopPlayerCardView hitter = gameService.getTopHitter(myTeamId, season);
-        TopPlayerCardView pitcher = gameService.getTopPitcher(myTeamId, season);
+            Team opponentTeam = teamService.getTeamById(opponentId);
+            model.addAttribute("opponentTeam", opponentTeam);
+
+            // 최근 전적
+            List<String> myRecentResults = scheduleService.getRecentResults(myTeamId);
+            List<String> opponentRecentResults = scheduleService.getRecentResults(opponentId);
+            model.addAttribute("myRecentResults", myRecentResults);
+            model.addAttribute("opponentRecentResults", opponentRecentResults);
+
+            // 상대 전적
+            String myRecord = scheduleService.getHeadToHeadRecord(myTeamId, opponentId);
+            String opponentRecord = scheduleService.getHeadToHeadRecord(opponentId, myTeamId);
+            model.addAttribute("myRecord", myRecord);
+            model.addAttribute("opponentRecord", opponentRecord);
+        }
+
+        // 주요 선수
+        TopPlayerCardView hitter = batterStatsService.getTopHitter(myTeamId, season);
+        TopPlayerCardView pitcher = pitcherStatsService.getTopPitcher(myTeamId, season);
         model.addAttribute("topHitter", hitter);
         model.addAttribute("topPitcher", pitcher);
-	    
-	    
-	    // 팀 순위 카드뷰
-	    List<TeamRankingCardView> rankingList = gameService.getTeamRankingCardViews(season);
-	    model.addAttribute("rankingList", rankingList);
 
-	    return "user/home";
-	}
+        List<TeamRankingCardView> rankingList = gameService.getTeamRankingCardViews(season);
+        model.addAttribute("rankingList", rankingList);
+
+        return "user/home";
+    }
 }

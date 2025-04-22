@@ -51,6 +51,12 @@ body {
   object-fit: contain;
 }
 
+.team-box {
+  width: 200px;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
 .team-logo-row {
   height: 48px;
 }
@@ -156,6 +162,26 @@ a {
   box-shadow: 0 8px 20px rgba(0,0,0,0.1);
 }
 
+.table-team-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.card-header {
+  font-size: 1.2rem;
+  padding: 12px 20px;
+}
+
+.card-body .border-bottom:last-child {
+  border-bottom: none !important;
+}
+
+.card-body .d-flex:hover {
+  background-color: #f8f9fa;
+  transition: background-color 0.2s ease-in-out;
+}
+  
 /* 푸터 */
 footer {
   height: 70px;

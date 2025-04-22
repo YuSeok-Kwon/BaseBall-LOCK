@@ -1,37 +1,33 @@
 package com.kepg.BaseBallLOCK.crawler;
 
-import com.kepg.BaseBallLOCK.team.teamRanking.teamRankingDao.TeamRankingDAO;
+import java.util.HashMap;
+import java.util.Map;
 
-import com.kepg.BaseBallLOCK.team.teamRanking.teamRankingDto.TeamRankingDTO;
-import jakarta.annotation.PostConstruct;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.util.HashMap;
-import java.util.Map;
+import com.kepg.BaseBallLOCK.team.teamRanking.domain.TeamRanking;
+import com.kepg.BaseBallLOCK.team.teamRanking.repository.TeamRankingRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Component
+@RequiredArgsConstructor
 public class StatizTeamRankingCrawler2025 {
 
-    @Autowired
-    private DataSource dataSource;
+    private final TeamRankingRepository teamRankingRepository;
 
-    private Map<String, Integer> teamNameToId;
-
-    @PostConstruct
-    public void initTeamMap() {
-        teamNameToId = new HashMap<>();
+    private static final Map<String, Integer> teamNameToId = new HashMap<>();
+    static {
         teamNameToId.put("KIA", 1);
         teamNameToId.put("두산", 2);
         teamNameToId.put("삼성", 3);
         teamNameToId.put("SSG", 4);
+        teamNameToId.put("SK", 4);
         teamNameToId.put("LG", 5);
         teamNameToId.put("한화", 6);
         teamNameToId.put("NC", 7);
@@ -40,57 +36,86 @@ public class StatizTeamRankingCrawler2025 {
         teamNameToId.put("키움", 10);
     }
 
-    @Scheduled(cron = "0 0 0 * * *") // 매일 00:00 (자정)
-    public void updateTeamRanking() {
-        String url = "https://statiz.sporki.com/season/?m=teamoverall&year=2025";
+    // 매일 00시 정각에 자동 실행
+    @Scheduled(cron = "0 15 0 * * *")
+    public void runScheduledCrawling() {
+        crawlTeamRankings();
+    }
 
-        try (Connection conn = dataSource.getConnection()) {
-            TeamRankingDAO teamRankingDAO = new TeamRankingDAO(conn);
+    public void crawlTeamRankings() {
+        String baseUrl = "https://statiz.sporki.com/season/?m=teamoverall&year=%d";
+        int[] years = {2025};
 
-            Document doc = Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0")
-                    .referrer("https://www.google.com")
-                    .timeout(10000)
-                    .get();
+        for (int year : years) {
+            System.out.println("시즌 " + year + " 팀 Ranking 데이터수집 시작");
+            String url = String.format(baseUrl, year);
+            System.out.println("크롤링 대상 URL: " + url);
 
-            Element table = doc.select("div.item_box table").get(0); // 첫 번째 테이블
-            Elements rows = table.select("tbody > tr");
+            try {
+                Document doc = Jsoup.connect(url)
+                        .userAgent("Mozilla/5.0")
+                        .referrer("https://www.google.com")
+                        .timeout(10000)
+                        .get();
 
-            for (Element row : rows) {
-                Elements cols = row.select("td");
-                if (cols.size() < 8) continue;
+                Elements tables = doc.select("div.item_box table");
+                if (tables.size() < 2) {
+                    System.out.println("정규시즌 중 순위 테이블이 없습니다.");
+                    continue;
+                }
 
-                String teamName = cols.get(1).text().trim();
-                int teamId = teamNameToId.getOrDefault(teamName, 0);
-                if (teamId == 0) continue;
+                Element rankingTable = tables.get(1);
+                Elements rows = rankingTable.select("tbody > tr");
 
-                int season = 2025;
-                int rank = Integer.parseInt(cols.get(0).text());
-                int g = Integer.parseInt(cols.get(2).text());
-                int w = Integer.parseInt(cols.get(3).text());
-                int d = Integer.parseInt(cols.get(4).text());
-                int l = Integer.parseInt(cols.get(5).text());
-                double gb = Double.parseDouble(cols.get(6).text());
-                double winRate = Double.parseDouble(cols.get(7).text());
+                for (Element row : rows) {
+                    Elements cols = row.select("td");
+                    if (cols.size() < 8) continue;
 
-                TeamRankingDTO dto = new TeamRankingDTO();
-                dto.setSeason(season);
-                dto.setTeamId(teamId);
-                dto.setRanking(rank);
-                dto.setGames(g);
-                dto.setWins(w);
-                dto.setDraws(d);
-                dto.setLosses(l);
-                dto.setGamesBehind(gb);
-                dto.setWinRate(winRate);
+                    String teamName = cols.get(1).text().trim();
+                    int teamId = teamNameToId.getOrDefault(teamName, 0);
+                    if (teamId == 0) continue;
 
-                teamRankingDAO.saveOrUpdate(dto);
-                System.out.printf("저장 완료 - 팀: %s (%d위)\n", teamName, rank);
+                    int ranking = Integer.parseInt(cols.get(0).text().trim());
+                    int games = Integer.parseInt(cols.get(2).text().trim());
+                    int wins = Integer.parseInt(cols.get(3).text().trim());
+                    int draws = Integer.parseInt(cols.get(4).text().trim());
+                    int losses = Integer.parseInt(cols.get(5).text().trim());
+
+                    String gbText = cols.get(6).text().trim();
+                    double gamesBehind = gbText.equals("-") ? 0.0 : Double.parseDouble(gbText);
+                    double winRate = Double.parseDouble(cols.get(7).text().trim());
+
+                    TeamRanking entity = teamRankingRepository.findBySeasonAndTeamId(year, teamId)
+                            .map(existing -> {
+                                existing.setRanking(ranking);
+                                existing.setGames(games);
+                                existing.setWins(wins);
+                                existing.setDraws(draws);
+                                existing.setLosses(losses);
+                                existing.setGamesBehind(gamesBehind);
+                                existing.setWinRate(winRate);
+                                return existing;
+                            })
+                            .orElse(TeamRanking.builder()
+                                    .season(year)
+                                    .teamId(teamId)
+                                    .ranking(ranking)
+                                    .games(games)
+                                    .wins(wins)
+                                    .draws(draws)
+                                    .losses(losses)
+                                    .gamesBehind(gamesBehind)
+                                    .winRate(winRate)
+                                    .build());
+
+                    teamRankingRepository.save(entity);
+                    System.out.printf("저장 완료 - 시즌 %d, 팀 %s (%d위)\n", year, teamName, ranking);
+                }
+
+            } catch (Exception e) {
+                System.out.println("크롤링 실패: year=" + year);
+                e.printStackTrace();
             }
-
-        } catch (Exception e) {
-            System.out.println("에러 발생: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 }
