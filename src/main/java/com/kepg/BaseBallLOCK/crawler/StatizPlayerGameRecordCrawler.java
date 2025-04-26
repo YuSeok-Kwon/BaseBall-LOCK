@@ -11,7 +11,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.kepg.BaseBallLOCK.game.lineUp.service.LineupService;
@@ -24,7 +25,9 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class StatizScheduleCrawlerToday {
+public class StatizPlayerGameRecordCrawler {
+
+    private static final Logger log = LoggerFactory.getLogger(StatizPlayerGameRecordCrawler.class);
 
     private final ScheduleService scheduleService;
     private final PlayerService playerService;
@@ -45,40 +48,49 @@ public class StatizScheduleCrawlerToday {
         teamNameToId.put("키움", 10);
     }
 
-    @Scheduled(cron = "0 5 0 * * *", zone = "Asia/Seoul") // 매일 00시 05분 실행
-    public void crawlYesterdayGames() {
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        String dateStr = yesterday.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        Timestamp matchDateTime = Timestamp.valueOf(yesterday.atStartOfDay());
+    public void crawl() {
+        int startId = 20250078;
+        int endId = 20250130;
+        String baseUrl = "https://statiz.sporki.com/schedule/?m=boxscore&s_no=%d";
 
-        for (int statizId = 20250001; statizId <= 20259999; statizId++) {
+        for (int statizId = startId; statizId <= endId; statizId++) {
+            String url = String.format(baseUrl, statizId);
             try {
-                String url = String.format("https://statiz.sporki.com/schedule/?m=boxscore&s_no=%d", statizId);
                 Document doc = Jsoup.connect(url)
                         .userAgent("Mozilla/5.0")
                         .referrer("https://www.google.com")
+                        .header("Accept-Language", "ko-KR,ko;q=0.9")
                         .timeout(70000)
                         .get();
 
                 Element calloutBox = doc.selectFirst(".callout_box .txt");
-                if (calloutBox == null || !calloutBox.text().contains(dateStr.substring(5))) continue;
+                if (calloutBox == null) {
+                    continue;
+                }
 
-                String[] parts = calloutBox.text().split(",");
-                LocalDate matchDate = LocalDate.parse("2025-" + parts[1].trim(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-                if (!matchDate.equals(yesterday)) continue;
+                String dateText = calloutBox.text().split(",")[1].trim();
+                LocalDate matchDate = LocalDate.parse("2025-" + dateText, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                Timestamp matchDateTime = Timestamp.valueOf(matchDate.atStartOfDay());
 
                 Elements headers = doc.select("div.box_type_boared .box_head");
-                if (headers.size() < 2) continue;
+                if (headers.size() < 2) {
+                    log.warn("팀 헤더 부족: {}", statizId);
+                    continue;
+                }
 
                 String awayTeamName = headers.get(0).text().replace("타격기록", "").replaceAll("[()]", "").trim();
                 String homeTeamName = headers.get(1).text().replace("타격기록", "").replaceAll("[()]", "").trim();
 
                 Integer awayTeamId = teamNameToId.get(awayTeamName);
                 Integer homeTeamId = teamNameToId.get(homeTeamName);
-                if (awayTeamId == null || homeTeamId == null) continue;
+                if (awayTeamId == null || homeTeamId == null) {
+                    continue;
+                }
 
                 Integer scheduleId = scheduleService.findScheduleIdByMatchInfo(matchDateTime, homeTeamId, awayTeamId);
-                if (scheduleId == null) continue;
+                if (scheduleId == null) {
+                    continue;
+                }
 
                 Map<String, Integer> sbMap = new HashMap<>();
                 Elements logBoxes = doc.select("div.box_type_boared .log_box");
@@ -101,10 +113,13 @@ public class StatizScheduleCrawlerToday {
                         Elements cols = row.select("td");
                         if (cols.size() < 22) continue;
 
-                        while (true) {
+                        boolean success = false;
+                        while (!success) {
                             String name = cols.get(1).text().trim();
                             Optional<Player> player = playerService.findByNameAndTeamId(name, teamId);
+
                             if (player.isEmpty()) {
+                                log.info("➕ 신규 Player 등록: {} / teamId: {}", name, teamId);
                                 playerService.savePlayer(name, teamId);
                                 continue;
                             }
@@ -123,9 +138,10 @@ public class StatizScheduleCrawlerToday {
 
                                 lineupService.saveBatterLineup(scheduleId, teamId, order, pos, name);
                                 recordService.saveBatterRecord(scheduleId, teamId, pa, ab, hits, hr, rbi, bb, so, sb, name);
-                                break;
+
+                                success = true;
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                log.error("타자 저장 중 에러 발생: {}", name, e);
                                 break;
                             }
                         }
@@ -147,19 +163,25 @@ public class StatizScheduleCrawlerToday {
                         Elements cols = row.select("td");
                         if (cols.size() < 18) continue;
 
-                        while (true) {
-                            Element nameAnchor = cols.get(0).selectFirst("a");
-                            if (nameAnchor == null) break;
+                        boolean success = false;
+                        while (!success) {
+                        	Element nameAnchor = cols.get(0).selectFirst("a");
+                        	if (nameAnchor == null) continue;
 
-                            String name = nameAnchor.text().trim().replaceAll("\\s*\\([^)]*\\)", "").trim();
-                            String decision = "";
-                            if (name.contains("승")) decision = "W";
-                            else if (name.contains("패")) decision = "L";
-                            else if (name.contains("세")) decision = "SV";
-                            else if (name.contains("홀")) decision = "H";
+                        	String name = nameAnchor.text().trim();
+                        	String fullText = cols.get(0).text();
+                        	String decision = "";
+
+                        	if (fullText.contains("(승")) decision = "W";
+                        	else if (fullText.contains("(패")) decision = "L";
+                        	else if (fullText.contains("(세")) decision = "SV";
+                        	else if (fullText.contains("(홀")) decision = "HLD";
+
+                        	name = fullText.replaceAll("\\s*\\([^)]*\\)", "").trim();
 
                             Optional<Player> player = playerService.findByNameAndTeamId(name, teamId);
                             if (player.isEmpty()) {
+                                log.info("➕ 신규 Pitcher 등록: {} / teamId: {}", name, teamId);
                                 playerService.savePlayer(name, teamId);
                                 continue;
                             }
@@ -175,19 +197,19 @@ public class StatizScheduleCrawlerToday {
                                 int hr = Integer.parseInt(cols.get(9).text().trim());
 
                                 recordService.savePitcherRecord(scheduleId, teamId, name, innings, strikeouts, bb, hbp, runs, er, hits, hr, decision);
-                                break;
+                                success = true;
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                log.error("투수 저장 중 에러 발생: {}", name, e);
                                 break;
                             }
                         }
                     }
                 }
 
-                Thread.sleep(1500);
+                System.out.println("저장 완료" + statizId + "(" + scheduleId + ")" + matchDate);
+                Thread.sleep(40000);
             } catch (Exception e) {
-                System.out.println("오류 발생: " + statizId);
-                e.printStackTrace();
+                log.error("오류 발생: {}", statizId, e);
             }
         }
     }

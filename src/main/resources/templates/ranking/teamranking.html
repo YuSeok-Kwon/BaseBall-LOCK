@@ -1,0 +1,102 @@
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/default}">
+
+<th:block layout:fragment="contents">
+  <div class="container py-5">
+
+    <!-- 버튼 -->
+    <div class="text-center mb-4">
+      <button class="btn btn-warning fw-bold me-3 px-4 py-2">팀 랭킹</button>
+      <button class="btn btn-outline-secondary fw-bold px-4 py-2">개인 랭킹</button>
+    </div>
+
+    <!-- 팀 순위 카드 -->
+    <div class="col-12 col-md-6 col-lg-5 mb-4">
+      <div class="card border-warning shadow-sm h-100">
+        <div class="card-body py-3 px-4">
+          <h5 class="card-title text-center fs-1 fw-bold my-4">KBO 리그 팀 순위</h5>
+          <table class="table table-hover table-striped text-center mt-2 mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>순위</th><th>팀</th><th>경기</th><th>승</th><th>패</th><th>무</th><th>승률</th><th>승차</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="team : ${rankingList}">
+                <td th:text="${team.ranking}">1</td>
+                <td class="d-flex align-items-center gap-2 justify-content-center">
+                  <img th:src="@{/static/emblems/{logo}.png(logo=${team.logoName})}" alt="로고" class="table-team-logo">
+                  <span th:text="${team.teamName}">팀명</span>
+                </td>
+                <td th:text="${team.games}">144</td>
+                <td th:text="${team.wins}">88</td>
+                <td th:text="${team.losses}">50</td>
+                <td th:text="${team.draws}">6</td>
+                <td th:text="${team.winRate}">.638</td>
+                <td th:text="${team.gamesBehind}">-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 최고 팀 스탯 박스 -->
+    <div class="row mb-4">
+
+      <!-- 타자 스탯 -->
+      <div class="col-md-4">
+        <div class="border rounded p-3 bg-white h-100">
+          <h5 class="fw-bold mb-3">타자 스탯 Top 팀</h5>
+          <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between" th:each="stat : ${topBatterStats}">
+              <span th:text="${stat.category}">OPS</span>
+              <span>
+                <img th:src="@{/static/emblems/{logo}.png(logo=${stat.teamLogo})}" class="table-team-logo me-1">
+                <span th:text="${stat.teamName}" class="me-2">LG</span>
+                <strong th:text="${stat.value}">0.830</strong>
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 투수 스탯 -->
+      <div class="col-md-4">
+        <div class="border rounded p-3 bg-white h-100">
+          <h5 class="fw-bold mb-3">투수 스탯 Top 팀</h5>
+          <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between" th:each="stat : ${topPitcherStats}">
+              <span th:text="${stat.category}">ERA</span>
+              <span>
+                <img th:src="@{/static/emblems/{logo}.png(logo=${stat.teamLogo})}" class="table-team-logo me-1">
+                <span th:text="${stat.teamName}" class="me-2">두산</span>
+                <strong th:text="${stat.value}">2.91</strong>
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- WAA 스탯 -->
+      <div class="col-md-4">
+        <div class="border rounded p-3 bg-white h-100">
+          <h5 class="fw-bold mb-3">WAA 스탯 Top 팀</h5>
+          <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between" th:each="stat : ${topWaaStats}">
+              <span th:text="${stat.category}">수비</span>
+              <span>
+                <img th:src="@{/static/emblems/{logo}.png(logo=${stat.teamLogo})}" class="table-team-logo me-1">
+                <span th:text="${stat.teamName}" class="me-2">한화</span>
+                <strong th:text="${stat.value}">1.21</strong>
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</th:block>

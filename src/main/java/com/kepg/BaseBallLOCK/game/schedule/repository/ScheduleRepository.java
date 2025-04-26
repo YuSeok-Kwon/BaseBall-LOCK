@@ -50,8 +50,17 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Integer> {
     Integer findIdByDateAndTeams(@Param("matchDate") Timestamp matchDate,
                                  @Param("homeTeamId") int homeTeamId,
                                  @Param("awayTeamId") int awayTeamId);
+    
 
     Optional<Schedule> findByMatchDateAndHomeTeamIdAndAwayTeamId(Timestamp matchDate,
                                                                  int homeTeamId,
                                                                  int awayTeamId);
+    
+    Optional<Schedule> findById(int id);
+    
+    @Query("SELECT s.id FROM Schedule s WHERE s.matchDate < :currentDate ORDER BY s.matchDate DESC LIMIT 1")
+    Integer findPrevMatchId(@Param("currentDate") Timestamp currentDate);
+
+    @Query("SELECT s.id FROM Schedule s WHERE s.matchDate > :currentDate ORDER BY s.matchDate ASC LIMIT 1")
+    Integer findNextMatchId(@Param("currentDate") Timestamp currentDate);
 }

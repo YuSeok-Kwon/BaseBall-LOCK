@@ -31,7 +31,7 @@ public class StatizTeamRankingCrawler  {
         teamNameToId.put("키움", 10);
     }
 
-    public void run(String... args) throws Exception {
+    public void crawl(String... args) throws Exception {
         String baseUrl = "https://statiz.sporki.com/season/?m=teamoverall&year=%d";
         int[] years = {2020, 2021, 2022, 2023, 2024};
 

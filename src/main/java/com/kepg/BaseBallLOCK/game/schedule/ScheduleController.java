@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.kepg.BaseBallLOCK.game.schedule.dto.GameDetailCardView;
 import com.kepg.BaseBallLOCK.game.schedule.dto.ScheduleCardView;
 import com.kepg.BaseBallLOCK.game.schedule.service.ScheduleService;
 
@@ -61,14 +62,22 @@ public class ScheduleController {
     }
 
     @GetMapping("/detail-view")
-    public String gameDetail(@RequestParam("matchId") int matchId, Model model) {
-        ScheduleCardView detail = scheduleService.getScheduleDetailById(matchId);
-        
-	    if (detail == null) {
-	        return "redirect:/game/result-view";
-	    }
+    public String gameDetail(@RequestParam int matchId, Model model) {
+        GameDetailCardView detail = scheduleService.getGameDetail(matchId);
+        if (detail == null) {
+            return "redirect:/schedule/result-view";
+        }
 
-	    model.addAttribute("game", detail);
+        LocalDate date = detail.getMatchDate().toLocalDateTime().toLocalDate();
+        List<ScheduleCardView> allGames = scheduleService.getSchedulesByDate(date);
+        
+        Integer prevMatchId = scheduleService.getPrevMatchId(matchId);
+        Integer nextMatchId = scheduleService.getNextMatchId(matchId);
+        
+        model.addAttribute("prevMatchId", prevMatchId);
+        model.addAttribute("nextMatchId", nextMatchId);
+        model.addAttribute("game", detail);
+        model.addAttribute("otherGames", allGames);
         return "schedule/detail";
     }
 }

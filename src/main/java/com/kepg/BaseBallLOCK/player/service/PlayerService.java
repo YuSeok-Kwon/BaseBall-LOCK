@@ -40,4 +40,12 @@ public class PlayerService {
     public List<Object[]> getTopHitterByTeamAndSeason(int teamId, int season) {
         return playerRepository.findTopHitterByTeamIdAndSeason(teamId, season);
     }
+    
+    public void savePlayer(String name, Integer teamId) {
+        Player newPlayer = Player.builder()
+                .name(name)
+                .teamId(teamId)
+                .build();
+        playerRepository.save(newPlayer);
+    }
 }

@@ -37,5 +37,8 @@ public interface PlayerRepository extends JpaRepository<Player, Integer> {
 	    """, nativeQuery = true)
 	List<Object[]> findTopPitcherByTeamIdAndSeason(@Param("teamId") int teamId, @Param("season") int season);
 	
+	@Query("SELECT s.value FROM BatterStats s WHERE s.playerId = :playerId AND s.category = :category AND s.season = :season")
+	Optional<String> findStatValueByPlayerIdCategoryAndSeason(@Param("playerId") int playerId, @Param("category") String category, @Param("season") int season);
+	
 	Optional<Player> findByNameAndTeamId(String name, int teamId);
 }

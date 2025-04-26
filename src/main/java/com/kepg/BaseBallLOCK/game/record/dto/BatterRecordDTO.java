@@ -13,6 +13,7 @@ public class BatterRecordDTO {
     private int scheduleId;
     private int teamId;
     private int playerId;
+    private String playerName;
     private int pa;
     private int ab;
     private int hits;

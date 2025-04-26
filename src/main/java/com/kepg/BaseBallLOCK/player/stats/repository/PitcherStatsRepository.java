@@ -1,6 +1,5 @@
 package com.kepg.BaseBallLOCK.player.stats.repository;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,10 +12,6 @@ public interface PitcherStatsRepository extends JpaRepository<PitcherStats, Inte
 	
     Optional<PitcherStats> findByPlayerIdAndSeasonAndCategory(Integer playerId, Integer season, String category);
     
-    @Query("""
-    	    SELECT p FROM PitcherStats p
-    	    WHERE p.playerId = :playerId
-    	      AND p.category IN ('ERA', 'WHIP', 'W', 'SV', 'HOLD')
-    	""")
-    	List<PitcherStats> findKeyStatsByPlayerId(@Param("playerId") int playerId);
+    @Query("SELECT s.value FROM PitcherStats s WHERE s.playerId = :playerId AND s.category = :category AND s.season = :season")
+    Optional<String> findStatValueByPlayerIdCategoryAndSeason(@Param("playerId") int playerId, @Param("category") String category, @Param("season") int season);
 }

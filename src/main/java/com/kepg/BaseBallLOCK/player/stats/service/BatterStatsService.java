@@ -1,8 +1,6 @@
 package com.kepg.BaseBallLOCK.player.stats.service;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -48,41 +46,63 @@ public class BatterStatsService {
     }
     
     public TopPlayerCardView getTopHitter(int teamId, int season) {
-        List<Object[]> results = playerService.getTopHitterByTeamAndSeason(teamId, season);
-
-        if (results == null || results.isEmpty()) {
+        List<Object[]> result = playerService.getTopHitterByTeamAndSeason(teamId, season);
+        if (result.isEmpty()) {
             return null;
         }
 
-        Object[] result = results.get(0);
-        if (result.length < 5) return null;
+        Object[] row = result.get(0);
 
-        TopPlayerCardView view = TopPlayerCardView.builder()
-                .name((String) result[0])
-                .position((String) result[1])
-                .war((Double) result[2])
-                .warRank(result[3] != null ? (Integer) result[3] : 0)
-                .build();
+        String name = (String) row[0];
+        String position = (String) row[1];
+        double war = 0.0;
+        int ranking = 0;
+        int playerId = 0;
 
-        Integer playerId = (Integer) result[4];
-        enrichHitterStats(view, playerId);
-
-        return view;
-    }
-
-    private void enrichHitterStats(TopPlayerCardView view, int playerId) {
-        List<BatterStats> stats = batterStatsRepository.findKeyStatsByPlayerId(playerId);
-        Map<String, BatterStats> statMap = new HashMap<>();
-        for (BatterStats stat : stats) {
-            statMap.put(stat.getCategory(), stat);
+        if (row[2] != null) {
+            war = Double.parseDouble(row[2].toString());
         }
 
-        BatterStats avg = statMap.get("AVG");
-        BatterStats hr = statMap.get("HR");
-        BatterStats ops = statMap.get("OPS");
+        if (row[3] != null) {
+            ranking = Integer.parseInt(row[3].toString());
+        }
 
-        if (avg != null) view.setAvg(avg.getValue());
-        if (hr != null) view.setHr(hr.getValue().intValue());
-        if (ops != null) view.setOps(ops.getValue());
+        if (row[4] != null) {
+            playerId = Integer.parseInt(row[4].toString());
+        }
+
+        double avg = -1.0;
+        int hr = 1;
+        double ops = -1.0;
+
+        Optional<String> avgOptional = batterStatsRepository.findStatValueByPlayerIdCategoryAndSeason(playerId, "AVG", season);
+        if (avgOptional.isPresent()) {
+            avg = Double.parseDouble(avgOptional.get());
+        }
+
+        Optional<String> hrOptional = batterStatsRepository.findStatValueByPlayerIdCategoryAndSeason(playerId, "HR", season);
+        if (hrOptional.isPresent()) {
+            String rawHr = hrOptional.get().trim();
+            try {
+                hr = (int) Double.parseDouble(rawHr);
+            } catch (NumberFormatException e) {
+                System.out.println("⚠️ HR 변환 오류: " + rawHr);
+            }
+        }
+
+        Optional<String> opsOptional = batterStatsRepository.findStatValueByPlayerIdCategoryAndSeason(playerId, "OPS", season);
+        if (opsOptional.isPresent()) {
+            ops = Double.parseDouble(opsOptional.get());
+        }
+
+        return TopPlayerCardView.builder()
+                .name(name)
+                .position(position)
+                .war(war)
+                .warRank(ranking)
+                .avg(avg)
+                .hr(hr)
+                .ops(ops)
+                .build();
     }
 }

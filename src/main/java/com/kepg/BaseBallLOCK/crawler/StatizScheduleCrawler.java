@@ -48,7 +48,7 @@ public class StatizScheduleCrawler  {
         teamIdToStadium.put(10, "서울 고척스카이돔");
     }
 
-    public void run(String... args) throws Exception {
+    public void crawl(String... args) throws Exception {
         String baseUrl = "https://statiz.sporki.com/schedule/?year=%d&month=%d";
 
         for (int year = 2024; year <= 2024; year++) {

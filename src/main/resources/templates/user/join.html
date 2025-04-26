@@ -11,10 +11,13 @@
 			  <h1 class="text-center mb-4">회원가입</h1>
 			
 			  <!-- 아이디 + 중복확인 -->
-			  <div class="d-flex mb-2">
+			  <div class="idInput-div d-flex mb-2">
 			    <input type="text" id="loginIdInput" class="form-control w-75 me-2" placeholder="아이디를 입력하세요 (8~12자)">
 			    <button type="button" class="btn w-25" id="idDuplicateBtn">중복확인</button>
 			  </div>
+			  <!-- 아이디 중복 확인 메시지 -->
+			  <div id="availableIdText" class="text-success d-none small ms-2 my-1">사용 가능한 ID입니다.</div>
+			  <div id="unAvailableIdText" class="text-danger d-none small ms-2 my-1">이미 사용 중인 ID입니다.</div>
 			
 			  <!-- 비밀번호 -->
 			  <input type="password" class="form-control mb-2" id="passwordInput" placeholder="비밀번호를 입력하세요">
@@ -37,11 +40,14 @@
 			  </div>
 			
 			  <!-- 닉네임 + 중복확인 -->
-			  <div class="d-flex mb-2">
+			  <div class="nicknameInput-div d-flex mb-2">
 			    <input type="text" id="nicknameInput" class="form-control w-75 me-2" placeholder="닉네임 입력 (2~8자)">
 			    <button type="button" class="btn w-25" id="nicknameDuplicateBtn">중복확인</button>
 			  </div>
-			
+			  <!-- 닉네임 중복 확인 메시지 -->
+			  <div id="availableNicknameText" class="text-success d-none small ms-2 my-1">사용 가능한 닉네임입니다.</div>
+			  <div id="unAvailableNicknameText" class="text-danger d-none small ms-2 my-1">이미 사용 중인 닉네임입니다.</div>
+						
 			  <!-- 선호팀 -->
 			  <select class="form-select mb-3" id="favoriteTeam">
 			    <option value="" disabled selected>선호팀을 선택하세요</option>
@@ -62,7 +68,7 @@
 			</div>
 		</section>
 	
-<script layout:fragment="script">
+	<script layout:fragment="script">
 	$(function(){
 		// 아이디와 닉네임 중복확인 관련 변수
 		var isIdDuplicate = true;
@@ -110,9 +116,11 @@
 					if (!response.result) {
 						$("#unAvailableIdText").addClass("d-none");
 						$("#availableIdText").removeClass("d-none");
+						$(".idInput-div").removeClass("mb-2");
 					} else {
 						$("#unAvailableIdText").removeClass("d-none");
 						$("#availableIdText").addClass("d-none");
+						$(".idInput-div").removeClass("mb-2");
 					}
 				},
 				error : function(){
@@ -142,9 +150,12 @@
 					if (!response.result) {
 						$("#unAvailableNicknameText").addClass("d-none");
 						$("#availableNicknameText").removeClass("d-none");
+						$(".nicknameInput-div").removeClass("mb-2");
 					} else {
 						$("#unAvailableNicknameText").removeClass("d-none");
 						$("#availableNicknameText").addClass("d-none");
+						$(".nicknameInput-div").removeClass("mb-2");
+
 					}
 				},
 				error : function(){

@@ -41,8 +41,8 @@ public class StatizBatterCrawler {
 
     public void crawl() {
         String baseUrl = "https://statiz.sporki.com/stats/?m=main&m2=batting&m3=default&so=WAR&ob=DESC&year=%d&po=%d&lt=10100&reg=A";
-        int[] years = {2025};
-        int[] positions = {2};
+        int[] years = {2020};
+        int[] positions = {6,7,8,9};
 
         for (int year : years) {
             for (int po : positions) {
@@ -84,7 +84,6 @@ public class StatizBatterCrawler {
                         Player player = playerService.findOrCreatePlayer(playerDTO);
                         int playerId = player.getId();
 
-                        statsService.saveBatterStats(createStat(playerId, season, "position", 0, null, position));
                         statsService.saveBatterStats(createStat(playerId, season, "G", parseInt(cols.get(4).text()), null, position));
                         statsService.saveBatterStats(createStat(playerId, season, "PA", parseInt(cols.get(7).text()), null, position));
                         statsService.saveBatterStats(createStat(playerId, season, "WAR", parseDouble(cols.get(3).text()), parseInt(cols.get(0).text()), position));

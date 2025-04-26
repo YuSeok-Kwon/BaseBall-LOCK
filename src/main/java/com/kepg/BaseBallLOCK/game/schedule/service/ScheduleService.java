@@ -1,25 +1,29 @@
 package com.kepg.BaseBallLOCK.game.schedule.service;
 
 import java.sql.Timestamp;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.kepg.BaseBallLOCK.game.lineUp.service.LineupService;
+import com.kepg.BaseBallLOCK.game.record.dto.PitcherRecordDTO;
+import com.kepg.BaseBallLOCK.game.record.service.RecordService;
 import com.kepg.BaseBallLOCK.game.schedule.domain.Schedule;
+import com.kepg.BaseBallLOCK.game.schedule.dto.GameDetailCardView;
 import com.kepg.BaseBallLOCK.game.schedule.dto.ScheduleCardView;
 import com.kepg.BaseBallLOCK.game.schedule.repository.ScheduleRepository;
+import com.kepg.BaseBallLOCK.game.scoreBoard.domain.ScoreBoard;
+import com.kepg.BaseBallLOCK.game.scoreBoard.service.ScoreBoardService;
 import com.kepg.BaseBallLOCK.team.domain.Team;
 import com.kepg.BaseBallLOCK.team.service.TeamService;
 
@@ -31,26 +35,10 @@ public class ScheduleService {
 
     private final ScheduleRepository scheduleRepository;
     private final TeamService teamService;
-    
-    private String formatKoreanDate(LocalDateTime dateTime) {
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("M월 d일", Locale.KOREAN);
-        String dayOfWeek = getKoreanDayOfWeek(dateTime.getDayOfWeek());
-        return dateTime.format(dateFormatter) + "(" + dayOfWeek + ")";
-    }
-    
-    private String getKoreanDayOfWeek(DayOfWeek day) {
-        switch (day) {
-            case MONDAY: return "월";
-            case TUESDAY: return "화";
-            case WEDNESDAY: return "수";
-            case THURSDAY: return "목";
-            case FRIDAY: return "금";
-            case SATURDAY: return "토";
-            case SUNDAY: return "일";
-            default: return "";
-        }
-    }
-    
+    private final ScoreBoardService scoreBoardService;
+    private final LineupService lineupService;
+    private final RecordService recordService;
+
     @Transactional
     public void saveOrUpdate(Schedule newSchedule) {
         Optional<Schedule> optional = scheduleRepository.findByMatchDateAndHomeTeamIdAndAwayTeamId(
@@ -59,51 +47,38 @@ public class ScheduleService {
                 newSchedule.getAwayTeamId()
         );
 
-        Schedule schedule;
-        if (optional.isPresent()) {
-            schedule = optional.get();
-            schedule.setHomeTeamScore(newSchedule.getHomeTeamScore());
-            schedule.setAwayTeamScore(newSchedule.getAwayTeamScore());
-            schedule.setStadium(newSchedule.getStadium());
-            schedule.setStatus(newSchedule.getStatus());
-        } else {
-            schedule = newSchedule;
-        }
+        Schedule schedule = optional.orElse(newSchedule);
+        schedule.setHomeTeamScore(newSchedule.getHomeTeamScore());
+        schedule.setAwayTeamScore(newSchedule.getAwayTeamScore());
+        schedule.setStadium(newSchedule.getStadium());
+        schedule.setStatus(newSchedule.getStatus());
 
         scheduleRepository.save(schedule);
     }
 
-    // 오늘 경기(전체 중 하나)
     public Schedule getTodaySchedule() {
-    	LocalDate today = LocalDate.now();
-        Timestamp start = Timestamp.valueOf(today.atStartOfDay());
-        Timestamp end = Timestamp.valueOf(today.atTime(23, 59, 59));
+        Timestamp start = Timestamp.valueOf(LocalDate.now().atStartOfDay());
+        Timestamp end = Timestamp.valueOf(LocalDate.now().atTime(23, 59, 59));
         return scheduleRepository.findFirstByMatchDateBetween(start, end);
     }
-    
-    // 팀 기준 오늘 경기
+
     public Schedule getTodayScheduleByTeam(int teamId) {
-    	LocalDate today = LocalDate.now();
-        Timestamp start = Timestamp.valueOf(today.atStartOfDay());
-        Timestamp end = Timestamp.valueOf(today.atTime(23, 59, 59));
-        
+        Timestamp start = Timestamp.valueOf(LocalDate.now().atStartOfDay());
+        Timestamp end = Timestamp.valueOf(LocalDate.now().atTime(23, 59, 59));
         return scheduleRepository.findTodayScheduleByTeam(start, end, teamId);
     }
-    
-    // 최근 경기 결과 리스트
+
     public List<String> getRecentResults(int teamId) {
         Timestamp todayStart = Timestamp.valueOf(LocalDate.now().atStartOfDay());
         List<Schedule> matches = scheduleRepository.findRecentSchedules(teamId, todayStart);
         List<String> results = new ArrayList<>();
 
         for (Schedule match : matches) {
-            Integer myScore = null;
-            Integer oppScore = null;
-
+            Integer myScore = null, oppScore = null;
             if (match.getHomeTeamId() == teamId) {
                 myScore = match.getHomeTeamScore();
                 oppScore = match.getAwayTeamScore();
-            } else if (match.getAwayTeamId() == teamId) {
+            } else {
                 myScore = match.getAwayTeamScore();
                 oppScore = match.getHomeTeamScore();
             }
@@ -120,20 +95,16 @@ public class ScheduleService {
         }
 
         Collections.reverse(results);
-        return results ;
+        return results;
     }
-    
-    // 맞대결 전적
-    public String getHeadToHeadRecord(int myTeamId, int opponentTeamId) {
-    	Timestamp todayStart = Timestamp.valueOf(LocalDate.now().atStartOfDay());
-        List<Schedule> matches = scheduleRepository.findHeadToHeadMatches2025(myTeamId, opponentTeamId, todayStart);
 
+    public String getHeadToHeadRecord(int myTeamId, int opponentTeamId) {
+        Timestamp todayStart = Timestamp.valueOf(LocalDate.now().atStartOfDay());
+        List<Schedule> matches = scheduleRepository.findHeadToHeadMatches2025(myTeamId, opponentTeamId, todayStart);
         int wins = 0, losses = 0, draws = 0;
 
         for (Schedule match : matches) {
-            Integer myScore = null;
-            Integer oppScore = null;
-
+            Integer myScore, oppScore;
             if (match.getHomeTeamId() == myTeamId) {
                 myScore = match.getHomeTeamScore();
                 oppScore = match.getAwayTeamScore();
@@ -143,7 +114,6 @@ public class ScheduleService {
             }
 
             if (myScore == null || oppScore == null) continue;
-
             if (myScore > oppScore) wins++;
             else if (myScore < oppScore) losses++;
             else draws++;
@@ -151,84 +121,77 @@ public class ScheduleService {
 
         return String.format("%d승 %d패 %d무", wins, losses, draws);
     }
-    
-    public Map<LocalDate, List<ScheduleCardView>> getGroupedScheduleByMonth(int year, int month) {
-    	
-    	YearMonth yearMonth = YearMonth.of(year, month);
-        Timestamp start = Timestamp.valueOf(yearMonth.atDay(1).atStartOfDay());
-        Timestamp end = Timestamp.valueOf(yearMonth.atEndOfMonth().atTime(23, 59, 59));
 
+    public Map<LocalDate, List<ScheduleCardView>> getGroupedScheduleByMonth(int year, int month) {
+        Timestamp start = Timestamp.valueOf(YearMonth.of(year, month).atDay(1).atStartOfDay());
+        Timestamp end = Timestamp.valueOf(YearMonth.of(year, month).atEndOfMonth().atTime(23, 59, 59));
         List<Schedule> schedules = scheduleRepository.findByMatchDateBetweenOrderByMatchDate(start, end);
+
         Map<LocalDate, List<ScheduleCardView>> grouped = new LinkedHashMap<>();
 
         for (Schedule schedule : schedules) {
             LocalDate date = schedule.getMatchDate().toLocalDateTime().toLocalDate();
-            if (schedule.getMatchDate() == null) {
-            	continue;
-            }
             Team homeTeam = teamService.getTeamById(schedule.getHomeTeamId());
             Team awayTeam = teamService.getTeamById(schedule.getAwayTeamId());
-
-            if (homeTeam == null || awayTeam == null) {
-                continue;
-            }
+            if (homeTeam == null || awayTeam == null) continue;
 
             ScheduleCardView view = ScheduleCardView.builder()
-                .id(schedule.getId())
-                .matchDate(formatKoreanDate(schedule.getMatchDate().toLocalDateTime()))
-                .homeTeamName(homeTeam.getName())
-                .awayTeamName(awayTeam.getName())
-                .homeTeamLogo(homeTeam.getLogoName())
-                .awayTeamLogo(awayTeam.getLogoName())
-                .homeTeamScore(schedule.getHomeTeamScore())
-                .awayTeamScore(schedule.getAwayTeamScore())
-                .stadium(schedule.getStadium())
-                .build();
+                    .id(schedule.getId())
+                    .matchDate(schedule.getMatchDate())
+                    .homeTeamName(homeTeam.getName())
+                    .awayTeamName(awayTeam.getName())
+                    .homeTeamLogo(homeTeam.getLogoName())
+                    .awayTeamLogo(awayTeam.getLogoName())
+                    .homeTeamScore(schedule.getHomeTeamScore())
+                    .awayTeamScore(schedule.getAwayTeamScore())
+                    .stadium(schedule.getStadium())
+                    .status(schedule.getStatus())
+                    .build();
 
-            if (!grouped.containsKey(date)) {
-                grouped.put(date, new ArrayList<>());
-            }
-            grouped.get(date).add(view);
+            grouped.computeIfAbsent(date, k -> new ArrayList<>()).add(view);
         }
 
         return grouped;
-    	
+    }
+
+    public List<ScheduleCardView> getSchedulesByDate(LocalDate date) {
+        Timestamp start = Timestamp.valueOf(date.atStartOfDay());
+        Timestamp end = Timestamp.valueOf(date.atTime(23, 59, 59));
+        List<Schedule> schedules = scheduleRepository.findByMatchDateBetweenOrderByMatchDate(start, end);
+
+        return schedules.stream().map(schedule -> {
+            int homeTeamId = schedule.getHomeTeamId();
+            int awayTeamId = schedule.getAwayTeamId();
+
+            return ScheduleCardView.builder()
+                    .id(schedule.getId())
+                    .matchDate(schedule.getMatchDate())
+                    .homeTeamName(teamService.getTeamNameById(homeTeamId))
+                    .awayTeamName(teamService.getTeamNameById(awayTeamId))
+                    .homeTeamLogo(teamService.getTeamLogoById(homeTeamId))
+                    .awayTeamLogo(teamService.getTeamLogoById(awayTeamId))
+                    .homeTeamScore(schedule.getHomeTeamScore())
+                    .awayTeamScore(schedule.getAwayTeamScore())
+                    .stadium(schedule.getStadium())
+                    .status(schedule.getStatus())
+                    .build();
+        }).collect(Collectors.toList());
     }
 
     public ScheduleCardView getScheduleDetailById(int matchId) {
         Optional<Schedule> optional = scheduleRepository.findById(matchId);
-        if (optional.isEmpty()) {
-            return null;
-        }
+        if (optional.isEmpty()) return null;
 
         Schedule s = optional.get();
 
-        Team home = teamService.getTeamById(s.getHomeTeamId());
-        Team away = teamService.getTeamById(s.getAwayTeamId());
-
-        String homeTeamName = "홈";
-        String homeTeamLogo = "logo";
-        String awayTeamName = "원정";
-        String awayTeamLogo = "logo";
-
-        if (home != null) {
-            homeTeamName = home.getName();
-            homeTeamLogo = home.getLogoName();
-        }
-
-        if (away != null) {
-            awayTeamName = away.getName();
-            awayTeamLogo = away.getLogoName();
-        }
-
         return ScheduleCardView.builder()
                 .id(s.getId())
-                .matchDate(formatKoreanDate(s.getMatchDate().toLocalDateTime()))
-                .homeTeamName(homeTeamName)
-                .homeTeamLogo(homeTeamLogo)
+                .matchDate(s.getMatchDate())
+                .homeTeamName(teamService.getTeamNameById(s.getHomeTeamId()))
+                .awayTeamName(teamService.getTeamNameById(s.getAwayTeamId()))
+                .homeTeamLogo(teamService.getTeamLogoById(s.getHomeTeamId()))
+                .awayTeamLogo(teamService.getTeamLogoById(s.getAwayTeamId()))
                 .homeTeamScore(s.getHomeTeamScore())
-                .awayTeamName(awayTeamName)
-                .awayTeamLogo(awayTeamLogo)
                 .awayTeamScore(s.getAwayTeamScore())
                 .stadium(s.getStadium())
                 .status(s.getStatus())
@@ -236,6 +199,108 @@ public class ScheduleService {
     }
 
     public Integer findScheduleIdByMatchInfo(Timestamp matchDateTime, int homeTeamId, int awayTeamId) {
+        return scheduleRepository.findIdByDateAndTeams(matchDateTime, homeTeamId, awayTeamId);
+    }
+
+    public GameDetailCardView getGameDetail(int matchId) {
+        Optional<Schedule> optionalSchedule = scheduleRepository.findById(matchId);
+        if (optionalSchedule.isEmpty()) return null;
+
+        Schedule schedule = optionalSchedule.get();
+        int homeTeamId = schedule.getHomeTeamId();
+        int awayTeamId = schedule.getAwayTeamId();
+
+        Team homeTeam = teamService.getTeamById(homeTeamId);
+        Team awayTeam = teamService.getTeamById(awayTeamId);
+
+        List<PitcherRecordDTO> allPitcherRecords = recordService.getAllPitcherRecordsByScheduleId(matchId);
+
+        List<String> holdPitchers = new ArrayList<>();
+        String savePitcher = null;
+
+        for (PitcherRecordDTO record : allPitcherRecords) {
+            if ("HLD".equals(record.getDecision())) {
+                holdPitchers.add(record.getPlayerName());
+            }
+            if (savePitcher == null && "SV".equals(record.getDecision())) {
+                savePitcher = record.getPlayerName();
+            }
+        }
+        
+        ScoreBoard scoreBoard = scoreBoardService.findByScheduleId(matchId);
+
+        if (scoreBoard == null) {
+            return GameDetailCardView.builder()
+                .matchDate(schedule.getMatchDate())
+                .stadium(schedule.getStadium())
+                .homeTeamName(homeTeam.getName())
+                .awayTeamName(awayTeam.getName())
+                .homeTeamLogo(homeTeam.getLogoName())
+                .awayTeamLogo(awayTeam.getLogoName())
+                .homeScore(null)
+                .awayScore(null)
+                .status("취소")
+                .homeTeamColor(homeTeam.getColor())
+                .awayTeamColor(awayTeam.getColor())
+                .build();
+        }
+
+        return GameDetailCardView.builder()
+                .matchDate(schedule.getMatchDate())
+                .stadium(schedule.getStadium())
+                .homeTeamName(homeTeam.getName())
+                .awayTeamName(awayTeam.getName())
+                .homeTeamLogo(homeTeam.getLogoName())
+                .awayTeamLogo(awayTeam.getLogoName())
+                .homeScore(schedule.getHomeTeamScore())
+                .awayScore(schedule.getAwayTeamScore())
+                .homeInningScores(convertInningScores(scoreBoard.getHomeInningScores()))
+                .awayInningScores(convertInningScores(scoreBoard.getAwayInningScores()))
+                .homeHits(scoreBoard.getHomeH())
+                .homeErrors(scoreBoard.getHomeE())
+                .awayHits(scoreBoard.getAwayH())
+                .awayErrors(scoreBoard.getAwayE())
+                .homeBatterLineup(lineupService.getBatterLineup(matchId, homeTeamId))
+                .awayBatterLineup(lineupService.getBatterLineup(matchId, awayTeamId))
+                .homeBatterRecords(recordService.getBatterRecords(matchId, homeTeamId))
+                .awayBatterRecords(recordService.getBatterRecords(matchId, awayTeamId))
+                .homePitcherRecords(recordService.getPitcherRecords(matchId, homeTeamId))
+                .awayPitcherRecords(recordService.getPitcherRecords(matchId, awayTeamId))
+                .winPitcher(scoreBoard.getWinPitcher())
+                .losePitcher(scoreBoard.getLosePitcher())
+                .savePitcher(savePitcher)
+                .holdPitchers(holdPitchers)
+                .homeTeamColor(homeTeam.getColor())
+                .awayTeamColor(awayTeam.getColor())
+                .build();
+    }
+
+    private List<Integer> convertInningScores(String scoreString) {
+        if (scoreString == null || scoreString.isBlank()) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(scoreString.split(" "))
+                .map(Integer::parseInt)
+                .collect(Collectors.toList());
+    }
+    
+    public Integer getPrevMatchId(int currentMatchId) {
+        Optional<Schedule> current = scheduleRepository.findById(currentMatchId);
+        if (current.isEmpty()) return null;
+
+        Timestamp currentDate = current.get().getMatchDate();
+        return scheduleRepository.findPrevMatchId(currentDate);
+    }
+
+    public Integer getNextMatchId(int currentMatchId) {
+        Optional<Schedule> current = scheduleRepository.findById(currentMatchId);
+        if (current.isEmpty()) return null;
+
+        Timestamp currentDate = current.get().getMatchDate();
+        return scheduleRepository.findNextMatchId(currentDate);
+    }
+    
+    public Integer findIdByDateAndTeams(Timestamp matchDateTime, int homeTeamId, int awayTeamId) {
         return scheduleRepository.findIdByDateAndTeams(matchDateTime, homeTeamId, awayTeamId);
     }
 }

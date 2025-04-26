@@ -1,9 +1,14 @@
 package com.kepg.BaseBallLOCK.game.record.domain;
 
+import com.kepg.BaseBallLOCK.player.domain.Player;
+
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,4 +50,9 @@ public class BatterRecord {
     private Integer so;
 
     private Integer bb;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "playerId", insertable = false, updatable = false)
+    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
+    private Player player;
 }

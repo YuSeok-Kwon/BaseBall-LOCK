@@ -13,6 +13,7 @@ public class PitcherRecordDTO {
     private int scheduleId;
     private int teamId;
     private int playerId;
+    private String playerName;
     private double innings;
     private int strikeouts;
     private int bb;

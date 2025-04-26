@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class StatizScheduleCrawlerToday {
+public class StatizPlayerGameRecordCrawlerToday {
 
     private final ScheduleService scheduleService;
     private final PlayerService playerService;
@@ -45,7 +45,7 @@ public class StatizScheduleCrawlerToday {
         teamNameToId.put("키움", 10);
     }
 
-    @Scheduled(cron = "0 5 0 * * *", zone = "Asia/Seoul") // 매일 00시 05분 실행
+    @Scheduled(cron = "0 5 0 * * *", zone = "Asia/Seoul")
     public void crawlYesterdayGames() {
         LocalDate yesterday = LocalDate.now().minusDays(1);
         String dateStr = yesterday.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -148,15 +148,19 @@ public class StatizScheduleCrawlerToday {
                         if (cols.size() < 18) continue;
 
                         while (true) {
-                            Element nameAnchor = cols.get(0).selectFirst("a");
-                            if (nameAnchor == null) break;
+                        	Element nameAnchor = cols.get(0).selectFirst("a");
+                        	if (nameAnchor == null) continue;
 
-                            String name = nameAnchor.text().trim().replaceAll("\\s*\\([^)]*\\)", "").trim();
-                            String decision = "";
-                            if (name.contains("승")) decision = "W";
-                            else if (name.contains("패")) decision = "L";
-                            else if (name.contains("세")) decision = "SV";
-                            else if (name.contains("홀")) decision = "H";
+                        	String name = nameAnchor.text().trim();
+                        	String fullText = cols.get(0).text();
+                        	String decision = "";
+
+                        	if (fullText.contains("(승")) decision = "W";
+                        	else if (fullText.contains("(패")) decision = "L";
+                        	else if (fullText.contains("(세")) decision = "SV";
+                        	else if (fullText.contains("(홀")) decision = "H";
+
+                        	name = fullText.replaceAll("\\s*\\([^)]*\\)", "").trim();
 
                             Optional<Player> player = playerService.findByNameAndTeamId(name, teamId);
                             if (player.isEmpty()) {

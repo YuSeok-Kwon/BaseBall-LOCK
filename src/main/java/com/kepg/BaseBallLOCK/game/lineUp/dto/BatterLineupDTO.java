@@ -13,6 +13,7 @@ public class BatterLineupDTO {
     private int scheduleId;
     private int teamId;
     private int playerId;
+    private String playerName;
     private int order;
     private String position;
 }

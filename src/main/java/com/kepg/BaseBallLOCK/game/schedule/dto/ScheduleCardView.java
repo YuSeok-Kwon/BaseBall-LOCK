@@ -1,5 +1,7 @@
 package com.kepg.BaseBallLOCK.game.schedule.dto;
 
+import java.sql.Timestamp;
+
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
@@ -9,7 +11,7 @@ import lombok.Getter;
 @Getter
 public class ScheduleCardView {
 	private Integer id;
-	private String matchDate;
+	private Timestamp matchDate;
     private String stadium;
     private String homeTeamName;
     private String homeTeamLogo;

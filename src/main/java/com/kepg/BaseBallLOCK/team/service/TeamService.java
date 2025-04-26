@@ -21,5 +21,16 @@ public class TeamService {
         return optional.orElse(null);
     }
    
+    public String getTeamNameById(int teamId) {
+        return teamRepository.findById(teamId)
+                             .map(Team::getName)
+                             .orElse("팀 없음");
+    }
+    
+    public String getTeamLogoById(int teamId) {
+        return teamRepository.findById(teamId)
+                             .map(Team::getLogoName)
+                             .orElse(null);
+    }
 }
 

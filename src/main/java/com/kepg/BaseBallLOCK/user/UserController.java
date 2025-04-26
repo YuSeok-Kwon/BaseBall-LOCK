@@ -1,7 +1,9 @@
 package com.kepg.BaseBallLOCK.user;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -37,7 +39,17 @@ public class UserController {
     public String loginView() {
         return "user/login";
     }
+    
+	// 로그아웃 API
+	@GetMapping("/logout")
+	public String logout(HttpSession session) {
+	    session.invalidate();  // 세션 전체 삭제
 
+	    Map<String, String> resultMap = new HashMap<>();
+	    resultMap.put("result", "success");
+	    return "redirect:/user/login-view";	
+	}
+	
     @GetMapping("/join-view")
     public String joinView() {
         return "user/join";
