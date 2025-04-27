@@ -1,102 +1,292 @@
-<html lang="ko"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layouts/default}">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layouts/default}">
 
 <th:block layout:fragment="contents">
-  <div class="container py-5">
+	<div class="container-fluid py-5 px-3">
+	
+	  <!-- 시즌 선택 -->
+	  <div class="d-flex align-items-center mb-4 mx-4">
+	    <form class="d-flex align-items-center px-4">
+	      <select id="season-select" class="form-select" name="season" style="width:120px;" onchange="changeSeason(this.value)">
+	        <option value="2025">2025</option>
+	        <option value="2024">2024</option>
+	        <option value="2023">2023</option>
+	        <option value="2022">2022</option>
+	        <option value="2021">2021</option>
+	        <option value="2020">2020</option>
+	      </select>
+		  <input type="hidden" id="current-sort" name="sort" value="TotalWAR">
+		  <input type="hidden" id="current-direction" name="direction" value="DESC">
+	    </form>
+	  </div>
+	
+	  <!-- 팀 순위, TOP 스탯 영역 -->
+	  <div class="row gy-4 mx-5">
+	    <div class="col-lg-4">
+	      <div class="card border-point shadow-sm p-3">
+	        <h5 class="text-center fw-bold mb-3">KBO 리그 팀 순위</h5>
+	        <div id="team-ranking-list"></div>
+	      </div>
+	    </div>
+	    <div class="col-lg-8">
+	      <div class="row gy-4">
+	        <div class="col-md-6">
+	          <div class="card border-point p-3">
+	            <h5 class="text-center fw-bold mb-3">팀 타자 스탯 Top</h5>
+	            <ul id="top-batter-list" class="list-group border"></ul>
+	          </div>
+	        </div>
+	        <div class="col-md-6">
+	          <div class="card border-point p-3">
+	            <h5 class="text-center fw-bold mb-3">팀 투수 스탯 Top</h5>
+	            <ul id="top-pitcher-list" class="list-group border"></ul>
+	          </div>
+	        </div>
+	        <div class="col-12">
+	          <div class="card border-point p-3">
+	            <h5 class="text-center fw-bold mb-3">팀 WAA 스탯 Top</h5>
+	            <ul id="top-waa-list" class="list-group border"></ul>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
+	  </div>
+	
+	  <!-- 스탯 테이블 -->
+	  <div id="ranking-table-wrapper" class="mt-5 mx-5"></div>
+	
+	</div>
+  </th:block>
 
-    <!-- 버튼 -->
-    <div class="text-center mb-4">
-      <button class="btn btn-warning fw-bold me-3 px-4 py-2">팀 랭킹</button>
-      <button class="btn btn-outline-secondary fw-bold px-4 py-2">개인 랭킹</button>
-    </div>
+  <th:block layout:fragment="script">
+	<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script> <!-- jQuery 추가!! -->
+		<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			  var season = document.getElementById('season-select').value;
+			  changeSeason(season);
+			});
+		// 시즌 변경
+		function changeSeason(season) {
+			
+		  var currentSort = document.querySelector('input[name="sort"]').value;
+		  var currentDirection = document.querySelector('input[name="direction"]').value;
+		
+		  $.ajax({
+		    url: '/ranking/teamranking-view-json',
+		    method: 'GET',
+		    data: {
+		      season: season,
+		      sort: currentSort,
+		      direction: currentDirection
+		    },
+		    success: function(data) {
+		    	console.log("받은 데이터:", data);
+		      // 카드뷰 부분
+		      document.getElementById('team-ranking-list').innerHTML = renderTeamRankingList(data.rankingList);
+		      document.getElementById('top-batter-list').innerHTML = renderTopBatterList(data.topBatterStats, data.categoryNameMap);
+		      document.getElementById('top-pitcher-list').innerHTML = renderTopPitcherList(data.topPitcherStats, data.categoryNameMap);
+		      document.getElementById('top-waa-list').innerHTML = renderTopWaaList(data.topWaaStats);
+		
+		      // 테이블 부분
+		      renderStatTable(data.statRankingList, data.headers, data.categoryNameMap, data.currentSort, data.sortDirection);
+		
+		      // hidden input 업데이트
+		      document.querySelector('input[name="sort"]').value = data.currentSort;
+		      document.querySelector('input[name="direction"]').value = data.sortDirection;
+		    },
+		    error: function(xhr, status, error) {
+		      console.error('시즌 변경 실패:', error);
+		    }
+		  });
+		}
+		
+		// 테이블 정렬
+		function sortTable(sortKey) {
+		  var season = document.querySelector('select[name="season"]').value;
+		  var currentSortInput = document.querySelector('input[name="sort"]');
+		  var directionInput = document.querySelector('input[name="direction"]');
+		
+		  var currentSort = currentSortInput ? currentSortInput.value : 'TotalWAR';
+		  var currentDirection = directionInput ? directionInput.value : 'DESC';
+		
+		  var newDirection = 'ASC';
+		  if (currentSort.toUpperCase() === sortKey.toUpperCase() && currentDirection === 'ASC') {
+		    newDirection = 'DESC';
+		  }
+		
+		  $.ajax({
+		    url: '/ranking/teamranking-view-json',
+		    method: 'GET',
+		    data: {
+		      season: season,
+		      sort: sortKey,
+		      direction: newDirection
+		    },
+		    success: function(data) {
+		      // 카드뷰 부분
+		      document.getElementById('team-ranking-list').innerHTML = renderTeamRankingList(data.rankingList);
+		      document.getElementById('top-batter-list').innerHTML = renderTopBatterList(data.topBatterStats, data.categoryNameMap);
+		      document.getElementById('top-pitcher-list').innerHTML = renderTopPitcherList(data.topPitcherStats, data.categoryNameMap);
+		      document.getElementById('top-waa-list').innerHTML = renderTopWaaList(data.topWaaStats);
+		
+		      // 테이블 부분
+		      renderStatTable(data.statRankingList, data.headers, data.categoryNameMap, data.currentSort, data.sortDirection);
+		
+		      // hidden input 업데이트
+		      if (currentSortInput) currentSortInput.value = sortKey;
+		      if (directionInput) directionInput.value = newDirection;
+		    },
+		    error: function(xhr, status, error) {
+		      console.error('정렬 실패:', error);
+		    }
+		  });
+		}
+		function convertHeaderToField(header) {
+			  var map = {
+			    'TotalWAR': 'totalWar',
+			    'BetterWAR': 'betterWar',
+			    'OPS': 'ops',
+			    'AVG': 'avg',
+			    'HR': 'hr',
+			    'SB': 'sb',
+			    'PitcherWAR': 'pitcherWar',
+			    'SO': 'so',
+			    'ERA': 'era',
+			    'WHIP': 'whip',
+			    'BB': 'bb',
+			    '타격': 'battingWaa',
+			    '주루': 'baserunningWaa',
+			    '수비': 'defenseWaa',
+			    '선발': 'startingWaa',
+			    '불펜': 'bullpenWaa'
+			  };
+			  return map[header] || header;
+			}
+		function formatValue(header, value) {
+			  if (value === undefined || value === null || value === '-') {
+			    return '-';
+			  }
+		
+			  // OPS, AVG → 소수점 3자리
+			  if (header === 'OPS' || header === 'AVG') {
+			    return parseFloat(value).toFixed(3);
+			  }
+		
+			  // BetterWAR, PitcherWAR, ERA, WHIP, 타격, 주루, 수비, 선발, 불펜 → 소수점 2자리
+			  if (['BetterWAR', 'PitcherWAR', 'ERA', 'WHIP', '타격', '주루', '수비', '선발', '불펜'].includes(header)) {
+			    return parseFloat(value).toFixed(2);
+			  }
+		
+			  // HR, SB, SO, BB → 정수
+			  if (['HR', 'SB', 'SO', 'BB', 'H', 'SV', 'W'].includes(header)) {
+			    return parseInt(value, 10);
+			  }
+		
+			  // 그 외 → 소수점 2자리
+			  return parseFloat(value).toFixed(2);
+			}
+			
+		//테이블 그리기 함수
+		function renderStatTable(list, headers, categoryNameMap, currentSort, sortDirection) {
+		  var html = '<table id="ranking-table" class="table table-bordered table-striped text-center">';
+		  html += '<thead><tr><th>순위</th><th>팀명</th>';
+		
+		  $.each(headers, function(j, header) {
+		    html += '<th><a href="javascript:void(0);" onclick="sortTable(\'' + header + '\')" data-header="' + header + '">' +
+		             (categoryNameMap[header] || header) + ' ' +
+		             (currentSort === header ? (sortDirection === 'ASC' ? '▲' : '▼') : '') +
+		             '</a></th>';
+		  });
+		
+		  html += '</tr></thead><tbody>';
+		
+		  $.each(list, function(i, team) {
+		    html += '<tr>' +
+		      '<td>' + (i + 1) + '</td>' +
+		      '<td>' + (team.teamName || '-') + '</td>';
+		
+		    $.each(headers, function(j, header) {
+		      var field = convertHeaderToField(header);
+		      var value = team[field] !== undefined ? formatValue(header, team[field]) : '-';
+		      html += '<td>' + value + '</td>';
+		    });
+		
+		    html += '</tr>';
+		  });
+		
+		  html += '</tbody></table>';
+		
+		  $('#ranking-table-wrapper').html(html);
+		}
+		
+		// 팀 순위 카드
+		function renderTeamRankingList(list) {
+		  var html = '<table class="table text-center">';
+		  html += '<thead><tr><th>순위</th><th>팀</th><th>경기</th><th>승</th><th>패</th><th>무</th><th>승률</th><th>승차</th></tr></thead><tbody>';
+		  $.each(list, function(i, team) {
+		    html += '<tr>' +
+		      '<td>' + team.ranking + '</td>' +
+		      '<td class="d-flex align-items-center gap-2"><img src="' + getLogoPath(team.logoName) + '" style="width:28px;height:28px;">' +
+		      '<span>' + team.teamName + '</span></td>' +
+		      '<td>' + team.games + '</td>' +
+		      '<td>' + team.wins + '</td>' +
+		      '<td>' + team.losses + '</td>' +
+		      '<td>' + team.draws + '</td>' +
+		      '<td>' + team.winRate + '</td>' +
+		      '<td>' + team.gamesBehind + '</td>' +
+		      '</tr>';
+		  });
+		  html += '</tbody></table>';
+		  return html;
+		}
+		
+		// 타자 스탯 카드
+		function renderTopBatterList(list, categoryNameMap) {
+		  var html = '';
+		  $.each(list, function(i, stat) {
+		    var categoryName = categoryNameMap[stat.category] || stat.category; // 매핑
+		    html += '<li class="list-group-item d-flex justify-content-between">' +
+		      '<span>' + categoryName + '</span>' +
+			  '<span><img src="' + getLogoPath(stat.teamLogo) + '" style="width:28px;height:28px;">' +
+		      stat.teamName + ' <strong>' + stat.formattedValue + '</strong></span></li>';
+		  });
+		  return html;
+		}
+		
+		// 투수 스탯 카드
+		function renderTopPitcherList(list, categoryNameMap) {
+		  var html = '';
+		  $.each(list, function(i, stat) {
+		    var categoryName = categoryNameMap[stat.category] || stat.category; // 🔥 한글 변환
+		    html += '<li class="list-group-item d-flex justify-content-between">' +
+		      '<span>' + categoryName + '</span>' +
+			  '<span><img src="' + getLogoPath(stat.teamLogo) + '" style="width:28px;height:28px;">' +
+		      stat.teamName + ' <strong>' + stat.formattedValue + '</strong></span></li>';
+		  });
+		  return html;
+		}
+		
+		// WAA 스탯 카드
+		function renderTopWaaList(list) {
+		  var html = '';
+		  $.each(list, function(i, stat) {
+			  html += '<li class="list-group-item d-flex justify-content-between">' +
+			    '<span>' + stat.category + '</span>' +
+			    '<span><img src="' + getLogoPath(stat.teamLogo) + '" style="width:28px;height:28px;">' +
+			    stat.teamName + ' <strong>' + stat.formattedValue + '</strong></span></li>';
+			});
+		  return html;
+		}
+		
+		// 로고 확장자
+		function getLogoPath(logoName) {
+			  var svgTeams = ['DOOSAN', 'HANHWA'];
 
-    <!-- 팀 순위 카드 -->
-    <div class="col-12 col-md-6 col-lg-5 mb-4">
-      <div class="card border-warning shadow-sm h-100">
-        <div class="card-body py-3 px-4">
-          <h5 class="card-title text-center fs-1 fw-bold my-4">KBO 리그 팀 순위</h5>
-          <table class="table table-hover table-striped text-center mt-2 mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>순위</th><th>팀</th><th>경기</th><th>승</th><th>패</th><th>무</th><th>승률</th><th>승차</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr th:each="team : ${rankingList}">
-                <td th:text="${team.ranking}">1</td>
-                <td class="d-flex align-items-center gap-2 justify-content-center">
-                  <img th:src="@{/static/emblems/{logo}.png(logo=${team.logoName})}" alt="로고" class="table-team-logo">
-                  <span th:text="${team.teamName}">팀명</span>
-                </td>
-                <td th:text="${team.games}">144</td>
-                <td th:text="${team.wins}">88</td>
-                <td th:text="${team.losses}">50</td>
-                <td th:text="${team.draws}">6</td>
-                <td th:text="${team.winRate}">.638</td>
-                <td th:text="${team.gamesBehind}">-</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- 최고 팀 스탯 박스 -->
-    <div class="row mb-4">
-
-      <!-- 타자 스탯 -->
-      <div class="col-md-4">
-        <div class="border rounded p-3 bg-white h-100">
-          <h5 class="fw-bold mb-3">타자 스탯 Top 팀</h5>
-          <ul class="list-group">
-            <li class="list-group-item d-flex justify-content-between" th:each="stat : ${topBatterStats}">
-              <span th:text="${stat.category}">OPS</span>
-              <span>
-                <img th:src="@{/static/emblems/{logo}.png(logo=${stat.teamLogo})}" class="table-team-logo me-1">
-                <span th:text="${stat.teamName}" class="me-2">LG</span>
-                <strong th:text="${stat.value}">0.830</strong>
-              </span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- 투수 스탯 -->
-      <div class="col-md-4">
-        <div class="border rounded p-3 bg-white h-100">
-          <h5 class="fw-bold mb-3">투수 스탯 Top 팀</h5>
-          <ul class="list-group">
-            <li class="list-group-item d-flex justify-content-between" th:each="stat : ${topPitcherStats}">
-              <span th:text="${stat.category}">ERA</span>
-              <span>
-                <img th:src="@{/static/emblems/{logo}.png(logo=${stat.teamLogo})}" class="table-team-logo me-1">
-                <span th:text="${stat.teamName}" class="me-2">두산</span>
-                <strong th:text="${stat.value}">2.91</strong>
-              </span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- WAA 스탯 -->
-      <div class="col-md-4">
-        <div class="border rounded p-3 bg-white h-100">
-          <h5 class="fw-bold mb-3">WAA 스탯 Top 팀</h5>
-          <ul class="list-group">
-            <li class="list-group-item d-flex justify-content-between" th:each="stat : ${topWaaStats}">
-              <span th:text="${stat.category}">수비</span>
-              <span>
-                <img th:src="@{/static/emblems/{logo}.png(logo=${stat.teamLogo})}" class="table-team-logo me-1">
-                <span th:text="${stat.teamName}" class="me-2">한화</span>
-                <strong th:text="${stat.value}">1.21</strong>
-              </span>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</th:block>
+			  if (svgTeams.includes(logoName)) {
+			    return '/static/emblems/' + logoName + '.svg';
+			  } else {
+			    return '/static/emblems/' + logoName + '.png';
+			  }
+			}
+		</script>
+	</th:block>
+</html>

@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class TopStatTeamDTO {
     private String category;   
-    private double value;      
+    private double value;  
+    private String formattedValue;
     private int teamId;
     private String teamName;
     private String teamLogo;

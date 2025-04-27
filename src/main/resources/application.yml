@@ -9,6 +9,10 @@ spring:
         username: root
         password: ${mysql.password}
     thymeleaf:
+        prefix: classpath:/templates/
+        suffix: .html
+        mode: HTML
+        encoding: UTF-8
         cache: false
     mvc:
         static-path-pattern: /static/**

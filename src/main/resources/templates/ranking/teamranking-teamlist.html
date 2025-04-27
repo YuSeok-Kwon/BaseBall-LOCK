@@ -1,0 +1,35 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="teamlist">
+  <table class="table table-hover text-center">
+    <thead class="table-light">
+      <tr>
+        <th>순위</th>
+        <th>팀명</th>
+        <th>경기</th>
+        <th>승</th>
+        <th>패</th>
+        <th>무</th>
+        <th>승률</th>
+        <th>승차</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="team : ${rankingList}">
+        <td th:text="${team.ranking}"></td>
+        <td class="d-flex align-items-center gap-2">
+			<img src="' + getLogoPath(team.logoName) + '" class="table-team-logo" style="width: 28px; height: 28px;">
+            <span th:text="${team.teamName}"></span>
+        </td>
+        <td th:text="${team.games}"></td>
+        <td th:text="${team.wins}"></td>
+        <td th:text="${team.losses}"></td>
+        <td th:text="${team.draws}"></td>
+        <td th:text="${team.winRate}"></td>
+        <td th:text="${team.gamesBehind}"></td>
+      </tr>
+    </tbody>
+  </table>
+</th:block>
+</body>
+</html>

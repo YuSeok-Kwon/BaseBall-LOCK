@@ -181,7 +181,100 @@ a {
   background-color: #f8f9fa;
   transition: background-color 0.2s ease-in-out;
 }
-  
+
+/* 포인트 색*/  
+.text-point {
+  color: #FFD700 !important;
+}
+
+.bg-point {
+  background-color: #FFD700 !important;
+}
+
+.border-point {
+  border-color: #FFD700;
+  border-width: 2px;
+  border-style: solid; 
+}
+
+#top-batter-list .list-group-item {
+  border: none;
+}
+
+#top-pitcher-list .list-group-item {
+  border: none;
+}
+
+/* 
+#top-waa-list .list-group-item {
+  border: none;
+} */
+
+#ranking-table {
+  background-color: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.3); /* 테이블에 황금빛 그림자 */
+}
+
+/* 헤더 */
+#ranking-table thead {
+  background-color: #FFD700; /* 헤더 배경 골드 */
+  color: #212529; /* 글자는 어두운 색 */
+  font-weight: bold;
+}
+
+#ranking-table thead th {
+  font-size: 1rem;
+  vertical-align: middle;
+  padding: 12px;
+}
+
+/* 헤더에 있는 a 링크 스타일 */
+#ranking-table thead th a {
+  color: #212529;
+  text-decoration: none;
+}
+
+#ranking-table thead th a:hover {
+  color: #000;
+  text-decoration: underline;
+}
+
+/* tbody */
+#ranking-table tbody tr {
+  transition: background-color 0.2s ease-in-out;
+}
+
+#ranking-table tbody tr:hover {
+  background-color: #fff8dc; /* 밝은 골드톤으로 hover 효과 */
+}
+
+#ranking-table tbody td {
+  vertical-align: middle;
+  padding: 10px;
+  font-size: 0.95rem;
+}
+
+/* 순위(1위~3위) 강조 */
+#ranking-table tbody tr:nth-child(1) td:first-child,
+#ranking-table tbody tr:nth-child(2) td:first-child,
+#ranking-table tbody tr:nth-child(3) td:first-child {
+  color: #FFD700;
+  font-weight: bold;
+}
+
+/* 팀명 강조 */
+#ranking-table tbody td:nth-child(2) span {
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+/* 전체 테이블 스타일을 약간 둥글게 */
+#ranking-table {
+  border: 1px solid #FFD700;
+}
+
 /* 푸터 */
 footer {
   height: 70px;

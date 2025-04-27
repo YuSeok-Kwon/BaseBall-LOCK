@@ -1,0 +1,208 @@
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/default}">
+
+<th:block layout:fragment="contents">
+<div class="container-fluid py-5">
+
+  <!-- 상단 제목 -->
+  <div class="d-flex justify-content-between align-items-center mb-4 px-3">
+    <h3 class="fw-bold">2025 KBO 리그 팀 기록</h3>
+
+    <!-- 정렬 폼 -->
+    <form method="get" action="/ranking/teamranking-detail-view" class="d-flex align-items-center gap-2">
+      <select class="form-select" name="sort" style="width: 200px;" onchange="this.form.submit()">
+        <option value="BetterWAR" th:selected="${currentSort == 'BetterWAR'}">타자 WAR</option>
+        <option value="OPS" th:selected="${currentSort == 'OPS'}">OPS</option>
+        <option value="AVG" th:selected="${currentSort == 'AVG'}">타율</option>
+        <option value="HR" th:selected="${currentSort == 'HR'}">홈런</option>
+        <option value="SB" th:selected="${currentSort == 'SB'}">도루</option>
+        <option value="PitcherWAR" th:selected="${currentSort == 'PitcherWAR'}">투수 WAR</option>
+        <option value="SO" th:selected="${currentSort == 'SO'}">탈삼진</option>
+        <option value="ERA" th:selected="${currentSort == 'ERA'}">ERA</option>
+        <option value="WHIP" th:selected="${currentSort == 'WHIP'}">WHIP</option>
+        <option value="BB" th:selected="${currentSort == 'BB'}">볼넷</option>
+        <option value="타격" th:selected="${currentSort == '타격'}">타격 WAA</option>
+        <option value="주루" th:selected="${currentSort == '주루'}">주루 WAA</option>
+        <option value="수비" th:selected="${currentSort == '수비'}">수비 WAA</option>
+        <option value="선발" th:selected="${currentSort == '선발'}">선발 WAA</option>
+        <option value="불펜" th:selected="${currentSort == '불펜'}">불펜 WAA</option>
+      </select>
+    </form>
+  </div>
+
+  <!-- 카드 스타일 테이블 -->
+  <div class="card border-0 shadow-sm bg-warning-subtle p-4">
+    <div class="table-responsive">
+      <table class="table table-striped table-bordered text-center align-middle bg-white rounded-3">
+        <thead class="table-warning">
+		  <tr>
+		    <th>순위</th>
+		    <th>팀명</th>
+		
+		    <!-- 정렬 기준 -->
+		    <th th:text="${categoryNameMap[currentSort] != null ? categoryNameMap[currentSort] : currentSort}" class="text-dark fw-bold"></th>
+		
+		    <!-- 각 스탯별 정렬 가능한 헤더 -->
+		    <th>
+		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='OPS', direction=${currentSort == 'OPS' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
+		         th:classappend="${currentSort == 'OPS'} ? 'text-warning fw-bold' : ''">
+		        OPS <span th:if="${currentSort == 'OPS'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
+		      </a>
+		    </th>
+		
+		    <th>
+		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='AVG', direction=${currentSort == 'AVG' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
+		         th:classappend="${currentSort == 'AVG'} ? 'text-warning fw-bold' : ''">
+		        AVG <span th:if="${currentSort == 'AVG'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
+		      </a>
+		    </th>
+		
+		    <th>
+		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='HR', direction=${currentSort == 'HR' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
+		         th:classappend="${currentSort == 'HR'} ? 'text-warning fw-bold' : ''">
+		        HR <span th:if="${currentSort == 'HR'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
+		      </a>
+		    </th>
+		
+		    <th>
+		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='SB', direction=${currentSort == 'SB' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
+		         th:classappend="${currentSort == 'SB'} ? 'text-warning fw-bold' : ''">
+		        SB <span th:if="${currentSort == 'SB'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
+		      </a>
+		    </th>
+		
+		    <th>
+		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='BetterWAR', direction=${currentSort == 'BetterWAR' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
+		         th:classappend="${currentSort == 'BetterWAR'} ? 'text-warning fw-bold' : ''">
+		        타자 WAR <span th:if="${currentSort == 'BetterWAR'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
+		      </a>
+		    </th>
+		
+		    <th>
+		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='PitcherWAR', direction=${currentSort == 'PitcherWAR' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
+		         th:classappend="${currentSort == 'PitcherWAR'} ? 'text-warning fw-bold' : ''">
+		        투수 WAR <span th:if="${currentSort == 'PitcherWAR'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
+		      </a>
+		    </th>
+		
+		    <th>
+		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='SO', direction=${currentSort == 'SO' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
+		         th:classappend="${currentSort == 'SO'} ? 'text-warning fw-bold' : ''">
+		        SO <span th:if="${currentSort == 'SO'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
+		      </a>
+		    </th>
+		
+		    <th>
+		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='ERA', direction=${currentSort == 'ERA' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
+		         th:classappend="${currentSort == 'ERA'} ? 'text-warning fw-bold' : ''">
+		        ERA <span th:if="${currentSort == 'ERA'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
+		      </a>
+		    </th>
+		
+		    <th>
+		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='WHIP', direction=${currentSort == 'WHIP' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
+		         th:classappend="${currentSort == 'WHIP'} ? 'text-warning fw-bold' : ''">
+		        WHIP <span th:if="${currentSort == 'WHIP'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
+		      </a>
+		    </th>
+		
+		    <th>
+		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='BB', direction=${currentSort == 'BB' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
+		         th:classappend="${currentSort == 'BB'} ? 'text-warning fw-bold' : ''">
+		        BB <span th:if="${currentSort == 'BB'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
+		      </a>
+		    </th>
+		
+		    <th>
+		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='타격', direction=${currentSort == '타격' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
+		         th:classappend="${currentSort == '타격'} ? 'text-warning fw-bold' : ''">
+		        타격 WAA <span th:if="${currentSort == '타격'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
+		      </a>
+		    </th>
+		
+		    <th>
+		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='주루', direction=${currentSort == '주루' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
+		         th:classappend="${currentSort == '주루'} ? 'text-warning fw-bold' : ''">
+		        주루 WAA <span th:if="${currentSort == '주루'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
+		      </a>
+		    </th>
+		
+		    <th>
+		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='수비', direction=${currentSort == '수비' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
+		         th:classappend="${currentSort == '수비'} ? 'text-warning fw-bold' : ''">
+		        수비 WAA <span th:if="${currentSort == '수비'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
+		      </a>
+		    </th>
+		
+		    <th>
+		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='선발', direction=${currentSort == '선발' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
+		         th:classappend="${currentSort == '선발'} ? 'text-warning fw-bold' : ''">
+		        선발 WAA <span th:if="${currentSort == '선발'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
+		      </a>
+		    </th>
+		
+		    <th>
+		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='불펜', direction=${currentSort == '불펜' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
+		         th:classappend="${currentSort == '불펜'} ? 'text-warning fw-bold' : ''">
+		        불펜 WAA <span th:if="${currentSort == '불펜'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
+		      </a>
+		    </th>
+		
+		  </tr>
+		</thead>
+        
+        <tbody>
+          <tr th:each="team, iterStat : ${rankingList}">
+            <td th:text="${iterStat.index + 1}"></td>
+
+            <td class="d-flex align-items-center justify-content-start gap-2">
+              <img th:src="@{/static/emblems/{logo}.png(logo=${team.logoName})}" class="table-team-logo" style="width: 28px; height: 28px;">
+              <span th:text="${team.teamName}" class="fw-bold"></span>
+            </td>
+
+            <!-- 정렬 기준 데이터  -->
+            <td th:switch="${currentSort}" class="fw-bold">
+              <span th:case="'OPS'" th:text="${#numbers.formatDecimal(team.ops, 1, 3)}"></span>
+              <span th:case="'AVG'" th:text="${#numbers.formatDecimal(team.avg, 1, 3)}"></span>
+              <span th:case="'HR'" th:text="${#numbers.formatDecimal(team.hr, 0, 0)}"></span>
+              <span th:case="'SB'" th:text="${#numbers.formatDecimal(team.sb, 0, 0)}"></span>
+              <span th:case="'BetterWAR'" th:text="${#numbers.formatDecimal(team.betterWar, 1, 2)}"></span>
+              <span th:case="'PitcherWAR'" th:text="${#numbers.formatDecimal(team.pitcherWar, 1, 2)}"></span>
+              <span th:case="'SO'" th:text="${#numbers.formatDecimal(team.so, 0, 0)}"></span>
+              <span th:case="'ERA'" th:text="${#numbers.formatDecimal(team.era, 1, 2)}"></span>
+              <span th:case="'WHIP'" th:text="${#numbers.formatDecimal(team.whip, 1, 2)}"></span>
+              <span th:case="'BB'" th:text="${#numbers.formatDecimal(team.bb, 0, 0)}"></span>
+              <span th:case="'타격'" th:text="${#numbers.formatDecimal(team.battingWaa, 1, 2)}"></span>
+              <span th:case="'주루'" th:text="${#numbers.formatDecimal(team.baserunningWaa, 1, 2)}"></span>
+              <span th:case="'수비'" th:text="${#numbers.formatDecimal(team.defenseWaa, 1, 2)}"></span>
+              <span th:case="'선발'" th:text="${#numbers.formatDecimal(team.startingWaa, 1, 2)}"></span>
+              <span th:case="'불펜'" th:text="${#numbers.formatDecimal(team.bullpenWaa, 1, 2)}"></span>
+            </td>
+
+            <!-- 나머지 고정 스탯 -->
+            <td th:text="${#numbers.formatDecimal(team.ops, 1, 3)}"></td>
+            <td th:text="${#numbers.formatDecimal(team.avg, 1, 3)}"></td>
+            <td th:text="${#numbers.formatDecimal(team.hr, 0, 0)}"></td>
+            <td th:text="${#numbers.formatDecimal(team.sb, 0, 0)}"></td>
+            <td th:text="${#numbers.formatDecimal(team.betterWar, 1, 2)}"></td>
+            <td th:text="${#numbers.formatDecimal(team.pitcherWar, 1, 2)}"></td>
+            <td th:text="${#numbers.formatDecimal(team.so, 0, 0)}"></td>
+            <td th:text="${#numbers.formatDecimal(team.era, 1, 2)}"></td>
+            <td th:text="${#numbers.formatDecimal(team.whip, 1, 2)}"></td>
+            <td th:text="${#numbers.formatDecimal(team.bb, 0, 0)}"></td>
+            <td th:text="${#numbers.formatDecimal(team.battingWaa, 1, 2)}"></td>
+            <td th:text="${#numbers.formatDecimal(team.baserunningWaa, 1, 2)}"></td>
+            <td th:text="${#numbers.formatDecimal(team.defenseWaa, 1, 2)}"></td>
+            <td th:text="${#numbers.formatDecimal(team.startingWaa, 1, 2)}"></td>
+            <td th:text="${#numbers.formatDecimal(team.bullpenWaa, 1, 2)}"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</th:block>
+</html>

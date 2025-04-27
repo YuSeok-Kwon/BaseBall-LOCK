@@ -5,40 +5,50 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.kepg.BaseBallLOCK.game.service.GameService;
 import com.kepg.BaseBallLOCK.team.teamStats.service.TeamStatsService;
 
 import lombok.RequiredArgsConstructor;
 
-@Controller
+@RestController
 @RequestMapping("/ranking")
 @RequiredArgsConstructor
-public class TeamRankingController {
-
+public class TeamRankingRestController {
+    
     private final GameService gameService;
     private final TeamStatsService teamStatsService;
-
-    @GetMapping("/teamranking-view")
-    public String teamRankingView(
+    
+    @GetMapping("/teamranking-view-json")
+    public Map<String, Object> teamRankingViewJson(
             @RequestParam(name = "season", required = false, defaultValue = "2025") int season,
             @RequestParam(name = "sort", required = false, defaultValue = "TotalWAR") String sort,
-            @RequestParam(name = "direction", required = false, defaultValue = "DESC") String direction,
-            Model model) {
+            @RequestParam(name = "direction", required = false, defaultValue = "DESC") String direction) {
 
-        model.addAttribute("season", season);
-        model.addAttribute("currentSort", sort.trim().toUpperCase());
-        model.addAttribute("sortDirection", direction);
-        model.addAttribute("categoryNameMap", getCategoryNameMap());
-        model.addAttribute("headers", getTeamRankingHeaders());
+        Map<String, Object> result = new HashMap<>();
+        result.put("rankingList", gameService.getTeamRankingCardViews(season));
+        result.put("topBatterStats", teamStatsService.getTopBatterStats(season));
+        result.put("topPitcherStats", teamStatsService.getTopPitcherStats(season));
+        result.put("topWaaStats", teamStatsService.getTopWaaStats(season));
+        result.put("statRankingList", teamStatsService.getTeamRankingsSortedByStat(season, sort, direction));
+        result.put("currentSort", sort.trim().toUpperCase());
+        result.put("sortDirection", direction);
+        result.put("headers", getTeamRankingHeaders());
+        result.put("categoryNameMap", getCategoryNameMap());
 
-        return "ranking/teamranking"; // 이제 첫 화면은 빈 틀만 보여줘
+        return result;
+    }
+
+    private List<String> getTeamRankingHeaders() {
+        return Arrays.asList(
+            "TotalWAR", "BetterWAR", "OPS", "AVG", "HR", "SB",
+            "PitcherWAR", "SO", "ERA", "WHIP", "BB",
+            "타격", "주루", "수비", "선발", "불펜"
+        );
     }
 
     private Map<String, String> getCategoryNameMap() {
@@ -60,13 +70,5 @@ public class TeamRankingController {
         map.put("선발", "선발 WAA");
         map.put("불펜", "불펜 WAA");
         return map;
-    }
-
-    private List<String> getTeamRankingHeaders() {
-        return Arrays.asList(
-            "TotalWAR", "BetterWAR", "OPS", "AVG", "HR", "SB",
-            "PitcherWAR", "SO", "ERA", "WHIP", "BB",
-            "타격", "주루", "수비", "선발", "불펜"
-        );
     }
 }

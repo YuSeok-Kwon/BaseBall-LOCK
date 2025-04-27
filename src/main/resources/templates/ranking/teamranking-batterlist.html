@@ -1,0 +1,15 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="batterlist">
+  <li class="list-group-item d-flex justify-content-between" th:each="stat : ${topBatterStats}">
+    <span th:text="${categoryNameMap[stat.category]}"></span>
+    <span>
+	  <img src="' + getLogoPath(team.logoName) + '" class="table-team-logo" style="width: 28px; height: 28px;">
+      <span th:text="${stat.teamName}" class="me-2"></span>
+      <strong th:text="${stat.formattedValue}"></strong>
+    </span>
+  </li>
+</th:block>
+</body>
+</html>
+
