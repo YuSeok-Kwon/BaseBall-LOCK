@@ -4,7 +4,7 @@
       layout:decorate="~{layouts/default}">
 
 <th:block layout:fragment="contents">
-  <div class="container-fluid bg-light-gray min-vh-100 py-5" style="background-color: #D9D9D9;">
+  <div class="container-fluid bg-light-gray min-vh-100 py-5">
     <div class="row justify-content-center px-3 gap-4">
 
       <!-- 팀 순위 카드 -->
@@ -22,8 +22,8 @@
                 <tr th:each="team : ${rankingList}">
                   <td th:text="${team.ranking}">1</td>
                   <td class="d-flex align-items-center gap-2">
-                    <img th:src="@{/static/emblems/{logo}.png(logo=${team.logoName})}" alt="로고" class="table-team-logo">
-                    <span th:text="${team.teamName}">팀명</span>
+                     <img th:src="@{/static/emblems/{logo}.svg(logo=${team.logoName})}" alt="로고" class="table-team-logo">
+					  <span th:text="${team.teamName}">팀명</span>
                   </td>
                   <td th:text="${team.games}">144</td>
                   <td th:text="${team.wins}">88</td>
@@ -55,42 +55,45 @@
                 2025.4.2 잠실 종합 운동장
               </div>
 
-              <!-- 경기 대진 -->
-              <div class="text-center mb-4">
-
-                <div class="d-flex justify-content-center gap-5 align-items-start">
-                  <!-- My Team -->
-                  <div class="text-center ">
-                  	<img th:src="@{/static/emblems/{logo}.png(logo=${myTeam.logoName})}" class="rounded team-logo-box">
-                    <div class="fs-2 fw-bold" th:text="${myTeam.name}">우리팀</div>
-                    <div class="fs-6 mb-2 text-muted" th:text="'(' + ${myRecord} + ')'">(5승 3패)</div>
-                    <div class="fs-4 d-flex justify-content-center gap-2"><br>
-                      <span th:each="result : ${myRecentResults}" th:switch="${result}">
-                        <span th:case="'승'" class="text-success fw-bold">승</span>
-                        <span th:case="'패'" class="text-danger fw-bold">패</span>
-                        <span th:case="'무'" class="text-secondary fw-bold">무</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <!-- VS -->
-                  <div class="fs-2 mt-5 text-secondary d-flex align-items-center">VS</div>
-
-                  <!-- Opponent Team -->
-                  <div class="text-center">
-                  	<img th:src="@{/static/emblems/{logo}.png(logo=${opponentTeam.logoName})}" class="rounded team-logo-box">
-                    <div class="fs-2 fw-bold" th:text="${opponentTeam.name}">상대팀</div>
-                    <div class="fs-6 mb-2 text-muted" th:text="'(' + ${opponentRecord} + ')'">(3승 5패)</div>
-                    <div class="fs-4 d-flex justify-content-center gap-2">
-                      <span th:each="result : ${opponentRecentResults}" th:switch="${result}">
-                        <span th:case="'승'" class="text-success fw-bold">승</span>
-                        <span th:case="'패'" class="text-danger fw-bold">패</span>
-                        <span th:case="'무'" class="text-secondary fw-bold">무</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+			  <!-- 경기 대진 -->
+			  <div class="text-center mb-4">
+				
+				<div class="d-flex justify-content-center gap-5 align-items-start">
+				    
+				  <!-- My Team -->
+				  <div class="text-center">
+				     <img th:src="@{/static/emblems/{logo}.svg(logo=${myTeam.logoName})}" class="rounded team-logo-box mb-2">
+				     <div class="fs-2 fw-bold" th:text="${myTeam.name}">우리팀</div>
+				     <div class="fs-6 mb-2 text-muted" th:text="'(' + ${myRecord} + ')'">(5승 3패)</div>
+				     <div class="fs-4 d-flex justify-content-center gap-2">
+				       <span th:each="result : ${myRecentResults}" th:switch="${result}">
+				         <span th:case="'승'" class="text-success fw-bold">승</span>
+				         <span th:case="'패'" class="text-danger fw-bold">패</span>
+				         <span th:case="'무'" class="text-secondary fw-bold">무</span>
+				       </span>
+				     </div>
+				  </div>
+				
+				  <!-- VS -->
+				  <div class="fs-2 mt-5 text-secondary d-flex align-items-center">VS</div>
+				
+				  <!-- 상대 Team -->
+				  <div class="text-center">
+				      <img th:src="@{/static/emblems/{logo}.svg(logo=${opponentTeam.logoName})}" class="rounded team-logo-box mb-2">
+				      <div class="fs-2 fw-bold" th:text="${opponentTeam.name}">상대팀</div>
+				      <div class="fs-6 mb-2 text-muted" th:text="'(' + ${opponentRecord} + ')'">(3승 5패)</div>
+				      <div class="fs-4 d-flex justify-content-center gap-2">
+				        <span th:each="result : ${opponentRecentResults}" th:switch="${result}">
+				          <span th:case="'승'" class="text-success fw-bold">승</span>
+				          <span th:case="'패'" class="text-danger fw-bold">패</span>
+				          <span th:case="'무'" class="text-secondary fw-bold">무</span>
+				        </span>
+				      </div>
+				  </div>
+				
+				</div>
+				
+			</div>
 
             </div>
 

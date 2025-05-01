@@ -7,6 +7,9 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.stereotype.Component;
 
 import com.kepg.BaseBallLOCK.player.domain.Player;
@@ -45,72 +48,85 @@ public class StatizPitcherCrawler {
             "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=ASC&year=%d&sy=&ey=&te=&po=&lt=10100&reg=A&pe=&ds=&de=&we=&hr=&ha=&ct=&st=&vp=&bo=&pt=&pp=&ii=&vc=&um=&oo=&rr=&sc=&bc=&ba=&li=&as=&ae=&pl=&gc=&lr=&pr=50&ph=&hs=&us=&na=&ls=&sf1=&sk1=&sv1=&sf2=&sk2=&sv2="
         };
 
-        int[] years = {2020};
+        int[] years = {2025};
 
         for (String urlPattern : urlPatterns) {
             for (int year : years) {
                 String url = String.format(urlPattern, year);
                 System.out.println("투수 크롤링: year=" + year);
 
+                WebDriver driver = null;
                 try {
-                    Document doc = Jsoup.connect(url)
-                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/123 Safari/537.36")
-                        .referrer("https://www.google.com")
-                        .header("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7")
-                        .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-                        .header("Connection", "keep-alive")
-                        .timeout(70000)
-                        .get();
+                	ChromeOptions options = new ChromeOptions();
+                	options.addArguments("--headless");  // UI 없이 백그라운드 실행
+                	options.addArguments("--no-sandbox");
+                	options.addArguments("--disable-dev-shm-usage");
+
+                	driver = new ChromeDriver(options);
+                	driver.get(url);
+
+                	Thread.sleep(5000);
+                    
+                	String pageSource = driver.getPageSource();
+                	Document doc = Jsoup.parse(pageSource);
 
                     Element table = doc.selectFirst("table");
-                    if (table == null) continue;
+                    if (table == null) {
+                    	continue;
+                    }
 
                     for (Element row : table.select("tr")) {
                         Elements cols = row.select("td");
                         if (cols.size() <= 36) continue;
-
-                        String name = cols.get(1).text().trim();
-                        String[] sp = cols.get(2).text().trim().split(" ");
-                        int season = Integer.parseInt(sp[0]);
-                        String position = "P";
-
-                        Element colorElem = cols.get(2).selectFirst("span[style]");
-                        int teamId = 0;
-                        if (colorElem != null) {
-                            String bg = colorElem.attr("style").split("background:")[1].split(";")[0].trim();
-                            teamId = colorToTeamIdMap.getOrDefault(bg, 0);
-                        }
-
-                        PlayerDTO dto = PlayerDTO.builder()
-                            .name(name)
-                            .teamId(teamId)
-                            .build();
-                        Player player = playerService.findOrCreatePlayer(dto);
-                        int playerId = player.getId();
-
-                        save(playerId, season, "G", parseInt(cols.get(4).text()), null, position);
-                        save(playerId, season, "W", parseInt(cols.get(10).text()), null, position);
-                        save(playerId, season, "L", parseInt(cols.get(11).text()), null, position);
-                        save(playerId, season, "SV", parseInt(cols.get(12).text()), null, position);
-                        save(playerId, season, "HLD", parseInt(cols.get(13).text()), null, position);
-                        save(playerId, season, "IP", parseDouble(cols.get(14).text()), null, position);
-                        save(playerId, season, "H", parseInt(cols.get(19).text()), null, position);
-                        save(playerId, season, "HR", parseInt(cols.get(22).text()), null, position);
-                        save(playerId, season, "BB", parseInt(cols.get(23).text()), null, position);
-                        save(playerId, season, "SO", parseInt(cols.get(26).text()), null, position);
-                        save(playerId, season, "ERA", parseDouble(cols.get(30).text()), null, position);
-                        save(playerId, season, "WHIP", parseDouble(cols.get(35).text()), null, position);
-                        save(playerId, season, "WAR", parseDouble(cols.get(36).text()), null, position);
+                        processRow(cols, year);
                     }
 
                 } catch (Exception e) {
                     System.out.println("에러 발생: year=" + year);
                     e.printStackTrace();
+                } finally {
+                    if (driver != null) driver.quit();
                 }
             }
         }
     }
+    
+    private int resolveTeamId(Element colorElem) {
+        if (colorElem == null) return 0;
+        String bg = colorElem.attr("style").split("background:")[1].split(";")[0].trim();
+        return colorToTeamIdMap.getOrDefault(bg, 0);
+    }
 
+    private int parseSeason(String raw) {
+        String[] parts = raw.split(" ");
+        return Integer.parseInt(parts[0]);
+    }
+
+    private void processRow(Elements cols, int year) {
+        String name = cols.get(1).text().trim();
+        int season = parseSeason(cols.get(2).text().trim());
+        String position = "P";
+        int teamId = resolveTeamId(cols.get(2).selectFirst("span[style]"));
+
+        PlayerDTO dto = PlayerDTO.builder().name(name).teamId(teamId).build();
+        Player player = playerService.findOrCreatePlayer(dto);
+        int playerId = player.getId();
+
+        save(playerId, season, "G", parseInt(cols.get(4).text()), null, position);
+        save(playerId, season, "W", parseInt(cols.get(10).text()), null, position);
+        save(playerId, season, "L", parseInt(cols.get(11).text()), null, position);
+        save(playerId, season, "SV", parseInt(cols.get(12).text()), null, position);
+        save(playerId, season, "HLD", parseInt(cols.get(13).text()), null, position);
+        save(playerId, season, "IP", parseDouble(cols.get(14).text()), null, position);
+        save(playerId, season, "H", parseInt(cols.get(19).text()), null, position);
+        save(playerId, season, "HR", parseInt(cols.get(22).text()), null, position);
+        save(playerId, season, "BB", parseInt(cols.get(23).text()), null, position);
+        save(playerId, season, "SO", parseInt(cols.get(26).text()), null, position);
+        save(playerId, season, "ERA", parseDouble(cols.get(30).text()), null, position);
+        save(playerId, season, "WHIP", parseDouble(cols.get(35).text()), null, position);
+        save(playerId, season, "WAR", parseDouble(cols.get(36).text()), null, position);
+    }
+    
     private void save(int playerId, int season, String category, double value, Integer ranking, String position) {
         PitcherStatsDTO dto = PitcherStatsDTO.builder()
                 .playerId(playerId)

@@ -63,4 +63,31 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Integer> {
 
     @Query("SELECT s.id FROM Schedule s WHERE s.matchDate > :currentDate ORDER BY s.matchDate ASC LIMIT 1")
     Integer findNextMatchId(@Param("currentDate") Timestamp currentDate);
+    
+    @Query("SELECT s FROM Schedule s WHERE s.matchDate BETWEEN :start AND :end AND (s.homeTeamId = :teamId OR s.awayTeamId = :teamId)")
+    List<Schedule> findByMatchDateBetweenAndTeam(@Param("start") Timestamp start, @Param("end") Timestamp end, @Param("teamId") int teamId);
+    
+    @Query(value = """
+    	    SELECT teamId, COUNT(*) AS gamesPlayed
+			FROM (
+			    SELECT s.homeTeamId AS teamId
+			    FROM schedule s
+			    WHERE YEAR(s.matchDate) = :season
+			      AND s.matchDate < CURRENT_DATE()
+			      AND s.homeTeamScore IS NOT NULL
+			      AND s.awayTeamScore IS NOT NULL
+			    UNION ALL
+			    SELECT s.awayTeamId AS teamId
+			    FROM schedule s
+			    WHERE YEAR(s.matchDate) = :season
+			      AND s.matchDate < CURRENT_DATE()
+			      AND s.homeTeamScore IS NOT NULL
+			      AND s.awayTeamScore IS NOT NULL
+			) AS all_teams
+			GROUP BY teamId
+    	""", nativeQuery = true)
+    	List<Object[]> countGamesByTeam(@Param("season") int season);
+    	
+    	@Query("SELECT s.matchDate FROM Schedule s WHERE s.id = :scheduleId")
+    	Timestamp findMatchDateById(@Param("scheduleId") int scheduleId);
 }

@@ -1,10 +1,10 @@
 package com.kepg.BaseBallLOCK.common;
 
-import org.springframework.stereotype.Component;
-
-@Component("colorUtil")
 public class ColorUtil {
-    public String toRgba(String hexColor, double alpha) {
+
+    private ColorUtil() {} // 인스턴스 생성 방지
+
+    public static String toRgba(String hexColor, double alpha) {
         if (hexColor == null || !hexColor.startsWith("#") || hexColor.length() != 7) {
             return "255, 255, 255, 0.3"; // fallback: 흰색
         }

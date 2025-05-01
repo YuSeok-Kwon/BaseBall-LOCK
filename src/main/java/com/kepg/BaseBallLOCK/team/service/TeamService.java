@@ -32,5 +32,9 @@ public class TeamService {
                              .map(Team::getLogoName)
                              .orElse(null);
     }
+    public String findColorById(int teamId) {
+        return teamRepository.findColorById(teamId);
+    }
+   
 }
 

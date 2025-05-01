@@ -1,208 +1,433 @@
-<html lang="ko"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layouts/default}">
-
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layouts/default}">
 <th:block layout:fragment="contents">
-<div class="container-fluid py-5">
+    <div class="container-fluid py-5 px-3">
 
-  <!-- 상단 제목 -->
-  <div class="d-flex justify-content-between align-items-center mb-4 px-3">
-    <h3 class="fw-bold">2025 KBO 리그 팀 기록</h3>
+        <!-- 개인랭킹 / 팀랭킹 링크 + 시즌 선택 드롭다운 -->
+        <div class="d-flex align-items-center mb-4 mx-4">
+		    <a href="/ranking/teamranking-view" class="btn btn-outline-secondary me-2" style="background-color: #FACC15;">팀 랭킹</a>
+		    <a href="/ranking/playerranking-view" class="btn btn-outline-primary" style="background-color: #FACC15;">개인 랭킹</a>
+            <form class="d-flex align-items-center px-4 seasonSelectBox">
+                <select class="form-select season-select" name="season" style="width:120px;" onchange="changeSeason(this)">
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                    <option value="2021">2021</option>
+                    <option value="2020">2020</option>
+                </select>
+            </form>
+            <input type="hidden" id="current-sort" value="WAR">
+            <input type="hidden" id="current-direction" value="DESC">
+        </div>
 
-    <!-- 정렬 폼 -->
-    <form method="get" action="/ranking/teamranking-detail-view" class="d-flex align-items-center gap-2">
-      <select class="form-select" name="sort" style="width: 200px;" onchange="this.form.submit()">
-        <option value="BetterWAR" th:selected="${currentSort == 'BetterWAR'}">타자 WAR</option>
-        <option value="OPS" th:selected="${currentSort == 'OPS'}">OPS</option>
-        <option value="AVG" th:selected="${currentSort == 'AVG'}">타율</option>
-        <option value="HR" th:selected="${currentSort == 'HR'}">홈런</option>
-        <option value="SB" th:selected="${currentSort == 'SB'}">도루</option>
-        <option value="PitcherWAR" th:selected="${currentSort == 'PitcherWAR'}">투수 WAR</option>
-        <option value="SO" th:selected="${currentSort == 'SO'}">탈삼진</option>
-        <option value="ERA" th:selected="${currentSort == 'ERA'}">ERA</option>
-        <option value="WHIP" th:selected="${currentSort == 'WHIP'}">WHIP</option>
-        <option value="BB" th:selected="${currentSort == 'BB'}">볼넷</option>
-        <option value="타격" th:selected="${currentSort == '타격'}">타격 WAA</option>
-        <option value="주루" th:selected="${currentSort == '주루'}">주루 WAA</option>
-        <option value="수비" th:selected="${currentSort == '수비'}">수비 WAA</option>
-        <option value="선발" th:selected="${currentSort == '선발'}">선발 WAA</option>
-        <option value="불펜" th:selected="${currentSort == '불펜'}">불펜 WAA</option>
-      </select>
-    </form>
-  </div>
+        <!-- 타자 / 투수 Top 영역 -->
+        <div class="row gy-4 mx-5 mb-5">
+            <div class="col-lg-6">
+                <div class="card border-point shadow-sm p-3">
+                    <h5 class="text-center fs-2 fw-bold mb-3">포지션별 타자 WAR Top</h5>
+                    <ul id="top-batter-list" class="list-group border-0"></ul>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card border-point shadow-sm p-3">
+                    <h5 class="text-center fs-2 fw-bold mb-3">기록별 투수 Top</h5>
+                    <ul id="top-pitcher-list" class="list-group border-0"></ul>
+                </div>
+            </div>
+        </div>
 
-  <!-- 카드 스타일 테이블 -->
-  <div class="card border-0 shadow-sm bg-warning-subtle p-4">
-    <div class="table-responsive">
-      <table class="table table-striped table-bordered text-center align-middle bg-white rounded-3">
-        <thead class="table-warning">
-		  <tr>
-		    <th>순위</th>
-		    <th>팀명</th>
-		
-		    <!-- 정렬 기준 -->
-		    <th th:text="${categoryNameMap[currentSort] != null ? categoryNameMap[currentSort] : currentSort}" class="text-dark fw-bold"></th>
-		
-		    <!-- 각 스탯별 정렬 가능한 헤더 -->
-		    <th>
-		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='OPS', direction=${currentSort == 'OPS' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
-		         th:classappend="${currentSort == 'OPS'} ? 'text-warning fw-bold' : ''">
-		        OPS <span th:if="${currentSort == 'OPS'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
-		      </a>
-		    </th>
-		
-		    <th>
-		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='AVG', direction=${currentSort == 'AVG' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
-		         th:classappend="${currentSort == 'AVG'} ? 'text-warning fw-bold' : ''">
-		        AVG <span th:if="${currentSort == 'AVG'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
-		      </a>
-		    </th>
-		
-		    <th>
-		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='HR', direction=${currentSort == 'HR' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
-		         th:classappend="${currentSort == 'HR'} ? 'text-warning fw-bold' : ''">
-		        HR <span th:if="${currentSort == 'HR'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
-		      </a>
-		    </th>
-		
-		    <th>
-		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='SB', direction=${currentSort == 'SB' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
-		         th:classappend="${currentSort == 'SB'} ? 'text-warning fw-bold' : ''">
-		        SB <span th:if="${currentSort == 'SB'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
-		      </a>
-		    </th>
-		
-		    <th>
-		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='BetterWAR', direction=${currentSort == 'BetterWAR' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
-		         th:classappend="${currentSort == 'BetterWAR'} ? 'text-warning fw-bold' : ''">
-		        타자 WAR <span th:if="${currentSort == 'BetterWAR'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
-		      </a>
-		    </th>
-		
-		    <th>
-		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='PitcherWAR', direction=${currentSort == 'PitcherWAR' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
-		         th:classappend="${currentSort == 'PitcherWAR'} ? 'text-warning fw-bold' : ''">
-		        투수 WAR <span th:if="${currentSort == 'PitcherWAR'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
-		      </a>
-		    </th>
-		
-		    <th>
-		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='SO', direction=${currentSort == 'SO' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
-		         th:classappend="${currentSort == 'SO'} ? 'text-warning fw-bold' : ''">
-		        SO <span th:if="${currentSort == 'SO'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
-		      </a>
-		    </th>
-		
-		    <th>
-		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='ERA', direction=${currentSort == 'ERA' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
-		         th:classappend="${currentSort == 'ERA'} ? 'text-warning fw-bold' : ''">
-		        ERA <span th:if="${currentSort == 'ERA'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
-		      </a>
-		    </th>
-		
-		    <th>
-		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='WHIP', direction=${currentSort == 'WHIP' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
-		         th:classappend="${currentSort == 'WHIP'} ? 'text-warning fw-bold' : ''">
-		        WHIP <span th:if="${currentSort == 'WHIP'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
-		      </a>
-		    </th>
-		
-		    <th>
-		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='BB', direction=${currentSort == 'BB' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
-		         th:classappend="${currentSort == 'BB'} ? 'text-warning fw-bold' : ''">
-		        BB <span th:if="${currentSort == 'BB'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
-		      </a>
-		    </th>
-		
-		    <th>
-		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='타격', direction=${currentSort == '타격' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
-		         th:classappend="${currentSort == '타격'} ? 'text-warning fw-bold' : ''">
-		        타격 WAA <span th:if="${currentSort == '타격'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
-		      </a>
-		    </th>
-		
-		    <th>
-		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='주루', direction=${currentSort == '주루' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
-		         th:classappend="${currentSort == '주루'} ? 'text-warning fw-bold' : ''">
-		        주루 WAA <span th:if="${currentSort == '주루'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
-		      </a>
-		    </th>
-		
-		    <th>
-		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='수비', direction=${currentSort == '수비' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
-		         th:classappend="${currentSort == '수비'} ? 'text-warning fw-bold' : ''">
-		        수비 WAA <span th:if="${currentSort == '수비'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
-		      </a>
-		    </th>
-		
-		    <th>
-		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='선발', direction=${currentSort == '선발' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
-		         th:classappend="${currentSort == '선발'} ? 'text-warning fw-bold' : ''">
-		        선발 WAA <span th:if="${currentSort == '선발'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
-		      </a>
-		    </th>
-		
-		    <th>
-		      <a th:href="@{/ranking/teamranking-detail-view(season=${season}, sort='불펜', direction=${currentSort == '불펜' and sortDirection == 'ASC' ? 'DESC' : 'ASC'})}"
-		         th:classappend="${currentSort == '불펜'} ? 'text-warning fw-bold' : ''">
-		        불펜 WAA <span th:if="${currentSort == '불펜'}" th:text="${sortDirection == 'ASC' ? '▲' : '▼'}"></span>
-		      </a>
-		    </th>
-		
-		  </tr>
-		</thead>
-        
-        <tbody>
-          <tr th:each="team, iterStat : ${rankingList}">
-            <td th:text="${iterStat.index + 1}"></td>
+        <!-- 버튼 및 포지션 드롭다운 -->
+        <div class="text-start mb-3 mx-4 d-flex">
+            <button id="showBatterTableBtn" class="btn btn-primary mx-2" style="background-color: #FACC15;">타자 기록</button>
+            <button id="showPitcherTableBtn" class="btn btn-primary mx-2" style="background-color: #FACC15;">투수 기록</button>
+            <form class="d-flex align-items-center mx-2 seasonSelectBox">
+                <select class="form-select season-select" name="season" style="width:120px;" onchange="changeSeason(this)">
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                    <option value="2021">2021</option>
+                    <option value="2020">2020</option>
+                </select>
+            </form>
+            <form id="positionChoiceBox" class="d-flex align-items-center mx-2">
+                <select id="position-select" class="form-select" onchange="filterByPosition()">
+                    <option value="">모든 포지션</option>
+                    <option value="C">C (포수)</option>
+                    <option value="1B">1B (1루수)</option>
+                    <option value="2B">2B (2루수)</option>
+                    <option value="3B">3B (3루수)</option>
+                    <option value="SS">SS (유격수)</option>
+                    <option value="LF">LF (좌익수)</option>
+                    <option value="RF">RF (우익수)</option>
+                    <option value="CF">CF (중견수)</option>
+                    <option value="DH">DH (지명타자)</option>
+                </select>
+            </form>
+            <button id="filterQualifiedBtn" class="btn btn-outline-secondary mx-2" style="background-color: #FACC15;">규정 선수만 보기 / 현재 : 전체선수</button>
+        </div>
 
-            <td class="d-flex align-items-center justify-content-start gap-2">
-              <img th:src="@{/static/emblems/{logo}.png(logo=${team.logoName})}" class="table-team-logo" style="width: 28px; height: 28px;">
-              <span th:text="${team.teamName}" class="fw-bold"></span>
-            </td>
-
-            <!-- 정렬 기준 데이터  -->
-            <td th:switch="${currentSort}" class="fw-bold">
-              <span th:case="'OPS'" th:text="${#numbers.formatDecimal(team.ops, 1, 3)}"></span>
-              <span th:case="'AVG'" th:text="${#numbers.formatDecimal(team.avg, 1, 3)}"></span>
-              <span th:case="'HR'" th:text="${#numbers.formatDecimal(team.hr, 0, 0)}"></span>
-              <span th:case="'SB'" th:text="${#numbers.formatDecimal(team.sb, 0, 0)}"></span>
-              <span th:case="'BetterWAR'" th:text="${#numbers.formatDecimal(team.betterWar, 1, 2)}"></span>
-              <span th:case="'PitcherWAR'" th:text="${#numbers.formatDecimal(team.pitcherWar, 1, 2)}"></span>
-              <span th:case="'SO'" th:text="${#numbers.formatDecimal(team.so, 0, 0)}"></span>
-              <span th:case="'ERA'" th:text="${#numbers.formatDecimal(team.era, 1, 2)}"></span>
-              <span th:case="'WHIP'" th:text="${#numbers.formatDecimal(team.whip, 1, 2)}"></span>
-              <span th:case="'BB'" th:text="${#numbers.formatDecimal(team.bb, 0, 0)}"></span>
-              <span th:case="'타격'" th:text="${#numbers.formatDecimal(team.battingWaa, 1, 2)}"></span>
-              <span th:case="'주루'" th:text="${#numbers.formatDecimal(team.baserunningWaa, 1, 2)}"></span>
-              <span th:case="'수비'" th:text="${#numbers.formatDecimal(team.defenseWaa, 1, 2)}"></span>
-              <span th:case="'선발'" th:text="${#numbers.formatDecimal(team.startingWaa, 1, 2)}"></span>
-              <span th:case="'불펜'" th:text="${#numbers.formatDecimal(team.bullpenWaa, 1, 2)}"></span>
-            </td>
-
-            <!-- 나머지 고정 스탯 -->
-            <td th:text="${#numbers.formatDecimal(team.ops, 1, 3)}"></td>
-            <td th:text="${#numbers.formatDecimal(team.avg, 1, 3)}"></td>
-            <td th:text="${#numbers.formatDecimal(team.hr, 0, 0)}"></td>
-            <td th:text="${#numbers.formatDecimal(team.sb, 0, 0)}"></td>
-            <td th:text="${#numbers.formatDecimal(team.betterWar, 1, 2)}"></td>
-            <td th:text="${#numbers.formatDecimal(team.pitcherWar, 1, 2)}"></td>
-            <td th:text="${#numbers.formatDecimal(team.so, 0, 0)}"></td>
-            <td th:text="${#numbers.formatDecimal(team.era, 1, 2)}"></td>
-            <td th:text="${#numbers.formatDecimal(team.whip, 1, 2)}"></td>
-            <td th:text="${#numbers.formatDecimal(team.bb, 0, 0)}"></td>
-            <td th:text="${#numbers.formatDecimal(team.battingWaa, 1, 2)}"></td>
-            <td th:text="${#numbers.formatDecimal(team.baserunningWaa, 1, 2)}"></td>
-            <td th:text="${#numbers.formatDecimal(team.defenseWaa, 1, 2)}"></td>
-            <td th:text="${#numbers.formatDecimal(team.startingWaa, 1, 2)}"></td>
-            <td th:text="${#numbers.formatDecimal(team.bullpenWaa, 1, 2)}"></td>
-          </tr>
-        </tbody>
-      </table>
+        <!-- 기록 테이블 -->
+        <div id="batter-ranking-table-wrapper" class="ranking-table mt-2 mx-5"></div>
+        <div id="pitcher-ranking-table-wrapper" class="ranking-table mt-2 mx-5 d-none"></div>
     </div>
-  </div>
+</th:block>
 
-</div>
+<th:block layout:fragment="script">
+	<script>
+	let isQualifiedFilterOn = false;
+
+	$(document).ready(function() {
+	    // 화면 처음 로딩 시
+	    fetchPlayerRanking();
+	
+	    // 버튼 클릭 시
+	    $('#showBatterTableBtn').click(function() {
+	        $('#batter-ranking-table-wrapper').removeClass('d-none');
+	        $('#pitcher-ranking-table-wrapper').addClass('d-none');
+	        $('#positionChoiceBox').removeClass('d-none');
+	    });
+	
+	    $('#showPitcherTableBtn').click(function() {
+	        $('#pitcher-ranking-table-wrapper').removeClass('d-none');
+	        $('#batter-ranking-table-wrapper').addClass('d-none');
+	        $('#positionChoiceBox').addClass('d-none');
+	    });
+	
+	    // 시즌 드롭다운 초기화
+	    var selectedValue = getSelectedSeason();
+	    $('select[name="season"]').val(selectedValue);
+	    
+	 	// 규정 선수 보기
+		$('#filterQualifiedBtn').click(function() {
+		    isQualifiedFilterOn = !isQualifiedFilterOn;
+		
+		    if (isQualifiedFilterOn) {
+		        $(this).text('전체 선수 보기 / 현재 : 규정선수');
+		    } else {
+		        $(this).text('규정 선수만 보기 / 현재 : 전체선수');
+		    }
+		
+		    const selectedSeason = $('select[name="season"]').val();
+		    fetchPlayerRanking(selectedSeason);
+		});
+	});
+	
+	// 시즌 변경
+	function changeSeason(selectElement) {
+	    var selectedValue = $(selectElement).val();
+	    $('.season-select').val(selectedValue);
+	    fetchPlayerRanking(selectedValue);
+	}
+	
+	// 초기 시즌 값 설정
+	function getSelectedSeason() {
+	    var seasonSelect = document.querySelector('select[name="season"]');
+	    return seasonSelect ? seasonSelect.value : '2025'; // 기본값 2025
+	}
+	
+	// 포지션 필터링
+	function filterByPosition() {
+    const selectedPosition = $('#position-select').val();
+
+    $('#batter-ranking-table-wrapper table tbody tr').each(function () {
+        const position = $(this).find('td').eq(2).text().trim(); // 포지션 컬럼
+
+        if (selectedPosition === "" || position === selectedPosition) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+}
+	
+	// 선수 랭킹 가져오기
+	function fetchPlayerRanking(season) {
+	    if (!season) {
+	        season = $('select[name="season"]').val();
+	    }
+	
+	    var currentSort = $('#current-sort').val();
+	    var currentDirection = $('#current-direction').val();
+	
+	    $.ajax({
+	        url: '/ranking/playerranking-view-json',
+	        method: 'GET',
+	        data: { 
+	        	season: season, 
+	        	sort: currentSort, 
+	        	direction: currentDirection,
+	        	qualified: isQualifiedFilterOn,
+	        	},
+	        success: function(data) {
+	            renderTopBatterList(data.topBatters);
+	            renderTopPitcherList(data.topPitchers);
+	            renderBatterTable(data.batterRankingList, data.currentSort, data.sortDirection);
+	            renderPitcherTable(data.pitcherRankingList, data.currentSort, data.sortDirection);
+	        },
+	        error: function(xhr, status, error) {
+	            console.error('데이터 불러오기 실패:', error);
+	            alert('데이터를 불러오는 데 실패했습니다.');
+	        }
+	    });
+	}
+	
+	// 타자 Top 리스트
+	function renderTopBatterList(list) {
+	    var html = '';
+	    list.forEach(function(batter) {
+	        html += '<li class="list-group-item d-flex justify-content-between">';
+	        html += '<span class="fs-5">' + (batter.position || '-') + '</span>';
+	        html += '<span class="d-flex align-items-center">';
+	        html += '<img src="' + getLogoPath(batter.logoName) + '" style="width:28px;height:28px;">';
+	        html += '<span class="ms-1 fs-5">' + batter.teamName + '</span>';
+	        html += '<span class="ms-2 fs-5">' + batter.playerName + '</span>';
+	        html += '<strong class="ms-1 fs-5">' + formatDecimal(batter.war, 2) + '</strong>';
+	        html += '</span></li>';
+	    });
+	    $('#top-batter-list').html(html);
+	}
+	
+	// 투수 Top5 리스트
+	function renderTopPitcherList(list) {
+	    var html = '';
+	    list.forEach(function(pitcher) {
+	        var formatClass = getFormatClassForCategory(pitcher.category);
+	        html += '<li class="list-group-item d-flex justify-content-between">';
+	        html += '<span class="fs-5">' + (pitcher.category || '-') + '</span>';
+	        html += '<span class="d-flex align-items-center fs-5">';
+	        html += '<img src="' + getLogoPath(pitcher.logoName) + '" style="width:28px;height:28px;">';
+	        html += '<span class="ms-1">' + pitcher.teamName + '</span>';
+	        html += '<span class="ms-2">' + pitcher.playerName + '</span>';
+	        html += '<strong class="ms-1 ' + formatClass + '">' + pitcher.value + '</strong>';
+	        html += '</span></li>';
+	    });
+	    $('#top-pitcher-list').html(html);
+	    formatPlayerStats();
+	}
+	
+	// 타자 테이블 정렬
+	function sortBatterTable(sortKey) {
+	    sortKey = sortKey.toUpperCase();
+	    var season = $('.season-select').val();
+	    var currentSort = $('#current-sort').val();
+	    var currentDirection = $('#current-direction').val();
+	
+	    var newDirection = (currentSort === sortKey && currentDirection === 'ASC') ? 'DESC' : 'ASC';
+	
+	    $.ajax({
+	        url: '/ranking/playerranking-view-json',
+	        method: 'GET',
+	        data: { 
+	            season: season, 
+	            sort: sortKey, 
+	            direction: newDirection,
+	            qualified: isQualifiedFilterOn
+	        },
+	        success: function(data) {
+	            $('#current-sort').val(sortKey);
+	            $('#current-direction').val(newDirection);
+	            renderBatterTable(data.batterRankingList, sortKey, newDirection);
+	        },
+	        error: function(xhr, status, error) {
+	            console.error('타자 테이블 정렬 실패:', error);
+	        }
+	    });
+	}
+	
+	// 타자 테이블 그리기
+	function renderBatterTable(list, currentSort, sortDirection) {
+	    var directionArrow = sortDirection === 'ASC' ? '▼' : '▲';
+	    var html = '<table class="table table-bordered table-striped text-center"><thead><tr>';
+	
+	    html += '<th>순위</th>';
+	    html += '<th>선수명</th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'position\')">포지션' + (currentSort === 'POSITION' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'WAR\')">WAR' + (currentSort === 'WAR' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'G\')">경기 수' + (currentSort === 'G' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'PA\')">타석' + (currentSort === 'PA' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'AVG\')">타율' + (currentSort === 'AVG' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'HR\')">홈런' + (currentSort === 'HR' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'SB\')">도루' + (currentSort === 'SB' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'H\')">안타' + (currentSort === 'H' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'RBI\')">타점' + (currentSort === 'RBI' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'BB\')">볼넷' + (currentSort === 'BB' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'SO\')">삼진' + (currentSort === 'SO' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'2B\')">2루타' + (currentSort === '2B' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'3B\')">3루타' + (currentSort === '3B' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'OBP\')">출루율' + (currentSort === 'OBP' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'SLG\')">장타율' + (currentSort === 'SLG' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'OPS\')">OPS' + (currentSort === 'OPS' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortBatterTable(\'wRC+\')">wRC+' + (currentSort === 'WRCPLUS' ? directionArrow : '') + '</a></th>';
+	    html += '</tr></thead><tbody>';
+	
+	    list.forEach(function(batter, index) {
+	        html += '<tr>';
+	        html += '<td>' + (index + 1) + '</td>';
+	        html += '<td class="d-flex align-items-center gap-2"><img src="' + getLogoPath(batter.logoName) + '" style="width:28px;height:28px;">' + batter.playerName + '</td>';
+	        html += '<td>' + (batter.position || '-') + '</td>';
+	        html += '<td>' + formatDecimal(batter.war, 2) + '</td>';
+	        html += '<td>' + formatInteger(batter.g) + '</td>';
+	        html += '<td>' + formatInteger(batter.pa) + '</td>';
+	        html += '<td>' + formatDecimal(batter.avg, 3) + '</td>';
+	        html += '<td>' + formatInteger(batter.hr) + '</td>';
+	        html += '<td>' + formatInteger(batter.sb) + '</td>';
+	        html += '<td>' + formatInteger(batter.h) + '</td>';
+	        html += '<td>' + formatInteger(batter.rbi) + '</td>';
+	        html += '<td>' + formatInteger(batter.bb) + '</td>';
+	        html += '<td>' + formatInteger(batter.so) + '</td>';
+	        html += '<td>' + formatInteger(batter.twoB) + '</td>';
+	        html += '<td>' + formatInteger(batter.threeB) + '</td>';
+	        html += '<td>' + formatDecimal(batter.obp, 3) + '</td>';
+	        html += '<td>' + formatDecimal(batter.slg, 3) + '</td>';
+	        html += '<td>' + formatDecimal(batter.ops, 3) + '</td>';
+	        html += '<td>' + formatDecimal(batter.wrcPlus, 1) + '</td>';
+	        html += '</tr>';
+	    });
+	
+	    html += '</tbody></table>';
+	    $('#batter-ranking-table-wrapper').html(html);
+	    filterByPosition();
+	}
+	
+	// 투수 테이블 정렬
+	function sortPitcherTable(sortKey) {
+	    sortKey = sortKey.toUpperCase();
+	    var season = $('.season-select').val();
+	    var currentSort = $('#current-sort').val();
+	    var currentDirection = $('#current-direction').val();
+	
+	    var newDirection = (currentSort === sortKey && currentDirection === 'ASC') ? 'DESC' : 'ASC';
+	
+	    $.ajax({
+	        url: '/ranking/playerranking-view-json',
+	        method: 'GET',
+	        data: { 
+	            season: season, 
+	            sort: sortKey, 
+	            direction: newDirection, 
+	            type: 'pitcher',
+	            qualified: isQualifiedFilterOn
+	        },
+	        success: function(data) {
+	            $('#current-sort').val(sortKey);
+	            $('#current-direction').val(newDirection);
+	            renderPitcherTable(data.pitcherRankingList, sortKey, newDirection);
+	        },
+	        error: function(xhr, status, error) {
+	            console.error('투수 테이블 정렬 실패:', error);
+	        }
+	    });
+	}
+	
+	// 투수 테이블 그리기
+	function renderPitcherTable(list, currentSort, sortDirection) {
+	    var directionArrow = sortDirection === 'ASC' ? '▲' : '▼';
+	    var html = '<table class="table table-bordered table-striped text-center"><thead><tr>';
+	
+	    html += '<th>순위</th>';
+	    html += '<th>선수명</th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortPitcherTable(\'WAR\')">WAR' + (currentSort === 'WAR' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortPitcherTable(\'ERA\')">ERA' + (currentSort === 'ERA' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortPitcherTable(\'WHIP\')">WHIP' + (currentSort === 'WHIP' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortPitcherTable(\'W\')">승' + (currentSort === 'W' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortPitcherTable(\'L\')">패' + (currentSort === 'L' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortPitcherTable(\'HLD\')">홀드' + (currentSort === 'HLD' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortPitcherTable(\'SV\')">세이브' + (currentSort === 'SV' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortPitcherTable(\'IP\')">이닝' + (currentSort === 'IP' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortPitcherTable(\'SO\')">삼진' + (currentSort === 'SO' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortPitcherTable(\'BB\')">볼넷' + (currentSort === 'BB' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortPitcherTable(\'H\')">피안타' + (currentSort === 'H' ? directionArrow : '') + '</a></th>';
+	    html += '<th><a href="javascript:void(0);" onclick="sortPitcherTable(\'HR\')">피홈런' + (currentSort === 'HR' ? directionArrow : '') + '</a></th>';
+	    html += '</tr></thead><tbody>';
+	
+	    list.forEach(function(pitcher, index) {
+	        html += '<tr>';
+	        html += '<td>' + (index + 1) + '</td>';
+	        html += '<td class="d-flex align-items-center gap-2"><img src="' + getLogoPath(pitcher.logoName) + '" style="width:28px;height:28px;">' + pitcher.playerName + '</td>';
+	        html += '<td>' + formatDecimal(pitcher.war, 2) + '</td>';
+	        html += '<td>' + formatDecimal(pitcher.era, 2) + '</td>';
+	        html += '<td>' + formatDecimal(pitcher.whip, 2) + '</td>';
+	        html += '<td>' + formatInteger(pitcher.wins) + '</td>';
+	        html += '<td>' + formatInteger(pitcher.loses) + '</td>';
+	        html += '<td>' + formatInteger(pitcher.holds) + '</td>';
+	        html += '<td>' + formatInteger(pitcher.saves) + '</td>';
+	        html += '<td>' + formatDecimal(pitcher.ip, 1) + '</td>';
+	        html += '<td>' + formatInteger(pitcher.so) + '</td>';
+	        html += '<td>' + formatInteger(pitcher.bb) + '</td>';
+	        html += '<td>' + formatInteger(pitcher.h) + '</td>';
+	        html += '<td>' + formatInteger(pitcher.hr) + '</td>';
+	        html += '</tr>';
+	    });
+	
+	    html += '</tbody></table>';
+	    $('#pitcher-ranking-table-wrapper').html(html);
+	}
+	
+	
+	// 공통 유틸
+	function getLogoPath(logoName) {
+	    return '/static/emblems/' + logoName + '.svg';
+	}
+	
+	function formatInteger(value) {
+	    if (value == null || isNaN(value)) return '-';
+	    return Math.round(value);
+	}
+	
+	function formatDecimal(value, decimals) {
+	    if (value == null || isNaN(value)) return '-';
+	    return parseFloat(value).toFixed(decimals);
+	}
+	// 숫자 포맷 통일 적용 함수
+	function formatPlayerStats() {
+	    document.querySelectorAll('.format-decimal-2').forEach(function(td) {
+	        var value = parseFloat(td.innerText);
+	        if (!isNaN(value)) {
+	            td.innerText = value.toFixed(2);
+	        }
+	    });
+
+	    document.querySelectorAll('.format-decimal-3').forEach(function(td) {
+	        var value = parseFloat(td.innerText);
+	        if (!isNaN(value)) {
+	            td.innerText = value.toFixed(3);
+	        }
+	    });
+
+	    document.querySelectorAll('.format-decimal-1').forEach(function(td) {
+	        var value = parseFloat(td.innerText);
+	        if (!isNaN(value)) {
+	            td.innerText = value.toFixed(1);
+	        }
+	    });
+
+	    document.querySelectorAll('.format-integer').forEach(function(td) {
+	        var value = parseFloat(td.innerText);
+	        if (!isNaN(value)) {
+	            td.innerText = Math.round(value);
+	        }
+	    });
+	}
+	function getFormatClassForCategory(category) {
+	    if (!category) return 'format-decimal-2';
+	    
+	    var upper = category.toUpperCase();
+
+	    if (['ERA', 'WHIP', 'WAR', 'BetterWAR', 'PitcherWAR', '타격', '주루', '수비', '선발', '불펜'].includes(upper)) {
+	        return 'format-decimal-2';
+	    }
+	    if (['OPS', 'AVG'].includes(upper)) {
+	        return 'format-decimal-3';
+	    }
+	    if (upper === 'IP') {
+	        return 'format-decimal-1';
+	    }
+	    if (['W', 'L', 'SV', 'HLD', 'SO', 'BB', 'H', 'HR', 'G', 'SB', 'RBI', '2B', '3B'].includes(upper)) {
+	        return 'format-integer';
+	    }
+	    return 'format-decimal-2';
+	}
+	</script>
 </th:block>
 </html>

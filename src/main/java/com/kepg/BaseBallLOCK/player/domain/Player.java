@@ -22,4 +22,5 @@ public class Player {
     @Column(length = 30, nullable = false)
     private String name;
 
+
 }

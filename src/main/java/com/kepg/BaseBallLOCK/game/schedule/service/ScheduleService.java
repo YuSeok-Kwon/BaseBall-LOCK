@@ -6,6 +6,7 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -303,4 +304,31 @@ public class ScheduleService {
     public Integer findIdByDateAndTeams(Timestamp matchDateTime, int homeTeamId, int awayTeamId) {
         return scheduleRepository.findIdByDateAndTeams(matchDateTime, homeTeamId, awayTeamId);
     }
+    
+    public List<Schedule> findByMatchDateAndTeam(LocalDate matchDate, int teamId) {
+        Timestamp start = Timestamp.valueOf(matchDate.atStartOfDay());
+        Timestamp end = Timestamp.valueOf(matchDate.atTime(23, 59, 59));
+
+        return scheduleRepository.findByMatchDateBetweenAndTeam(start, end, teamId);
+    }
+    
+    public Map<Integer, Integer> getTeamGamesPlayedBySeason(int season) {
+        List<Object[]> resultList = scheduleRepository.countGamesByTeam(season);
+        Map<Integer, Integer> teamGamesMap = new HashMap<>();
+
+        for (Object[] row : resultList) {
+        	Integer teamId = ((Number) row[0]).intValue();
+        	Integer gameCount = ((Number) row[1]).intValue();
+            teamGamesMap.put(teamId, gameCount);
+        }
+
+        return teamGamesMap;
+    }
+    
+    public Timestamp findMatchDateById(int scheduleId) {
+    	return scheduleRepository.findMatchDateById(scheduleId);
+    }
+	
+	
+
 }

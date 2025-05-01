@@ -40,6 +40,8 @@ public class UserRestController {
 			session.setAttribute("userId", user.getId());
 			session.setAttribute("userName", user.getName());
 			session.setAttribute("userNickname", user.getNickname());
+			session.setAttribute("favoriteTeamId", user.getFavoriteTeamId());
+
 			
 			resultMap.put("result", "success");
 		} else {

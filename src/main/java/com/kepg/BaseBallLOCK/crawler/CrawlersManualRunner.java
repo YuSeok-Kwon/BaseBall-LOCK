@@ -12,18 +12,18 @@ public class CrawlersManualRunner {
         ConfigurableApplicationContext context = SpringApplication.run(BaseBallLockApplication.class, args);
 
         try {
-//            context.getBean(StatizBatterCrawler.class).crawl();
-//            context.getBean(StatizPitcherCrawler.class).crawl();
-//			  context.getBean(StatizScheduleCrawler.class).crawl();
-//			  context.getBean(StatizTeamRankingCrawler.class).crawl();
-//			  context.getBean(StatizTeamWaaCrawler.class).crawl();
-//			  context.getBean(StatizTeamDetailedstatsCrawler.class).crawl();
-//            context.getBean(StatizPlayerGameRecordCrawler.class).crawl();
-        	  context.getBean(StatizGameSummaryCrawler.class).crawl();
+//            context.getBean(StatizBatterCrawler.class).crawl(); // 타자기록 (batterStats)
+//            context.getBean(StatizPitcherCrawler.class).crawl();  // 투수기록 (pitcherStats)
+//			context.getBean(StatizTeamRankingCrawler.class).crawl(); // 팀 순위기록 (teamRanking)
+//			context.getBean(StatizTeamWaaCrawler.class).crawl(); // 팀 WAA기록 (teamStats)
+//			context.getBean(StatizTeamDetailedstatsCrawler.class).crawl(); // 팀 투수, 타자 세부지표 (teamStats)
+//			context.getBean(StatizScheduleCrawler.class).crawl(); // 경기 일정(종료, 예정 등) (schedule)
+            context.getBean(StatizPlayerGameRecordCrawler.class).crawl(); // 1경기의 타자 및 투수 기록(batterLineUp, BatterRecord, PitcherRecord)
+        	context.getBean(StatizGameSummaryCrawler.class).crawl(); // 1경기의 스코어보드 기록(scoreBoard)
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            context.close();
         }
-        
-        context.close();
     }
 }

@@ -1,28 +1,95 @@
 package com.kepg.BaseBallLOCK.crawler;
 
-import com.kepg.BaseBallLOCK.team.teamRanking.domain.TeamRanking;
-import com.kepg.BaseBallLOCK.team.teamRanking.repository.TeamRankingRepository;
-import lombok.RequiredArgsConstructor;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.kepg.BaseBallLOCK.team.teamRanking.domain.TeamRanking;
+import com.kepg.BaseBallLOCK.team.teamRanking.repository.TeamRankingRepository;
 
+import lombok.RequiredArgsConstructor;
+
+@Component
 @RequiredArgsConstructor
-public class StatizTeamRankingCrawler  {
+public class StatizTeamRankingCrawler {
 
     private final TeamRankingRepository teamRankingRepository;
 
+    public void crawl(String... args) {
+        int[] years = {2025};
+        String baseUrl = "https://statiz.sporki.com/season/?m=teamoverall&year=%d";
+
+        for (int year : years) {
+            String url = String.format(baseUrl, year);
+            System.out.println("시즌 " + year + " 팀 Ranking 데이터수집 시작");
+            System.out.println("▶ URL: " + url);
+
+            WebDriver driver = null;
+            try {
+                ChromeOptions options = new ChromeOptions();
+                options.addArguments("--headless");
+                options.addArguments("--no-sandbox");
+                options.addArguments("--disable-dev-shm-usage");
+
+                driver = new ChromeDriver(options);
+                driver.get(url);
+
+            	Thread.sleep(5000);
+
+                String html = driver.getPageSource();
+                Document doc = Jsoup.parse(html);
+
+                Element rankingTable = null;
+                for (Element box : doc.select("div.item_box")) {
+                    Element head = box.selectFirst(".box_head");
+                    if (head != null && head.text().contains("정규 시즌 중")) {
+                        rankingTable = box.selectFirst("table");
+                        break;
+                    }
+                }
+
+                if (rankingTable == null) {
+                    System.out.println("▶ 정규 시즌 중 테이블을 찾지 못했습니다.");
+                    continue;
+                }
+
+                Elements rows = rankingTable.select("tbody > tr");
+                for (Element row : rows) {
+                    Elements cols = row.select("td");
+                    if (cols.size() < 8) continue;
+
+                    int teamId = resolveTeamId(cols.get(1));
+                    if (teamId == 0) continue;
+
+                    TeamRanking parsed = parseRankingRow(cols, year, teamId);
+                    saveOrUpdateRanking(parsed);
+                    System.out.printf("저장 완료 - 시즌 %d, 팀 %d (%d위)\n", year, teamId, parsed.getRanking());
+                }
+
+            } catch (Exception e) {
+                System.out.println("▶ 에러 발생: " + e.getMessage());
+                e.printStackTrace();
+            } finally {
+                if (driver != null) driver.quit();
+            }
+        }
+    }
+    
     private static final Map<String, Integer> teamNameToId = new HashMap<>();
     static {
         teamNameToId.put("KIA", 1);
         teamNameToId.put("두산", 2);
         teamNameToId.put("삼성", 3);
         teamNameToId.put("SSG", 4);
-        teamNameToId.put("SK", 4);
+        teamNameToId.put("SK", 4); // 옛 SSG
         teamNameToId.put("LG", 5);
         teamNameToId.put("한화", 6);
         teamNameToId.put("NC", 7);
@@ -30,75 +97,52 @@ public class StatizTeamRankingCrawler  {
         teamNameToId.put("롯데", 9);
         teamNameToId.put("키움", 10);
     }
+    
+    private int resolveTeamId(Element teamCell) {
+        Element anchor = teamCell.selectFirst("a");
+        String teamName = anchor != null ? anchor.ownText().trim() : teamCell.text().trim();
+        int teamId = teamNameToId.getOrDefault(teamName, 0);
+        System.out.println("▶ 팀명: " + teamName + ", teamId: " + teamId);
+        return teamId;
+    }
+    
+    private TeamRanking parseRankingRow(Elements cols, int year, int teamId) {
+        int ranking = Integer.parseInt(cols.get(0).text().trim());
+        int games = Integer.parseInt(cols.get(2).text().trim());
+        int wins = Integer.parseInt(cols.get(3).text().trim());
+        int draws = Integer.parseInt(cols.get(4).text().trim());
+        int losses = Integer.parseInt(cols.get(5).text().trim());
 
-    public void crawl(String... args) throws Exception {
-        String baseUrl = "https://statiz.sporki.com/season/?m=teamoverall&year=%d";
-        int[] years = {2020, 2021, 2022, 2023, 2024};
+        String gbText = cols.get(6).text().trim();
+        double gamesBehind = gbText.equals("-") ? 0.0 : Double.parseDouble(gbText);
+        double winRate = Double.parseDouble(cols.get(7).text().trim());
 
-        for (int year : years) {
-            System.out.println("시즌 " + year + " 팀 Ranking 데이터수집 시작");
-            String url = String.format(baseUrl, year);
-            System.out.println("크롤링 대상 URL: " + url);
+        return TeamRanking.builder()
+                .season(year)
+                .teamId(teamId)
+                .ranking(ranking)
+                .games(games)
+                .wins(wins)
+                .draws(draws)
+                .losses(losses)
+                .gamesBehind(gamesBehind)
+                .winRate(winRate)
+                .build();
+    }
+    
+    private void saveOrUpdateRanking(TeamRanking newEntity) {
+        TeamRanking entity = teamRankingRepository.findBySeasonAndTeamId(newEntity.getSeason(), newEntity.getTeamId())
+            .map(existing -> {
+                existing.setRanking(newEntity.getRanking());
+                existing.setGames(newEntity.getGames());
+                existing.setWins(newEntity.getWins());
+                existing.setDraws(newEntity.getDraws());
+                existing.setLosses(newEntity.getLosses());
+                existing.setGamesBehind(newEntity.getGamesBehind());
+                existing.setWinRate(newEntity.getWinRate());
+                return existing;
+            }).orElse(newEntity);
 
-            Document doc = Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0")
-                    .referrer("https://www.google.com")
-                    .timeout(10000)
-                    .get();
-
-            Elements tables = doc.select("div.item_box table");
-            if (tables.size() < 2) {
-                System.out.println("정규시즌 중 순위 테이블이 없습니다.");
-                continue;
-            }
-
-            Element rankingTable = tables.get(1);
-            Elements rows = rankingTable.select("tbody > tr");
-
-            for (Element row : rows) {
-                Elements cols = row.select("td");
-                if (cols.size() < 8) continue;
-
-                String teamName = cols.get(1).text().trim();
-                int teamId = teamNameToId.getOrDefault(teamName, 0);
-                if (teamId == 0) continue;
-
-                int ranking = Integer.parseInt(cols.get(0).text().trim());
-                int games = Integer.parseInt(cols.get(2).text().trim());
-                int wins = Integer.parseInt(cols.get(3).text().trim());
-                int draws = Integer.parseInt(cols.get(4).text().trim());
-                int losses = Integer.parseInt(cols.get(5).text().trim());
-
-                String gbText = cols.get(6).text().trim();
-                double gamesBehind = gbText.equals("-") ? 0.0 : Double.parseDouble(gbText);
-                double winRate = Double.parseDouble(cols.get(7).text().trim());
-
-                TeamRanking entity = teamRankingRepository.findBySeasonAndTeamId(year, teamId)
-                        .map(existing -> {
-                            existing.setRanking(ranking);
-                            existing.setGames(games);
-                            existing.setWins(wins);
-                            existing.setDraws(draws);
-                            existing.setLosses(losses);
-                            existing.setGamesBehind(gamesBehind);
-                            existing.setWinRate(winRate);
-                            return existing;
-                        })
-                        .orElse(TeamRanking.builder()
-                                .season(year)
-                                .teamId(teamId)
-                                .ranking(ranking)
-                                .games(games)
-                                .wins(wins)
-                                .draws(draws)
-                                .losses(losses)
-                                .gamesBehind(gamesBehind)
-                                .winRate(winRate)
-                                .build());
-
-                teamRankingRepository.save(entity);
-                System.out.printf("저장 완료 - 시즌 %d, 팀 %s (%d위)\n", year, teamName, ranking);
-            }
-        }
+        teamRankingRepository.save(entity);
     }
 }

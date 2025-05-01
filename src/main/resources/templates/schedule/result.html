@@ -44,17 +44,17 @@
 				    <span th:text="${game.awayTeamName}">SSG</span>
 				    <span th:if="${game.awayTeamScore != null}" th:text="'(' + ${game.awayTeamScore} + ')'"> (2)</span>
 				  </span>
-				  <img th:src="@{/static/emblems/{logo}.png(logo=${game.awayTeamLogo})}" class="table-team-logo">
+				  <img th:src="@{/static/emblems/{logo}.svg(logo=${game.awayTeamLogo})}" class="table-team-logo">  
 			  </div>
               <!-- VS -->
               <div class="col-2 text-center text-secondary fs-3 fw-bold">VS</div>
 
               <!-- 홈팀 -->
               <div class="col-5 text-start d-flex align-items-center justify-content-start gap-2 fs-3">
-				  <img th:src="@{/static/emblems/{logo}.png(logo=${game.homeTeamLogo})}" class="table-team-logo">
+				  <img th:src="@{/static/emblems/{logo}.svg(logo=${game.homeTeamLogo})}" class="table-team-logo">
 				  <span th:classappend="${game.homeTeamScore > game.awayTeamScore} ? 'fw-bold' : 'fw-light'">
-				    <span th:if="${game.homeTeamScore != null}" th:text="'(' + ${game.homeTeamScore} + ')'"> (3)</span>
-				    <span th:text="${game.homeTeamName}">두산</span>
+				      <span th:if="${game.homeTeamScore != null}" th:text="'(' + ${game.homeTeamScore} + ')'"> (3)</span>
+				      <span th:text="${game.homeTeamName}">두산</span>
 				  </span>
 			  </div>
 

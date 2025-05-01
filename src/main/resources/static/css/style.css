@@ -44,6 +44,38 @@ body {
      2px  2px 0 black;
 }
 
+/* 팀별 배경색 */
+.team-bg-1 { background-color: #ED1C24; } /* KIA */
+.team-bg-2 { background-color: #042071; } /* 두산 */
+.team-bg-3 { background-color: #0061AA; } /* 삼성 */
+.team-bg-4 { background-color: #CF152D; } /* SSG */
+.team-bg-5 { background-color: #FC1CAD; } /* LG */
+.team-bg-6 { background-color: #F37321; } /* 한화 */
+.team-bg-7 { background-color: #002B69; } /* NC */
+.team-bg-8 { background-color: #000000; } /* KT */
+.team-bg-9 { background-color: #888888; } /* 롯데 */
+.team-bg-10 { background-color: #86001F; } /* 키움 */
+
+/* 팀별 기본 텍스트색 */
+.team-text {
+  color: white;
+}
+
+/* 리뷰 버튼 스타일 */
+.btn-outline-light {
+  color: white;
+  border-color: white;
+}
+
+.btn-outline-light:hover {
+  background-color: white;
+  color: black;
+}
+
+/* 리뷰 달력 제목*/
+#calendar-title {
+  font-weight: bold;
+}
 /* 경기 로고 이미지 */
 .team-logo-box {
   width: 60px;
@@ -84,6 +116,20 @@ body {
   line-height: 40px;
 }
 
+/* 팀별 메뉴 링크 */
+.team-nav-link {
+  color: white;
+  font-weight: bold;
+  text-decoration: none;
+  text-shadow:
+    0 0 4px #FACC15;
+}
+
+.team-nav-link:hover {
+  color: #FFD700; /* hover 시 금색 */
+  text-decoration: underline;
+}
+
 /* 로그인 섹션 */
 .login-section {
   background-color: #f0f0f0;
@@ -109,7 +155,6 @@ body {
 
 /* 커스텀 버튼 */
 .btn {
-  background-color: #FACC15;
   color: black;
   border: 1px solid black;
 }
@@ -210,69 +255,66 @@ a {
   border: none;
 } */
 
-#ranking-table {
+/* 전체 테이블 스타일 */
+.ranking-table {
   background-color: #fff;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 0 15px rgba(255, 215, 0, 0.3); /* 테이블에 황금빛 그림자 */
+  border: 1px solid #FFD700;
 }
 
 /* 헤더 */
-#ranking-table thead {
+.ranking-table thead {
   background-color: #FFD700; /* 헤더 배경 골드 */
   color: #212529; /* 글자는 어두운 색 */
   font-weight: bold;
 }
 
-#ranking-table thead th {
+.ranking-table thead th {
   font-size: 1rem;
   vertical-align: middle;
   padding: 12px;
 }
 
-/* 헤더에 있는 a 링크 스타일 */
-#ranking-table thead th a {
+/* 헤더 안에 링크 스타일 */
+.ranking-table thead th a {
   color: #212529;
   text-decoration: none;
 }
 
-#ranking-table thead th a:hover {
+.ranking-table thead th a:hover {
   color: #000;
   text-decoration: underline;
 }
 
 /* tbody */
-#ranking-table tbody tr {
+.ranking-table tbody tr {
   transition: background-color 0.2s ease-in-out;
 }
 
-#ranking-table tbody tr:hover {
+.ranking-table tbody tr:hover {
   background-color: #fff8dc; /* 밝은 골드톤으로 hover 효과 */
 }
 
-#ranking-table tbody td {
+.ranking-table tbody td {
   vertical-align: middle;
   padding: 10px;
   font-size: 0.95rem;
 }
 
-/* 순위(1위~3위) 강조 */
-#ranking-table tbody tr:nth-child(1) td:first-child,
-#ranking-table tbody tr:nth-child(2) td:first-child,
-#ranking-table tbody tr:nth-child(3) td:first-child {
+/* 순위 강조 (1~3위) */
+.ranking-table tbody tr:nth-child(1) td:first-child,
+.ranking-table tbody tr:nth-child(2) td:first-child,
+.ranking-table tbody tr:nth-child(3) td:first-child {
   color: #FFD700;
   font-weight: bold;
 }
 
 /* 팀명 강조 */
-#ranking-table tbody td:nth-child(2) span {
+.ranking-table tbody td:nth-child(2) span {
   font-weight: bold;
   font-size: 1rem;
-}
-
-/* 전체 테이블 스타일을 약간 둥글게 */
-#ranking-table {
-  border: 1px solid #FFD700;
 }
 
 /* 푸터 */

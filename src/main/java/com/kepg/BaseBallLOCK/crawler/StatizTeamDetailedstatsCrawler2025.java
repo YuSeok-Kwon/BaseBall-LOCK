@@ -1,22 +1,76 @@
 package com.kepg.BaseBallLOCK.crawler;
 
-import com.kepg.BaseBallLOCK.team.teamStats.service.TeamStatsService;
-import lombok.RequiredArgsConstructor;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.kepg.BaseBallLOCK.team.teamStats.service.TeamStatsService;
+
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
 public class StatizTeamDetailedstatsCrawler2025 {
 
     private final TeamStatsService teamStatsService;
+
+    @Scheduled(cron = "0 0 4 * * *") 
+    public void runScheduledTeamStatCrawler() {
+    	String baseUrl = "https://statiz.sporki.com/stats/?m=team&m2=%s&m3=default&so=WAR&ob=DESC&year=%d";
+        String[] types = {"batting", "pitching"};
+        int[] years = {2025};
+
+        for (String type : types) {
+            for (int year : years) {
+            	WebDriver driver = null;
+                try {
+                	String url = String.format(baseUrl, type, year);
+                	System.out.println("크롤링: " + year + ", " + type);
+                	
+                    ChromeOptions options = new ChromeOptions();
+                    options.addArguments("--headless");
+                    options.addArguments("--no-sandbox");
+                    options.addArguments("--disable-dev-shm-usage");
+
+                    driver = new ChromeDriver(options);
+                    driver.get(url);
+
+                	Thread.sleep(5000);
+
+                    String html = driver.getPageSource();
+                    Document doc = Jsoup.parse(html);
+
+                    Elements tables = doc.select("div.table_type01 > table");
+                    if (tables.size() < 2) continue;
+
+                    Element table = tables.get(1);
+                    for (Element row : table.select("tbody > tr")) {
+                        Elements cols = row.select("td");
+                        if (type.equals("batting") && cols.size() >= 33) {
+                            processBattingRow(cols, year);
+                        } else if (type.equals("pitching") && cols.size() >= 36) {
+                            processPitchingRow(cols, year);
+                        }
+                    }
+
+                } catch (Exception e) {
+                    System.out.printf("크롤링 실패 (year: %d, type: %s): %s\n", year, type, e.getMessage());
+                    e.printStackTrace();
+                } finally {
+                    if (driver != null) driver.quit();
+                }
+            }
+        }
+    }
 
     private static final Map<String, Integer> teamNameToId = new HashMap<>();
     static {
@@ -32,62 +86,44 @@ public class StatizTeamDetailedstatsCrawler2025 {
         teamNameToId.put("키움", 10);
     }
 
-    private final String[] types = { "batting", "pitching" };
-    private final int[] years = {2025};
+    private void processBattingRow(Elements cols, int year) {
+        int teamId = extractTeamId(cols.get(1));
+        if (teamId == 0) return;
 
-    @Scheduled(cron = "0 5 0 * * *") 
-    public void runScheduledTeamStatCrawler() {
-        for (String type : types) {
-            for (int year : years) {
-                String url = String.format("https://statiz.sporki.com/stats/?m=team&m2=%s&m3=default&so=WAR&ob=DESC&year=%d", type, year);
-                try {
-                    Document doc = Jsoup.connect(url)
-                            .userAgent("Mozilla/5.0")
-                            .referrer("https://www.google.com")
-                            .timeout(10000)
-                            .get();
-
-                    Elements tables = doc.select("div.table_type01 > table");
-                    if (tables.size() < 2) continue;
-
-                    Element table = tables.get(1);
-                    for (Element row : table.select("tbody > tr")) {
-                        Elements cols = row.select("td");
-                        if (cols.isEmpty()) continue;
-
-                        String teamName = cols.get(1).text();
-                        int teamId = teamNameToId.getOrDefault(teamName, 0);
-                        if (teamId == 0) continue;
-
-                        int season = Integer.parseInt("20" + cols.get(2).text());
-
-                        if (type.equals("batting") && cols.size() >= 33) {
-                            teamStatsService.saveOrUpdate(teamId, season, "HR", parseDouble(cols.get(14)), null);
-                            teamStatsService.saveOrUpdate(teamId, season, "SB", parseDouble(cols.get(17)), null);
-                            teamStatsService.saveOrUpdate(teamId, season, "AVG", parseDouble(cols.get(26)), null);
-                            teamStatsService.saveOrUpdate(teamId, season, "OBP", parseDouble(cols.get(27)), null);
-                            teamStatsService.saveOrUpdate(teamId, season, "SLG", parseDouble(cols.get(28)), null);
-                            teamStatsService.saveOrUpdate(teamId, season, "OPS", parseDouble(cols.get(29)), null);
-                            teamStatsService.saveOrUpdate(teamId, season, "wRC+", parseDouble(cols.get(31)), null);
-                            teamStatsService.saveOrUpdate(teamId, season, "BetterWAR", parseDouble(cols.get(32)), null);
-                        } else if (type.equals("pitching") && cols.size() >= 36) {
-                            teamStatsService.saveOrUpdate(teamId, season, "BB", parseDouble(cols.get(23)), null);
-                            teamStatsService.saveOrUpdate(teamId, season, "SO", parseDouble(cols.get(26)), null);
-                            teamStatsService.saveOrUpdate(teamId, season, "ERA", parseDouble(cols.get(30)), null);
-                            teamStatsService.saveOrUpdate(teamId, season, "WHIP", parseDouble(cols.get(34)), null);
-                            teamStatsService.saveOrUpdate(teamId, season, "PitcherWAR", parseDouble(cols.get(35)), null);
-                        }
-                    }
-
-                } catch (Exception e) {
-                    System.out.println("오류 발생: year=" + year + ", type=" + type);
-                    e.printStackTrace();
-                }
-            }
-        }
+        save(teamId, year, "HR", parse(cols.get(14)));
+        save(teamId, year, "SB", parse(cols.get(17)));
+        save(teamId, year, "AVG", parse(cols.get(26)));
+        save(teamId, year, "OBP", parse(cols.get(27)));
+        save(teamId, year, "SLG", parse(cols.get(28)));
+        save(teamId, year, "OPS", parse(cols.get(29)));
+        save(teamId, year, "wRC+", parse(cols.get(31)));
+        save(teamId, year, "BetterWAR", parse(cols.get(32)));
     }
 
-    private double parseDouble(Element col) {
+    private void processPitchingRow(Elements cols, int year) {
+        int teamId = extractTeamId(cols.get(1));
+        if (teamId == 0) return;
+
+        save(teamId, year, "BB", parse(cols.get(23)));
+        save(teamId, year, "SO", parse(cols.get(26)));
+        save(teamId, year, "ERA", parse(cols.get(30)));
+        save(teamId, year, "WHIP", parse(cols.get(34)));
+        save(teamId, year, "PitcherWAR", parse(cols.get(35)));
+    }
+
+    private int extractTeamId(Element teamCell) {
+        String teamName = teamCell.text().trim();
+        int teamId = teamNameToId.getOrDefault(teamName, 0);
+        System.out.println("▶ 팀명: " + teamName + ", teamId: " + teamId);
+        return teamId;
+    }
+
+    private void save(int teamId, int year, String category, double value) {
+        teamStatsService.saveOrUpdate(teamId, year, category, value, null);
+        System.out.printf("저장 완료 - 시즌 %d, 팀 %d (%d위)\n", year, teamId);
+    }
+
+    private double parse(Element col) {
         try {
             return Double.parseDouble(col.text().trim());
         } catch (Exception e) {

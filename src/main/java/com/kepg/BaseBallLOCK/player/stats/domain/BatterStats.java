@@ -1,6 +1,13 @@
 package com.kepg.BaseBallLOCK.player.stats.domain;
 
+import java.time.LocalDateTime;
+
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -13,6 +20,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "batterStats")
+@EntityListeners(AuditingEntityListener.class)
 @Getter 
 @Setter 
 @Builder
@@ -35,5 +43,9 @@ public class BatterStats {
     private Integer ranking;
     
     private String position;
+    
+    @Column(name = "updatedAt")
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
 
 }

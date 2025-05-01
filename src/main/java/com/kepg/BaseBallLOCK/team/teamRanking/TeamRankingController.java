@@ -1,6 +1,7 @@
 package com.kepg.BaseBallLOCK.team.teamRanking;
 
 import java.util.Arrays;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,10 +11,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-
-import com.kepg.BaseBallLOCK.game.service.GameService;
-import com.kepg.BaseBallLOCK.team.teamStats.service.TeamStatsService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,8 +19,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TeamRankingController {
 
-    private final GameService gameService;
-    private final TeamStatsService teamStatsService;
 
     @GetMapping("/teamranking-view")
     public String teamRankingView(

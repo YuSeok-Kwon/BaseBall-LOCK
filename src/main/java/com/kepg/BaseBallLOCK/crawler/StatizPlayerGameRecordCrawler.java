@@ -3,16 +3,15 @@ package com.kepg.BaseBallLOCK.crawler;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.stereotype.Component;
 
 import com.kepg.BaseBallLOCK.game.lineUp.service.LineupService;
@@ -25,9 +24,8 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class StatizPlayerGameRecordCrawler {
 
-    private static final Logger log = LoggerFactory.getLogger(StatizPlayerGameRecordCrawler.class);
+public class StatizPlayerGameRecordCrawler {
 
     private final ScheduleService scheduleService;
     private final PlayerService playerService;
@@ -48,168 +46,222 @@ public class StatizPlayerGameRecordCrawler {
         teamNameToId.put("키움", 10);
     }
 
+    // 1경기의 타자 및 투수 기록(batterLineUp, BatterRecord, PitcherRecord)
     public void crawl() {
-        int startId = 20250078;
-        int endId = 20250130;
+        int startId = 20250164;
+        int endId = 20250165;
         String baseUrl = "https://statiz.sporki.com/schedule/?m=boxscore&s_no=%d";
 
         for (int statizId = startId; statizId <= endId; statizId++) {
-            String url = String.format(baseUrl, statizId);
-            try {
-                Document doc = Jsoup.connect(url)
-                        .userAgent("Mozilla/5.0")
-                        .referrer("https://www.google.com")
-                        .header("Accept-Language", "ko-KR,ko;q=0.9")
-                        .timeout(70000)
-                        .get();
+        	WebDriver driver = null;
+        	try {
+        	    String url = String.format(baseUrl, statizId);
+        	    System.out.println("크롤링 시작: " + statizId);
 
-                Element calloutBox = doc.selectFirst(".callout_box .txt");
-                if (calloutBox == null) {
-                    continue;
-                }
+        	    ChromeOptions options = new ChromeOptions();
+        	    options.addArguments("--headless");
+        	    options.addArguments("--no-sandbox");
+        	    options.addArguments("--disable-dev-shm-usage");
 
-                String dateText = calloutBox.text().split(",")[1].trim();
-                LocalDate matchDate = LocalDate.parse("2025-" + dateText, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-                Timestamp matchDateTime = Timestamp.valueOf(matchDate.atStartOfDay());
+        	    driver = new ChromeDriver(options);
+        	    driver.get(url);
 
-                Elements headers = doc.select("div.box_type_boared .box_head");
-                if (headers.size() < 2) {
-                    log.warn("팀 헤더 부족: {}", statizId);
-                    continue;
-                }
+        	    Thread.sleep(5000);
 
-                String awayTeamName = headers.get(0).text().replace("타격기록", "").replaceAll("[()]", "").trim();
-                String homeTeamName = headers.get(1).text().replace("타격기록", "").replaceAll("[()]", "").trim();
+        	    String html = driver.getPageSource();
+        	    Document doc = Jsoup.parse(html);
 
-                Integer awayTeamId = teamNameToId.get(awayTeamName);
-                Integer homeTeamId = teamNameToId.get(homeTeamName);
-                if (awayTeamId == null || homeTeamId == null) {
-                    continue;
-                }
+                Timestamp matchDate = extractMatchDate(doc);
+                if (matchDate == null) continue;
 
-                Integer scheduleId = scheduleService.findScheduleIdByMatchInfo(matchDateTime, homeTeamId, awayTeamId);
-                if (scheduleId == null) {
-                    continue;
-                }
+                Integer[] teamIds = extractTeamIds(doc);
+                Integer awayTeamId = teamIds[0];
+                Integer homeTeamId = teamIds[1];
+                if (awayTeamId == null || homeTeamId == null) continue;
 
-                Map<String, Integer> sbMap = new HashMap<>();
-                Elements logBoxes = doc.select("div.box_type_boared .log_box");
-                for (Element box : logBoxes) {
-                    for (Element div : box.select("div.log_div")) {
-                        if (div.selectFirst("strong") != null && div.selectFirst("strong").text().contains("도루성공")) {
-                            for (Element span : div.select("span")) {
-                                String name = span.selectFirst("a").text().trim();
-                                sbMap.put(name, sbMap.getOrDefault(name, 0) + 1);
-                            }
-                        }
-                    }
-                }
+                Integer scheduleId = scheduleService.findScheduleIdByMatchInfo(matchDate, homeTeamId, awayTeamId);
+                if (scheduleId == null) continue;
 
-                Elements tables = doc.select("div.box_type_boared .table_type03 table");
-                for (int teamIndex = 0; teamIndex < 2; teamIndex++) {
-                    int teamId = (teamIndex == 0) ? awayTeamId : homeTeamId;
-                    Element table = tables.get(teamIndex);
-                    for (Element row : table.select("tbody > tr:not(.total)")) {
-                        Elements cols = row.select("td");
-                        if (cols.size() < 22) continue;
+                Map<String, Integer> sbMap = extractStolenBases(doc);
 
-                        boolean success = false;
-                        while (!success) {
-                            String name = cols.get(1).text().trim();
-                            Optional<Player> player = playerService.findByNameAndTeamId(name, teamId);
+                saveBatterRecords(doc, scheduleId, awayTeamId, sbMap);
+                saveBatterRecords(doc, scheduleId, homeTeamId, sbMap);
+                savePitcherRecords(doc, scheduleId);
 
-                            if (player.isEmpty()) {
-                                log.info("➕ 신규 Player 등록: {} / teamId: {}", name, teamId);
-                                playerService.savePlayer(name, teamId);
-                                continue;
-                            }
+                System.out.println("저장 완료 batterLineUp, BatterRecord, PitcherRecord " + statizId + " (" + scheduleId + ") " + matchDate);
+                Thread.sleep(3000);
 
-                            try {
-                                int pa = Integer.parseInt(cols.get(3).text().trim());
-                                int ab = Integer.parseInt(cols.get(4).text().trim());
-                                int hits = Integer.parseInt(cols.get(6).text().trim());
-                                int hr = Integer.parseInt(cols.get(7).text().trim());
-                                int rbi = Integer.parseInt(cols.get(8).text().trim());
-                                int bb = Integer.parseInt(cols.get(9).text().trim());
-                                int so = Integer.parseInt(cols.get(11).text().trim());
-                                int sb = sbMap.getOrDefault(name, 0);
-                                int order = cols.get(0).text().isEmpty() ? 0 : Integer.parseInt(cols.get(0).text().trim());
-                                String pos = cols.get(2).text().trim();
-
-                                lineupService.saveBatterLineup(scheduleId, teamId, order, pos, name);
-                                recordService.saveBatterRecord(scheduleId, teamId, pa, ab, hits, hr, rbi, bb, so, sb, name);
-
-                                success = true;
-                            } catch (Exception e) {
-                                log.error("타자 저장 중 에러 발생: {}", name, e);
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                for (Element section : doc.select("div.box_type_boared")) {
-                    Element head = section.selectFirst(".box_head");
-                    if (head == null || !head.text().contains("투구기록")) continue;
-
-                    String teamName = head.text().replaceAll(".*\\((.*?)\\).*", "$1").trim();
-                    Integer teamId = teamNameToId.get(teamName);
-                    if (teamId == null) continue;
-
-                    Element table = section.selectFirst(".table_type03 table");
-                    if (table == null) continue;
-
-                    for (Element row : table.select("tbody > tr:not(.total)")) {
-                        Elements cols = row.select("td");
-                        if (cols.size() < 18) continue;
-
-                        boolean success = false;
-                        while (!success) {
-                        	Element nameAnchor = cols.get(0).selectFirst("a");
-                        	if (nameAnchor == null) continue;
-
-                        	String name = nameAnchor.text().trim();
-                        	String fullText = cols.get(0).text();
-                        	String decision = "";
-
-                        	if (fullText.contains("(승")) decision = "W";
-                        	else if (fullText.contains("(패")) decision = "L";
-                        	else if (fullText.contains("(세")) decision = "SV";
-                        	else if (fullText.contains("(홀")) decision = "HLD";
-
-                        	name = fullText.replaceAll("\\s*\\([^)]*\\)", "").trim();
-
-                            Optional<Player> player = playerService.findByNameAndTeamId(name, teamId);
-                            if (player.isEmpty()) {
-                                log.info("➕ 신규 Pitcher 등록: {} / teamId: {}", name, teamId);
-                                playerService.savePlayer(name, teamId);
-                                continue;
-                            }
-
-                            try {
-                                double innings = Double.parseDouble(cols.get(1).text().trim());
-                                int strikeouts = Integer.parseInt(cols.get(8).text().trim());
-                                int bb = Integer.parseInt(cols.get(6).text().trim());
-                                int hbp = Integer.parseInt(cols.get(7).text().trim());
-                                int runs = Integer.parseInt(cols.get(4).text().trim());
-                                int er = Integer.parseInt(cols.get(5).text().trim());
-                                int hits = Integer.parseInt(cols.get(3).text().trim());
-                                int hr = Integer.parseInt(cols.get(9).text().trim());
-
-                                recordService.savePitcherRecord(scheduleId, teamId, name, innings, strikeouts, bb, hbp, runs, er, hits, hr, decision);
-                                success = true;
-                            } catch (Exception e) {
-                                log.error("투수 저장 중 에러 발생: {}", name, e);
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                System.out.println("저장 완료" + statizId + "(" + scheduleId + ")" + matchDate);
-                Thread.sleep(40000);
             } catch (Exception e) {
-                log.error("오류 발생: {}", statizId, e);
+                System.out.printf("오류 발생: %d, %s\n", statizId, e.getMessage());
+            } finally {
+                if (driver != null) driver.quit();
+            }
+        }
+    }
+    
+    // 경기 날짜 추출
+    private Timestamp extractMatchDate(Document doc) {
+        try {
+            Element calloutBox = doc.selectFirst(".callout_box .txt");
+            if (calloutBox == null) return null;
+            String dateText = calloutBox.text().split(",")[1].trim();
+            LocalDate date = LocalDate.parse("2025-" + dateText, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            return Timestamp.valueOf(date.atStartOfDay());
+        } catch (Exception e) {
+            System.out.println("경기 날짜 추출 실패");
+            return null;
+        }
+    }
+    
+    // teamId추출
+    private Integer[] extractTeamIds(Document doc) {
+        Elements headers = doc.select("div.box_type_boared .box_head");
+        if (headers.size() < 2) return new Integer[]{null, null};
+        String away = headers.get(0).text().replace("타격기록", "").replaceAll("[()]", "").trim();
+        String home = headers.get(1).text().replace("타격기록", "").replaceAll("[()]", "").trim();
+        return new Integer[]{teamNameToId.get(away), teamNameToId.get(home)};
+    }
+    
+    // 도루기록 추출
+    private Map<String, Integer> extractStolenBases(Document doc) {
+        Map<String, Integer> sbMap = new HashMap<>();
+        Elements logBoxes = doc.select("div.box_type_boared .log_box");
+        for (Element box : logBoxes) {
+            for (Element div : box.select("div.log_div")) {
+                if (div.selectFirst("strong") != null && div.selectFirst("strong").text().contains("도루성공")) {
+                    for (Element span : div.select("span")) {
+                        String name = span.selectFirst("a").text().trim();
+                        sbMap.put(name, sbMap.getOrDefault(name, 0) + 1);
+                    }
+                }
+            }
+        }
+        return sbMap;
+    }
+    
+    // 타자기록 저장
+    private void saveBatterRecords(Document doc, int scheduleId, int teamId, Map<String, Integer> sbMap) {
+        Elements sections = doc.select("div.box_type_boared");
+
+        for (Element section : sections) {
+            Element head = section.selectFirst(".box_head");
+            if (head == null || !head.text().contains("타격기록")) {
+                System.out.println("타격기록 섹션 없음");
+                continue;
+            }
+
+            String teamName = head.text().replaceAll(".*\\((.*?)\\).*", "$1").trim();
+            Integer extractedTeamId = teamNameToId.get(teamName);
+            if (extractedTeamId == null || !extractedTeamId.equals(teamId)) {
+                System.out.println("TeamId 추출 실패");
+                continue;
+            }
+
+            Element table = section.selectFirst("table");
+            if (table == null) {
+                System.out.println("테이블 없음");
+            	continue;
+            }
+
+            for (Element row : table.select("tbody > tr:not(.total)")) {
+                Elements cols = row.select("td");
+                if (cols.size() < 22) {
+                    System.out.println("행 부족");
+                	continue;
+                }
+
+                while (true) {
+                    String name = cols.get(1).text().trim();
+                    Optional<Player> player = playerService.findByNameAndTeamId(name, teamId);
+                    if (player.isEmpty()) {
+                        playerService.savePlayer(name, teamId);
+                        continue;
+                    }
+
+                    try {
+                        int pa = Integer.parseInt(cols.get(3).text().trim());
+                        int ab = Integer.parseInt(cols.get(4).text().trim());
+                        int hits = Integer.parseInt(cols.get(6).text().trim());
+                        int hr = Integer.parseInt(cols.get(7).text().trim());
+                        int rbi = Integer.parseInt(cols.get(8).text().trim());
+                        int bb = Integer.parseInt(cols.get(9).text().trim());
+                        int so = Integer.parseInt(cols.get(11).text().trim());
+                        int sb = sbMap.getOrDefault(name, 0);
+                        int order = cols.get(0).text().isEmpty() ? 0 : Integer.parseInt(cols.get(0).text().trim());
+                        String pos = cols.get(2).text().trim();
+
+                        lineupService.saveBatterLineup(scheduleId, teamId, order, pos, name);
+                        recordService.saveBatterRecord(scheduleId, teamId, pa, ab, hits, hr, rbi, bb, so, sb, name);
+                        System.out.println("타자 저장 : " + name);
+                        break;
+                    } catch (Exception e) {
+                        System.out.println("타자 저장 중 에러: " + name);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    // 투수기록 저장
+    private void savePitcherRecords(Document doc, int scheduleId) {
+        for (Element section : doc.select("div.box_type_boared")) {
+            Element head = section.selectFirst(".box_head");
+            if (head == null || !head.text().contains("투구기록")) {
+            	System.out.println("투구기록 head 없음");
+            	continue;
+            }
+
+            String teamName = head.text().replaceAll(".*\\((.*?)\\).*", "$1").trim();
+            Integer teamId = teamNameToId.get(teamName);
+            if (teamId == null) {
+            	System.out.println("TeamId 추출 실패");
+            	continue;
+            }
+
+            Element table = section.selectFirst(".table_type03 table");
+            if (table == null) {
+            	System.out.println("테이블 없음");
+            	continue;
+            }
+
+            for (Element row : table.select("tbody > tr:not(.total)")) {
+                Elements cols = row.select("td");
+                if (cols.size() < 18) {
+                	System.out.println("행 부족");
+                	continue;
+                }
+
+                while (true) {
+                    Element nameAnchor = cols.get(0).selectFirst("a");
+                    if (nameAnchor == null) break;
+                    String fullText = cols.get(0).text();
+                    String decision = fullText.contains("(승") ? "W" : fullText.contains("(패") ? "L" : fullText.contains("(세") ? "SV" : fullText.contains("(홀") ? "HLD" : "";
+                    String name = fullText.replaceAll("\\s*\\([^)]*\\)", "").trim();
+
+                    Optional<Player> player = playerService.findByNameAndTeamId(name, teamId);
+                    if (player.isEmpty()) {
+                        playerService.savePlayer(name, teamId);
+                        continue;
+                    }
+                    try {
+                        double innings = Double.parseDouble(cols.get(1).text().trim());
+                        int strikeouts = Integer.parseInt(cols.get(8).text().trim());
+                        int bb = Integer.parseInt(cols.get(6).text().trim());
+                        int hbp = Integer.parseInt(cols.get(7).text().trim());
+                        int runs = Integer.parseInt(cols.get(4).text().trim());
+                        int er = Integer.parseInt(cols.get(5).text().trim());
+                        int hits = Integer.parseInt(cols.get(3).text().trim());
+                        int hr = Integer.parseInt(cols.get(9).text().trim());
+
+                        recordService.savePitcherRecord(scheduleId, teamId, name, innings, strikeouts, bb, hbp, runs, er, hits, hr, decision);
+                        System.out.println("투수 저장 : " + name);
+                        break;
+                    } catch (Exception e) {
+                        System.out.println("투수 저장 중 에러: " + name);
+                        break;
+                    }
+                }
             }
         }
     }

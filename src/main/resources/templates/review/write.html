@@ -1,0 +1,316 @@
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/reviewDefault}">
+
+<th:block layout:fragment="contents">
+<div class="container my-5 rounded p-4"
+     th:style="'max-width: 1200px; background-color: #fff; border: 2px solid ' + ${teamColor}">
+
+  <!-- 메인 경기 박스 -->
+  <div class="bg-warning-subtle rounded text-center py-4 px-2 mb-4 shadow-sm"
+  	   th:style="'background-color: #fff; border: 2px solid ' + ${teamColor}">
+    		    <div class="fs-3 mb-4 d-flex justify-content-center align-items-center text-center" style="width: 100%;">
+			<!-- 원정팀 -->
+			<div class="d-flex align-items-center justify-content-end gap-2" style="flex: 1;">
+			  <img th:src="@{/static/emblems/{logo}.svg(logo=${game.awayTeamLogo})}" class="table-team-logo mb-1 me-2">  
+			  <span th:if="${game.awayScore > game.homeScore}" th:text="${game.awayTeamName}" class="fs-2 fw-bold">기아 타이거즈</span>
+			  <span th:unless="${game.awayScore > game.homeScore}" th:text="${game.awayTeamName}" class="fs-2">기아 타이거즈</span>
+			
+			  <span th:if="${game.awayScore > game.homeScore}" th:text="${game.awayScore}" class="fs-2 fw-bold text-dark">3</span>
+			  <span th:unless="${game.awayScore > game.homeScore}" th:text="${game.awayScore}" class="fs-2 text-dark">3</span>
+			</div>
+			
+			<!-- VS -->
+			<div style="flex: 0 0 100px;">
+			  <span class="text-secondary fs-3">VS</span>
+			</div>
+			
+			<!-- 홈팀 -->
+			<div class="d-flex align-items-center justify-content-start gap-2" style="flex: 1;">
+			  <span th:if="${game.homeScore > game.awayScore}" th:text="${game.homeScore}" class="fs-2 fw-bold text-dark">6</span>
+			  <span th:unless="${game.homeScore > game.awayScore}" th:text="${game.homeScore}" class="fs-2 text-dark">6</span>
+			
+			  <span th:if="${game.homeScore > game.awayScore}" th:text="${game.homeTeamName + ' (홈)'}" class="fs-2 fw-bold">롯데 자이언츠 (홈)</span>
+			  <span th:unless="${game.homeScore > game.awayScore}" th:text="${game.homeTeamName + ' (홈)'}" class="fs-2">롯데 자이언츠 (홈)</span>
+			
+			  <img th:src="@{/static/emblems/{logo}.svg(logo=${game.homeTeamLogo})}" class="table-team-logo mb-1 me-2">
+			</div>
+		</div>
+	
+	    <!-- 이닝별 점수 테이블 -->
+	    <div class="table-responsive">
+	      <table class="table table-bordered text-center bg-white fs-5"
+			     style="table-layout: fixed; width: 100%;">
+			<thead class="table-light fs-5">
+			  <tr style="background-color: #fff3cd;">
+			   <th style="width: 180px;" class="bg-light">팀</th>
+			   <th th:each="i : ${#numbers.sequence(1, 9)}" style="width: 60px;" th:text="${i}">1</th>
+			   <th style="width: 70px;">R</th>
+			   <th style="width: 70px;">H</th>
+			   <th style="width: 70px;">E</th>
+			  </tr>
+			</thead>
+			<tbody>
+			  <tr style="background-color: #f3f6f9;">
+			     <th class="fs-5 text-white"
+					 th:style="'background-color:' + ${game.awayTeamColor}"
+					 th:text="${game.awayTeamName}">기아</th>
+			   <td th:each="score : ${game.awayInningScores}" th:text="${score}" style="width: 60px;">0</td>
+			   <td style="width: 70px;" th:text="${game.awayScore}">3</td>
+			   <td style="width: 70px;" th:text="${game.awayHits}">7</td>
+			   <td style="width: 70px;" th:text="${game.awayErrors}">0</td>
+			 </tr>
+			 <tr style="background-color: #f3f6f9;">
+			  <th class="fs-5 text-white"
+    		      th:style="'background-color:' + ${game.homeTeamColor}"
+    			  th:text="${game.homeTeamName + ' (홈)'}">롯데</th>
+			   <td th:each="score : ${game.homeInningScores}" th:text="${score}" style="width: 60px;">0</td>
+			   <td style="width: 70px;" th:text="${game.homeScore}">6</td>
+			   <td style="width: 70px;" th:text="${game.homeHits}">9</td>
+			   <td style="width: 70px;" th:text="${game.homeErrors}">1</td>
+			 </tr>
+		  </tbody>
+		</table>
+	  </div>
+	  <div class="text-start small mt-2 ms-2">
+	    <span th:if="${game.winPitcher != null}"><b>승리투수 : </b><span th:text="${game.winPitcher}" class="me-2">권유석</span></span>
+	    <span th:if="${game.holdPitchers != null and !game.holdPitchers.isEmpty()}">
+	    	<b>홀드 : </b><span th:each="name, stat : ${game.holdPitchers}" th:text="${name}" class="me-2"></span>
+		</span>
+  		<span th:if="${game.savePitcher != null}"><b>세이브 : </b><span th:text="${game.savePitcher}" class="me-2">김성은</span></span><br>
+  		<span th:if="${game.losePitcher != null}"><b>패전투수 : </b><span th:text="${game.losePitcher}" class="me-2">권석유</span></span>
+	  </div>
+  </div>
+
+  <!-- 리뷰 작성 폼 -->
+<form th:action="@{/review/save}" method="post" onsubmit="return false;">
+  <input type="hidden" name="scheduleId" th:value="${scheduleInfo.id}" />
+  <input type="hidden" name="id" th:value="${review.id}" />
+
+  <!-- 리뷰 요약 -->
+  <div class="mb-3">
+    <label class="form-label">오늘 경기 리뷰</label>
+    <textarea rows="5"
+              class="form-control"
+              name="summary"
+              required maxlength="100"
+              th:text="${review.summary}"> </textarea>
+  </div>
+
+  <!-- BEST 선수 -->
+  <div class="mb-3">
+    <label class="form-label">오늘의 BEST 선수</label>
+    <input type="text"
+           class="form-control"
+           name="bestPlayer"
+           required maxlength="50"
+           th:value="${review.bestPlayer}" />
+  </div>
+
+  <!-- WORST 선수 -->
+  <div class="mb-3">
+    <label class="form-label">오늘의 WORST 선수</label>
+    <input type="text"
+           class="form-control"
+           name="worstPlayer"
+           required maxlength="50"
+           th:value="${review.worstPlayer}" />
+  </div>
+
+  <!-- 감정 선택 -->
+  <div class="mb-3">
+    <label class="form-label">오늘의 감정</label>
+    <div id="feelingList" class="mb-3 d-flex flex-wrap gap-2">
+      <button type="button" class="btn btn-outline-primary" data-value="기쁨">기쁨</button>
+      <button type="button" class="btn btn-outline-primary" data-value="아쉬움">아쉬움</button>
+      <button type="button" class="btn btn-outline-primary" data-value="화남">화남</button>
+      <button type="button" class="btn btn-outline-primary" data-value="슬픔">슬픔</button>
+      <button type="button" class="btn btn-outline-primary" data-value="짜증">짜증</button>
+      <button type="button" class="btn btn-outline-primary" data-value="설렘">설렘</button>
+      <button type="button" class="btn btn-outline-primary" data-value="만족">만족</button>
+      <button type="button" class="btn btn-outline-primary" data-value="실망">실망</button>
+      <button type="button" class="btn btn-outline-primary" data-value="감동">감동</button>
+      <button type="button" class="btn btn-outline-primary" data-value="허탈">허탈</button>
+      <button type="button" class="btn btn-outline-primary" data-value="열정">열정</button>
+    </div>
+    <div id="selectedFeelings" class="d-flex flex-wrap gap-2"></div>
+    <input type="hidden" id="feelingsInput" name="feelings" th:value="${review.feelings}" />
+  </div>
+
+  <!-- 별점 -->
+  <div class="mb-3">
+    <label class="form-label">별점</label>
+    <div id="star-rating"
+         class="d-flex justify-content-center mb-3"
+         th:style="'font-size: 2rem; cursor: pointer; color:' + ${teamColor}">
+      <span data-value="1">☆</span>
+      <span data-value="2">☆</span>
+      <span data-value="3">☆</span>
+      <span data-value="4">☆</span>
+      <span data-value="5">☆</span>
+    </div>
+    <input type="hidden" id="ratingInput" name="rating" th:value="${review.rating}" />
+  </div>
+</form>
+
+	<div class="text-center">
+	  <button type="button" id="saveReviewButton" class="btn" style="background-color: #FACC15;">등록</button>
+	  <a href="/review-view" class="btn ms-2" style="background-color: #e2e6ea; color: black;">취소</a>
+	</div>
+  
+</div>
+</th:block>
+
+<th:block layout:fragment="script">
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var teamColor = "[[${teamColor}]]" || '#000000';
+
+    var feelingList = document.getElementById('feelingList');
+    var selectedFeelings = document.getElementById('selectedFeelings');
+    var hiddenFeelingsInput = document.getElementById('feelingsInput');
+    var selected = new Set();
+
+    // ⬇️ 초기 감정 값 반영
+    var initialFeelings = hiddenFeelingsInput.value ? hiddenFeelingsInput.value.split(',') : [];
+    initialFeelings.forEach(function(value) {
+        selected.add(value.trim());
+    });
+
+    function createBadge(value) {
+        var badge = document.createElement('span');
+        badge.className = 'badge d-flex align-items-center';
+        badge.style.backgroundColor = teamColor;
+        badge.style.color = 'white';
+        badge.style.gap = '5px';
+        badge.innerHTML = value + '<button type="button" class="btn-close btn-close-white btn-sm" data-value="' + value + '"></button>';
+        return badge;
+    }
+
+    function updateSelectedFeelings() {
+        selectedFeelings.innerHTML = '';
+
+        selected.forEach(function(value) {
+            var badge = createBadge(value);
+            selectedFeelings.appendChild(badge);
+        });
+
+        hiddenFeelingsInput.value = Array.from(selected).join(',');
+
+        var closeButtons = selectedFeelings.querySelectorAll('.btn-close');
+        closeButtons.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var value = btn.getAttribute('data-value');
+                selected.delete(value);
+                updateSelectedFeelings();
+
+                var feelingButton = feelingList.querySelector('button[data-value="' + value + '"]');
+                if (feelingButton) {
+                    feelingButton.classList.remove('btn-primary');
+                    feelingButton.classList.add('btn-outline-primary');
+                    feelingButton.style.backgroundColor = 'white';
+                    feelingButton.style.color = teamColor;
+                }
+            });
+        });
+    }
+
+    var feelingButtons = feelingList.querySelectorAll('button');
+    feelingButtons.forEach(function(button) {
+        var value = button.getAttribute('data-value');
+
+        // ⬇️ 초기 상태 반영
+        if (selected.has(value)) {
+            button.classList.remove('btn-outline-primary');
+            button.classList.add('btn-primary');
+            button.style.backgroundColor = teamColor;
+            button.style.color = 'white';
+        } else {
+            button.style.borderColor = teamColor;
+            button.style.color = teamColor;
+        }
+
+        // 클릭 이벤트
+        button.addEventListener('click', function() {
+            if (selected.has(value)) {
+                selected.delete(value);
+                button.classList.remove('btn-primary');
+                button.classList.add('btn-outline-primary');
+                button.style.backgroundColor = 'white';
+                button.style.color = teamColor;
+            } else {
+                selected.add(value);
+                button.classList.remove('btn-outline-primary');
+                button.classList.add('btn-primary');
+                button.style.backgroundColor = teamColor;
+                button.style.color = 'white';
+            }
+
+            updateSelectedFeelings();
+        });
+    });
+
+    updateSelectedFeelings();  // ⬅️ 초기 뱃지 출력
+
+    // ⭐ 별점 초기화
+    var stars = document.querySelectorAll('#star-rating span');
+    var ratingInput = document.getElementById('ratingInput');
+    var currentRating = parseInt(ratingInput.value) || 0;
+
+    function updateStars(rating) {
+        stars.forEach(function(star) {
+            var value = parseInt(star.getAttribute('data-value'));
+            star.textContent = (value <= rating) ? '★' : '☆';
+        });
+        ratingInput.value = rating;
+    }
+
+    stars.forEach(function(star) {
+        star.addEventListener('click', function() {
+            var selectedValue = parseInt(star.getAttribute('data-value'));
+            currentRating = (currentRating === selectedValue) ? selectedValue - 1 : selectedValue;
+            updateStars(currentRating);
+        });
+    });
+
+    updateStars(currentRating);  // ⬅️ 초기 별점 반영
+
+    // 📝 리뷰 저장
+    $("#saveReviewButton").click(function() {
+        event.preventDefault();
+
+        var reviewData = {
+            scheduleId: $("input[name='scheduleId']").val(),
+            id: $("input[name='id']").val(),  // ← 수정 리뷰일 경우 포함
+            summary: $("textarea[name='summary']").val(),
+            bestPlayer: $("input[name='bestPlayer']").val(),
+            worstPlayer: $("input[name='worstPlayer']").val(),
+            feelings: $("#feelingsInput").val(),
+            rating: $("#ratingInput").val()
+        };
+
+        $.ajax({
+            url: '/review/save',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(reviewData),
+            success: function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    window.location.href = '/review/calendar-view';
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('저장 실패:', error);
+                alert('서버 오류가 발생했습니다.');
+            }
+        });
+    });
+});
+</script>
+</th:block>
+
+</html>

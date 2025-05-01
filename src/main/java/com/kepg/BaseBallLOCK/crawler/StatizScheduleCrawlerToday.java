@@ -5,20 +5,19 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.kepg.BaseBallLOCK.game.lineUp.service.LineupService;
-import com.kepg.BaseBallLOCK.game.record.service.RecordService;
+import com.kepg.BaseBallLOCK.game.schedule.domain.Schedule;
 import com.kepg.BaseBallLOCK.game.schedule.service.ScheduleService;
-import com.kepg.BaseBallLOCK.player.domain.Player;
-import com.kepg.BaseBallLOCK.player.service.PlayerService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,11 +26,10 @@ import lombok.RequiredArgsConstructor;
 public class StatizScheduleCrawlerToday {
 
     private final ScheduleService scheduleService;
-    private final PlayerService playerService;
-    private final LineupService lineupService;
-    private final RecordService recordService;
 
     private static final Map<String, Integer> teamNameToId = new HashMap<>();
+    private static final Map<Integer, String> teamIdToStadium = new HashMap<>();
+
     static {
         teamNameToId.put("KIA", 1);
         teamNameToId.put("두산", 2);
@@ -43,152 +41,150 @@ public class StatizScheduleCrawlerToday {
         teamNameToId.put("KT", 8);
         teamNameToId.put("롯데", 9);
         teamNameToId.put("키움", 10);
+
+        teamIdToStadium.put(1, "광주 기아챔피언스필드");
+        teamIdToStadium.put(2, "서울 잠실종합운동장");
+        teamIdToStadium.put(3, "대구 삼성라이온즈파크");
+        teamIdToStadium.put(4, "인천 SSG랜더스필드");
+        teamIdToStadium.put(5, "서울 잠실종합운동장");
+        teamIdToStadium.put(6, "대전 한화생명이글스파크");
+        teamIdToStadium.put(7, "창원 NC파크");
+        teamIdToStadium.put(8, "수원 KT위즈파크");
+        teamIdToStadium.put(9, "부산 사직야구장");
+        teamIdToStadium.put(10, "서울 고척스카이돔");
     }
 
-    @Scheduled(cron = "0 5 0 * * *", zone = "Asia/Seoul") // 매일 00시 05분 실행
-    public void crawlYesterdayGames() {
+    @Scheduled(cron = "0 0 3 * * *", zone = "Asia/Seoul")
+    public void crawl() {
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        String dateStr = yesterday.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        Timestamp matchDateTime = Timestamp.valueOf(yesterday.atStartOfDay());
+        int year = yesterday.getYear();
+        int month = yesterday.getMonthValue();
 
-        for (int statizId = 20250001; statizId <= 20259999; statizId++) {
-            try {
-                String url = String.format("https://statiz.sporki.com/schedule/?m=boxscore&s_no=%d", statizId);
-                Document doc = Jsoup.connect(url)
-                        .userAgent("Mozilla/5.0")
-                        .referrer("https://www.google.com")
-                        .timeout(70000)
-                        .get();
+        String calendarUrl = String.format("https://statiz.sporki.com/schedule/?year=%d&month=%d", year, month);
 
-                Element calloutBox = doc.selectFirst(".callout_box .txt");
-                if (calloutBox == null || !calloutBox.text().contains(dateStr.substring(5))) continue;
+        WebDriver driver = null;
 
-                String[] parts = calloutBox.text().split(",");
-                LocalDate matchDate = LocalDate.parse("2025-" + parts[1].trim(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-                if (!matchDate.equals(yesterday)) continue;
+        try {
+            ChromeOptions options = new ChromeOptions();
+            options.addArguments("--headless", "--no-sandbox", "--disable-dev-shm-usage");
+            driver = new ChromeDriver(options);
+            driver.get(calendarUrl);
+            Thread.sleep(5000);
 
-                Elements headers = doc.select("div.box_type_boared .box_head");
-                if (headers.size() < 2) continue;
+            Document doc = Jsoup.parse(driver.getPageSource());
+            Elements gameLinks = doc.select(".calendar_area td:has(span.day) .games a[href*='s_no']");
 
-                String awayTeamName = headers.get(0).text().replace("타격기록", "").replaceAll("[()]", "").trim();
-                String homeTeamName = headers.get(1).text().replace("타격기록", "").replaceAll("[()]", "").trim();
+            for (Element link : gameLinks) {
+                String href = link.attr("href");
+                String sNo = href.replaceAll(".*s_no=(\\d+)", "$1");
+                String boxUrl = "https://statiz.sporki.com/schedule/?m=boxscore&s_no=" + sNo;
 
-                Integer awayTeamId = teamNameToId.get(awayTeamName);
-                Integer homeTeamId = teamNameToId.get(homeTeamName);
-                if (awayTeamId == null || homeTeamId == null) continue;
+                driver.get(boxUrl);
+                Thread.sleep(3000);
 
-                Integer scheduleId = scheduleService.findScheduleIdByMatchInfo(matchDateTime, homeTeamId, awayTeamId);
-                if (scheduleId == null) continue;
-
-                Map<String, Integer> sbMap = new HashMap<>();
-                Elements logBoxes = doc.select("div.box_type_boared .log_box");
-                for (Element box : logBoxes) {
-                    for (Element div : box.select("div.log_div")) {
-                        if (div.selectFirst("strong") != null && div.selectFirst("strong").text().contains("도루성공")) {
-                            for (Element span : div.select("span")) {
-                                String name = span.selectFirst("a").text().trim();
-                                sbMap.put(name, sbMap.getOrDefault(name, 0) + 1);
-                            }
-                        }
-                    }
+                Document gameDoc = Jsoup.parse(driver.getPageSource());
+                Timestamp matchDate = extractMatchDate(gameDoc);
+                if (matchDate == null || !matchDate.toLocalDateTime().toLocalDate().equals(yesterday)) {
+                    continue;
                 }
 
-                Elements tables = doc.select("div.box_type_boared .table_type03 table");
-                for (int teamIndex = 0; teamIndex < 2; teamIndex++) {
-                    int teamId = (teamIndex == 0) ? awayTeamId : homeTeamId;
-                    Element table = tables.get(teamIndex);
-                    for (Element row : table.select("tbody > tr:not(.total)")) {
-                        Elements cols = row.select("td");
-                        if (cols.size() < 22) continue;
+                Elements teamSpans = gameDoc.select("div.score_box .team");
+                Elements scoreSpans = gameDoc.select("div.score_box .score");
+                Element rainSpan = gameDoc.selectFirst(".score_box .weather.rain");
 
-                        while (true) {
-                            String name = cols.get(1).text().trim();
-                            Optional<Player> player = playerService.findByNameAndTeamId(name, teamId);
-                            if (player.isEmpty()) {
-                                playerService.savePlayer(name, teamId);
-                                continue;
-                            }
+                if (teamSpans.size() != 2) continue;
 
-                            try {
-                                int pa = Integer.parseInt(cols.get(3).text().trim());
-                                int ab = Integer.parseInt(cols.get(4).text().trim());
-                                int hits = Integer.parseInt(cols.get(6).text().trim());
-                                int hr = Integer.parseInt(cols.get(7).text().trim());
-                                int rbi = Integer.parseInt(cols.get(8).text().trim());
-                                int bb = Integer.parseInt(cols.get(9).text().trim());
-                                int so = Integer.parseInt(cols.get(11).text().trim());
-                                int sb = sbMap.getOrDefault(name, 0);
-                                int order = cols.get(0).text().isEmpty() ? 0 : Integer.parseInt(cols.get(0).text().trim());
-                                String pos = cols.get(2).text().trim();
+                String awayTeam = teamSpans.get(0).text().trim();
+                String homeTeam = teamSpans.get(1).text().trim();
 
-                                lineupService.saveBatterLineup(scheduleId, teamId, order, pos, name);
-                                recordService.saveBatterRecord(scheduleId, teamId, pa, ab, hits, hr, rbi, bb, so, sb, name);
-                                break;
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                                break;
-                            }
-                        }
-                    }
-                }
+                int[] teamIds = new int[2];
+                if (!parseTeamIds(homeTeam, awayTeam, teamIds)) continue;
+                int homeTeamId = teamIds[0];
+                int awayTeamId = teamIds[1];
 
-                for (Element section : doc.select("div.box_type_boared")) {
-                    Element head = section.selectFirst(".box_head");
-                    if (head == null || !head.text().contains("투구기록")) continue;
+                int[] scores = new int[2];
+                String status = determineMatchStatus(rainSpan, scoreSpans, scores);
+                Integer homeScore = (status.equals("종료")) ? scores[0] : null;
+                Integer awayScore = (status.equals("종료")) ? scores[1] : null;
 
-                    String teamName = head.text().replaceAll(".*\\((.*?)\\).*", "$1").trim();
-                    Integer teamId = teamNameToId.get(teamName);
-                    if (teamId == null) continue;
-
-                    Element table = section.selectFirst(".table_type03 table");
-                    if (table == null) continue;
-
-                    for (Element row : table.select("tbody > tr:not(.total)")) {
-                        Elements cols = row.select("td");
-                        if (cols.size() < 18) continue;
-
-                        while (true) {
-                            Element nameAnchor = cols.get(0).selectFirst("a");
-                            if (nameAnchor == null) break;
-
-                            String name = nameAnchor.text().trim().replaceAll("\\s*\\([^)]*\\)", "").trim();
-                            String decision = "";
-                            if (name.contains("승")) decision = "W";
-                            else if (name.contains("패")) decision = "L";
-                            else if (name.contains("세")) decision = "SV";
-                            else if (name.contains("홀")) decision = "H";
-
-                            Optional<Player> player = playerService.findByNameAndTeamId(name, teamId);
-                            if (player.isEmpty()) {
-                                playerService.savePlayer(name, teamId);
-                                continue;
-                            }
-
-                            try {
-                                double innings = Double.parseDouble(cols.get(1).text().trim());
-                                int strikeouts = Integer.parseInt(cols.get(8).text().trim());
-                                int bb = Integer.parseInt(cols.get(6).text().trim());
-                                int hbp = Integer.parseInt(cols.get(7).text().trim());
-                                int runs = Integer.parseInt(cols.get(4).text().trim());
-                                int er = Integer.parseInt(cols.get(5).text().trim());
-                                int hits = Integer.parseInt(cols.get(3).text().trim());
-                                int hr = Integer.parseInt(cols.get(9).text().trim());
-
-                                recordService.savePitcherRecord(scheduleId, teamId, name, innings, strikeouts, bb, hbp, runs, er, hits, hr, decision);
-                                break;
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                Thread.sleep(1500);
-            } catch (Exception e) {
-                System.out.println("오류 발생: " + statizId);
-                e.printStackTrace();
+                String matchDateStr = yesterday.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                saveSchedule(matchDate, homeTeamId, awayTeamId,
+                        homeScore, awayScore, status,
+                        teamIdToStadium.get(homeTeamId),
+                        matchDateStr, homeTeam, awayTeam);
             }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (driver != null) {
+                driver.quit();
+            }
+        }
+    }
+    
+    private Timestamp extractMatchDate(Document doc) {
+        try {
+            Element calloutBox = doc.selectFirst(".callout_box .txt");
+            if (calloutBox == null) return null;
+            String[] parts = calloutBox.text().split(",");
+            String mmdd = parts[1].trim(); // 예: "04-30"
+            LocalDate date = LocalDate.parse("2025-" + mmdd, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            return Timestamp.valueOf(date.atStartOfDay());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    private boolean parseTeamIds(String homeTeam, String awayTeam, int[] teamIds) {
+        Integer homeTeamId = teamNameToId.getOrDefault(homeTeam, 0);
+        Integer awayTeamId = teamNameToId.getOrDefault(awayTeam, 0);
+
+        if (homeTeamId == 0 || awayTeamId == 0) return false;
+
+        teamIds[0] = homeTeamId;
+        teamIds[1] = awayTeamId;
+        return true;
+    }
+
+    private String determineMatchStatus(Element rainSpan, Elements scoreSpans, int[] scores) {
+        if (rainSpan != null) {
+            return "우천취소";
+        } else if (scoreSpans.size() == 2) {
+            scores[0] = tryParseInt(scoreSpans.get(1).text().trim()); // home
+            scores[1] = tryParseInt(scoreSpans.get(0).text().trim()); // away
+            return "종료";
+        }
+        return "예정";
+    }
+
+    private void saveSchedule(Timestamp matchDate, int homeTeamId, int awayTeamId,
+                              Integer homeScore, Integer awayScore, String status,
+                              String stadium, String matchDateStr, String homeTeam, String awayTeam) {
+        Schedule schedule = Schedule.builder()
+                .matchDate(matchDate)
+                .homeTeamId(homeTeamId)
+                .awayTeamId(awayTeamId)
+                .homeTeamScore(homeScore)
+                .awayTeamScore(awayScore)
+                .status(status)
+                .stadium(stadium)
+                .build();
+
+        scheduleService.saveOrUpdate(schedule);
+
+        System.out.printf("저장 완료: %s - %s(%s) vs %s(%s) [%s]\n",
+                matchDateStr,
+                homeTeam, homeScore != null ? homeScore : "-",
+                awayTeam, awayScore != null ? awayScore : "-",
+                status);
+    }
+    
+    private Integer tryParseInt(String str) {
+        try {
+            return Integer.parseInt(str);
+        } catch (Exception e) {
+            return null;
         }
     }
 }

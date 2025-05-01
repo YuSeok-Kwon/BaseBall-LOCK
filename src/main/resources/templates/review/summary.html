@@ -1,0 +1,53 @@
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/reviewDefault}">
+
+<th:block layout:fragment="contents">
+<div class="container my-5 rounded p-4"
+     th:style="'max-width: 1200px; background-color: #fff; border: 2px solid ' + ${teamColor}">
+
+  <!-- ✅ 요약이 있을 경우 -->
+  <div th:if="${summary != null}" class="bg-warning-subtle rounded text-center py-4 px-2 mb-4 shadow-sm"
+       th:style="'background-color: #fff; border: 2px solid ' + ${teamColor}">
+       
+    <h3 class="fw-bold mb-3" th:text="${summary.weekStartDate + ' ~ ' + summary.weekEndDate + ' 주간 리뷰 요약'}"></h3>
+    
+    <div class="row fs-5 text-start px-4">
+      <div class="col-md-6 mb-2">
+        <strong>🎯 주간 성적:</strong> <span th:text="${summary.recordSummary}">1승 6패</span>
+      </div>
+      <div class="col-md-6 mb-2">
+        <strong>⭐ 평균 별점:</strong> <span th:text="${summary.averageRating} + '점'">3.6점</span>
+      </div>
+      <div class="col-md-6 mb-2">
+        <strong>🏅 Best Player:</strong> <span th:text="${summary.bestMoment}">오명진 (2회), 김택연 (1회)</span>
+      </div>
+      <div class="col-md-6 mb-2">
+        <strong>💀 Worst Player:</strong> <span th:text="${summary.worstMoment}">정대현 (3회), 박태영 (1회)</span>
+      </div>
+      <div class="col-12 mt-3">
+        <strong>🧠 감정 흐름 요약:</strong>
+        <div class="mt-2" style="white-space: pre-line;" th:text="${summary.feelingSummary}"></div>
+      </div>
+      <div class="col-12 mt-3">
+        <strong>💬 요약 멘트:</strong>
+        <div class="mt-2" th:text="${summary.reviewText}"></div>
+      </div>
+      <div class="col-12 mt-3">
+        <strong>🏷️ 키워드:</strong>
+        <div class="mt-2 text-primary" th:text="${summary.keywords}"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ❗ 요약이 없을 경우 -->
+  <div th:if="${summary == null}" class="text-center p-5">
+    <h4 class="mb-3">이번 주 리뷰 요약이 없습니다.</h4>
+    <p>아직 작성된 리뷰가 없거나 요약이 생성되지 않았습니다.</p>
+    <a href="/review/calendar-view" class="btn btn-outline-secondary mt-3">리뷰 캘린더로 이동</a>
+  </div>
+
+</div>
+</th:block>
+</html>
