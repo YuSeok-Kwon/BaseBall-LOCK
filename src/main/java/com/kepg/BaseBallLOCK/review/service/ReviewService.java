@@ -5,12 +5,16 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.kepg.BaseBallLOCK.game.lineUp.service.LineupService;
+import com.kepg.BaseBallLOCK.game.record.service.RecordService;
 import com.kepg.BaseBallLOCK.game.schedule.domain.Schedule;
 import com.kepg.BaseBallLOCK.game.schedule.service.ScheduleService;
 import com.kepg.BaseBallLOCK.review.domain.Review;
@@ -18,6 +22,7 @@ import com.kepg.BaseBallLOCK.review.dto.CalendarDayDTO;
 import com.kepg.BaseBallLOCK.review.dto.GameInfoDTO;
 import com.kepg.BaseBallLOCK.review.dto.ReviewDTO;
 import com.kepg.BaseBallLOCK.review.repository.ReviewRepository;
+import com.kepg.BaseBallLOCK.review.summary.service.ReviewSummaryService;
 import com.kepg.BaseBallLOCK.team.service.TeamService;
 
 import lombok.RequiredArgsConstructor;
@@ -29,7 +34,9 @@ public class ReviewService {
     private final ScheduleService scheduleService;
     private final TeamService teamService;
     private final ReviewRepository reviewRepository;
-
+    private final ReviewSummaryService reviewSummaryService;
+    private final LineupService lineupService;
+    private final RecordService recordService;
 
     public List<List<CalendarDayDTO>> generateCalendar(int year, int month, int userId, int myTeamId) {
 
@@ -118,7 +125,8 @@ public class ReviewService {
     }
     
     @Transactional
-    public void saveReview(int userId, ReviewDTO reviewDTO) {
+    public void saveOrUpdateReview(int userId, ReviewDTO reviewDTO) {
+
         Review review = new Review();
         review.setUserId(userId);
         review.setScheduleId(reviewDTO.getScheduleId());
@@ -127,15 +135,41 @@ public class ReviewService {
         review.setWorstPlayer(reviewDTO.getWorstPlayer());
         review.setFeelings(reviewDTO.getFeelings());
         review.setRating(reviewDTO.getRating());
-        review.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
+
+        List<Review> existingList = reviewRepository.findAllByUserIdAndScheduleId(userId, reviewDTO.getScheduleId());
+        if (!existingList.isEmpty()) {
+            Review existing = existingList.get(0); // 가장 첫 번째 것만 사용
+            review.setId(existing.getId());
+            review.setCreatedAt(existing.getCreatedAt());
+        } else {
+            review.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
+        }
         review.setUpdatedAt(Timestamp.valueOf(LocalDateTime.now()));
 
         reviewRepository.save(review);
+
+        Timestamp matchTimestamp = scheduleService.findMatchDateById(review.getScheduleId());
+        LocalDate matchDate = matchTimestamp.toLocalDateTime().toLocalDate();
+        LocalDate weekStart = matchDate.with(java.time.DayOfWeek.MONDAY);
+
+        reviewSummaryService.generateWeeklyReviewSummary(review.getUserId(), weekStart);
     }
     
     public Optional<Review> findById(Integer id) {
         return reviewRepository.findById(id);
     }
     
-    
+    public List<String> findPlayerNamesByScheduleId(int scheduleId, int myTeamId) {
+        Set<String> names = new HashSet<>();
+
+        List<String> batters = lineupService.getBatterNamesByScheduleId(scheduleId, myTeamId);
+        List<String> pitchers = recordService.getPitcherNamesByScheduleId(scheduleId, myTeamId);
+
+        names.addAll(batters);
+        names.addAll(pitchers);
+
+        List<String> sorted = new ArrayList<>(names);
+        sorted.sort(null); // 가나다순 정렬
+        return sorted;
+    }
 }

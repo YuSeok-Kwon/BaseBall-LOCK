@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.kepg.BaseBallLOCK.game.highlight.dto.GameHighlightDTO;
+import com.kepg.BaseBallLOCK.game.highlight.service.GameHighlightService;
 import com.kepg.BaseBallLOCK.game.lineUp.service.LineupService;
 import com.kepg.BaseBallLOCK.game.record.dto.PitcherRecordDTO;
 import com.kepg.BaseBallLOCK.game.record.service.RecordService;
@@ -39,6 +41,7 @@ public class ScheduleService {
     private final ScoreBoardService scoreBoardService;
     private final LineupService lineupService;
     private final RecordService recordService;
+    private final GameHighlightService gameHighlightService;
 
     @Transactional
     public void saveOrUpdate(Schedule newSchedule) {
@@ -229,6 +232,8 @@ public class ScheduleService {
         }
         
         ScoreBoard scoreBoard = scoreBoardService.findByScheduleId(matchId);
+        
+        List<GameHighlightDTO> highlights = gameHighlightService.findByScheduleId(matchId);
 
         if (scoreBoard == null) {
             return GameDetailCardView.builder()
@@ -273,6 +278,7 @@ public class ScheduleService {
                 .holdPitchers(holdPitchers)
                 .homeTeamColor(homeTeam.getColor())
                 .awayTeamColor(awayTeam.getColor())
+                .highlights(highlights)
                 .build();
     }
 

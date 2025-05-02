@@ -34,4 +34,7 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
 		    AND DATE(s.matchDate) = :matchDate
 		""")
 		Optional<Review> findByUserIdAndMatchDate(@Param("userId") int userId, @Param("matchDate") LocalDate matchDate);
+	
+	List<Review> findAllByUserIdAndScheduleId(int userId, int scheduleId);
+	
 }

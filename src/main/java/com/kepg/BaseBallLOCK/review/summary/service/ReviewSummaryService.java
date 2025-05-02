@@ -34,131 +34,131 @@ public class ReviewSummaryService {
 	
 	public ReviewSummary getWeeklySummaryByStartDate(int userId, LocalDate weekStartDate) {
         // LocalDate → java.sql.Date 변환
-        Date sqlStartDate = Date.valueOf(weekStartDate);
-
-        return reviewSummaryRepository.findByUserIdAndWeekStartDate(userId, sqlStartDate)
-                .orElse(null); // 없을 경우 null 반환
+		Date sqlStartDate = Date.valueOf(weekStartDate);
+	    List<ReviewSummary> list = reviewSummaryRepository.findByUserIdAndWeekStartDate(userId, sqlStartDate);
+	    return list.isEmpty() ? null : list.get(0);
     }
 	
 	public ReviewSummary generateWeeklyReviewSummary(Integer userId, LocalDate weekStart) {
-        // 이번 주의 시작일과 종료일 계산 (월~일 기준)
-        LocalDate weekEnd = weekStart.plusDays(6);
+	    LocalDate weekEnd = weekStart.plusDays(6);
 
-        Date weekStartDate = Date.valueOf(weekStart);
-        Date weekEndDate = Date.valueOf(weekEnd);
-        
-        LocalDateTime startDateTime = weekStart.atStartOfDay();
-        LocalDateTime endDateTime = weekEnd.atTime(LocalTime.MAX);
+	    Date weekStartDate = Date.valueOf(weekStart);
+	    Date weekEndDate = Date.valueOf(weekEnd);
+	    
+	    LocalDateTime startDateTime = weekStart.atStartOfDay();
+	    LocalDateTime endDateTime = weekEnd.atTime(LocalTime.MAX);
 
-        // 주간 리뷰 데이터 조회
-        List<Review> weeklyReviews = reviewRepository.findByUserIdAndScheduleMatchDateBetween(
-            userId, startDateTime, endDateTime
-        );
+	    List<Review> weeklyReviews = reviewRepository.findByUserIdAndScheduleMatchDateBetween(
+	        userId, startDateTime, endDateTime
+	    );
 
-        if (weeklyReviews == null || weeklyReviews.size() < 2) {
-            return null;
-        }
+	    if (weeklyReviews == null || weeklyReviews.size() < 2) {
+	        return null;
+	    }
 
-        // 승리/패배/별점 통계 초기화
-        int win = 0;
-        int totalRating = 0;
-        int reviewCount = weeklyReviews.size();
+	    int win = 0;
+	    int totalRating = 0;
+	    int reviewCount = weeklyReviews.size();
+	    Map<String, Integer> bestPlayerCount = new HashMap<>();
+	    Map<String, Integer> worstPlayerCount = new HashMap<>();
+	    Map<LocalDate, List<String>> dailyFeelings = new TreeMap<>();
 
-        // 선수 이름 → 등장 횟수 매핑
-        Map<String, Integer> bestPlayerCount = new HashMap<>();
-        Map<String, Integer> worstPlayerCount = new HashMap<>();
+	    for (Review review : weeklyReviews) {
+	        int rating = review.getRating();
+	        totalRating += rating;
+	        if (rating >= 7) win++;
 
-        // 날짜별 감정 리스트 저장 (감정 흐름 파악용)
-        Map<LocalDate, List<String>> dailyFeelings = new TreeMap<>();
+	        String best = review.getBestPlayer();
+	        if (best != null && !best.isEmpty()) {
+	            bestPlayerCount.put(best, bestPlayerCount.getOrDefault(best, 0) + 1);
+	        }
 
-        // 리뷰 반복 처리
-        for (Review review : weeklyReviews) {
-            // 별점 통계
-            int rating = review.getRating();
-            totalRating += rating;
-            if (rating >= 7) {
-                win++;
-            }
+	        String worst = review.getWorstPlayer();
+	        if (worst != null && !worst.isEmpty()) {
+	            worstPlayerCount.put(worst, worstPlayerCount.getOrDefault(worst, 0) + 1);
+	        }
 
-            // Best Player 집계
-            String best = review.getBestPlayer();
-            if (best != null && !best.isEmpty()) {
-                if (!bestPlayerCount.containsKey(best)) {
-                    bestPlayerCount.put(best, 1);
-                } else {
-                    int count = bestPlayerCount.get(best);
-                    bestPlayerCount.put(best, count + 1);
-                }
-            }
+	        Timestamp matchTimestamp = scheduleService.findMatchDateById(review.getScheduleId());
+	        LocalDate matchDate = matchTimestamp.toLocalDateTime().toLocalDate();
+	        dailyFeelings.computeIfAbsent(matchDate, k -> new ArrayList<>());
 
-            // Worst Player 집계
-            String worst = review.getWorstPlayer();
-            if (worst != null && !worst.isEmpty()) {
-                if (!worstPlayerCount.containsKey(worst)) {
-                    worstPlayerCount.put(worst, 1);
-                } else {
-                    int count = worstPlayerCount.get(worst);
-                    worstPlayerCount.put(worst, count + 1);
-                }
-            }
+	        String feeling = review.getFeelings();
+	        if (feeling != null && !feeling.trim().isEmpty()) {
+	            dailyFeelings.get(matchDate).add(feeling.trim());
+	        }
+	    }
 
-            // 날짜별 감정 수집
-            Timestamp matchTimestamp = scheduleService.findMatchDateById(review.getScheduleId());
-            LocalDate matchDate = matchTimestamp.toLocalDateTime().toLocalDate();            
-            dailyFeelings.computeIfAbsent(matchDate, k -> new ArrayList<>());
+	    int loss = reviewCount - win;
+	    double averageRating = (double) totalRating / reviewCount;
+	    String bestPlayers = formatPlayerCount(bestPlayerCount);
+	    String worstPlayers = formatPlayerCount(worstPlayerCount);
 
-            String feeling = review.getFeelings();
-            if (feeling != null && !feeling.trim().isEmpty()) {
-                dailyFeelings.get(matchDate).add(feeling.trim());
-            }
-        }
+	    String recordSummary = win + "승 " + loss + "패";
+	    String feelingSummary = aiSummaryService.summarizeFeelings(dailyFeelings);
+	    String reviewText = aiSummaryService.generateFullSummary(weeklyReviews);
+	    String keywords = extractKeywords(weeklyReviews);
 
-        // 패배 수 계산
-        int loss = reviewCount - win;
+	    // 기존 summary가 있으면 UPDATE
+	    ReviewSummary existing = getWeeklySummaryByStartDate(userId, weekStart);
+	    Timestamp now = Timestamp.valueOf(LocalDateTime.now());
 
-        // 평균 별점 계산
-        double averageRating = (double) totalRating / reviewCount;
+	    if (existing != null) {
+	        existing.setRecordSummary(recordSummary);
+	        existing.setFeelingSummary(feelingSummary);
+	        existing.setBestMoment(bestPlayers);
+	        existing.setWorstMoment(worstPlayers);
+	        existing.setReviewText(reviewText);
+	        existing.setKeywords(keywords);
+	        existing.setTotalReviewCount(reviewCount);
+	        existing.setAverageRating(averageRating);
+	        existing.setUpdatedAt(now);
+	        return reviewSummaryRepository.save(existing);  // UPDATE
+	    }
 
-        // Best/Worst Player 포맷 변환 (이름 (횟수) 형태)
-        String bestPlayers = formatPlayerCount(bestPlayerCount);
-        String worstPlayers = formatPlayerCount(worstPlayerCount);
+	    // 없으면 새로 생성
+	    ReviewSummary summary = new ReviewSummary();
+	    summary.setUserId(userId);
+	    summary.setSeason(2025);
+	    summary.setWeekStartDate(weekStartDate);
+	    summary.setWeekEndDate(weekEndDate);
+	    summary.setRecordSummary(recordSummary);
+	    summary.setFeelingSummary(feelingSummary);
+	    summary.setBestMoment(bestPlayers);
+	    summary.setWorstMoment(worstPlayers);
+	    summary.setReviewText(reviewText);
+	    summary.setKeywords(keywords);
+	    summary.setTotalReviewCount(reviewCount);
+	    summary.setAverageRating(averageRating);
+	    summary.setCreatedAt(now);
+	    summary.setUpdatedAt(now);
 
-        // 텍스트 요약 생성
-        String recordSummary = win + "승 " + loss + "패"; // ex. "1승 6패"
-        String feelingSummary = aiSummaryService.summarizeFeelings(dailyFeelings); // 감정 흐름 요약
-        String reviewText = aiSummaryService.generateFullSummary(weeklyReviews);   // 전체 요약 멘트
-        String keywords = extractKeywords(weeklyReviews);                          // 키워드 해시태그
-
-        // 결과 저장
-        ReviewSummary summary = new ReviewSummary();
-        summary.setUserId(userId);
-        summary.setSeason(2025);
-        summary.setWeekStartDate(weekStartDate);
-        summary.setWeekEndDate(weekEndDate);
-        summary.setRecordSummary(recordSummary);
-        summary.setFeelingSummary(feelingSummary);
-        summary.setBestMoment(bestPlayers);
-        summary.setWorstMoment(worstPlayers);
-        summary.setReviewText(reviewText);
-        summary.setKeywords(keywords);
-        summary.setTotalReviewCount(reviewCount);
-        summary.setAverageRating(averageRating);
-        summary.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
-        summary.setUpdatedAt(Timestamp.valueOf(LocalDateTime.now()));
-
-        reviewSummaryRepository.save(summary);
-        
-        return summary;
-    }
+	    return reviewSummaryRepository.save(summary);  // INSERT
+	}
 	
 	public boolean summaryExistsForWeek(int userId, LocalDate weekStartDate) {
 	    Date sqlDate = Date.valueOf(weekStartDate);
 	    return reviewSummaryRepository.existsByUserIdAndWeekStartDate(userId, sqlDate);
 	}
 	
+	// 선수 이름 추출
 	private String formatPlayerCount(Map<String, Integer> playerMap) {
-	    // Map의 Entry들을 List로 복사
-	    List<Map.Entry<String, Integer>> entryList = new ArrayList<>(playerMap.entrySet());
+	    Map<String, Integer> resolved = new HashMap<>();
+
+	    for (Map.Entry<String, Integer> entry : playerMap.entrySet()) {
+	        String raw = entry.getKey();
+	        int count = entry.getValue();
+
+	        // 쉼표로 분리된 이름을 각각 개별 선수로 집계
+	        String[] names = raw.split(",");
+	        for (String name : names) {
+	            String trimmed = name.trim();
+	            if (!trimmed.isEmpty()) {
+	                resolved.put(trimmed, resolved.getOrDefault(trimmed, 0) + count);
+	            }
+	        }
+	    }
+
+	    List<Map.Entry<String, Integer>> entryList = new ArrayList<>(resolved.entrySet());
 
 	    // 내림차순 정렬 (횟수가 많은 순)
 	    for (int i = 0; i < entryList.size() - 1; i++) {
@@ -171,7 +171,7 @@ public class ReviewSummaryService {
 	        }
 	    }
 
-	    // "이름 (횟수회)" 형태로 문자열 변환
+	    // "이름 (횟수회)" 형태로 변환
 	    StringBuilder result = new StringBuilder();
 	    for (int i = 0; i < entryList.size(); i++) {
 	        Map.Entry<String, Integer> entry = entryList.get(i);
@@ -239,14 +239,11 @@ public class ReviewSummaryService {
 	    return keywords.toString();
 	}
 	
-	public void generateWeeklySummaryForAllUsers(LocalDate weekStart) {
-	    List<Integer> userIds = userService.findAllUserIds(); // 모든 유저 ID 조회
+	public void generateWeeklyReviewSummaryForAllUsers(LocalDate weekStart) {
+	    List<Integer> userIds = userService.findAllUserIds();
 
 	    for (Integer userId : userIds) {
-	        ReviewSummary existing = getWeeklySummaryByStartDate(userId, weekStart);
-	        if (existing == null) {
-	            generateWeeklyReviewSummary(userId, weekStart);
-	        }
+	        generateWeeklyReviewSummary(userId, weekStart);
 	    }
 	}
 }

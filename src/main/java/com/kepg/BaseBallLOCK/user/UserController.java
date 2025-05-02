@@ -1,6 +1,7 @@
 package com.kepg.BaseBallLOCK.user;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ public class UserController {
 	// 로그아웃 API
 	@GetMapping("/logout")
 	public String logout(HttpSession session) {
-	    session.invalidate();  // 세션 전체 삭제
+	    session.invalidate(); 
 
 	    Map<String, String> resultMap = new HashMap<>();
 	    resultMap.put("result", "success");
@@ -94,6 +95,7 @@ public class UserController {
             List<String> myRecentResults = scheduleService.getRecentResults(myTeamId);
             List<String> opponentRecentResults = scheduleService.getRecentResults(opponentId);
             model.addAttribute("myRecentResults", myRecentResults);
+            Collections.reverse(opponentRecentResults);
             model.addAttribute("opponentRecentResults", opponentRecentResults);
 
             // 상대 전적

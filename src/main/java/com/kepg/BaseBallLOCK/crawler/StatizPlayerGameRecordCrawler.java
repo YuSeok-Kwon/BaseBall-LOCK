@@ -48,8 +48,8 @@ public class StatizPlayerGameRecordCrawler {
 
     // 1경기의 타자 및 투수 기록(batterLineUp, BatterRecord, PitcherRecord)
     public void crawl() {
-        int startId = 20250164;
-        int endId = 20250165;
+        int startId = 20250171;
+        int endId = 20250175;
         String baseUrl = "https://statiz.sporki.com/schedule/?m=boxscore&s_no=%d";
 
         for (int statizId = startId; statizId <= endId; statizId++) {

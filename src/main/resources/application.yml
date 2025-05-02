@@ -1,25 +1,24 @@
 spring:
-    config:
-        import: security-variable.yml
-    application:
-        name: BaseBallLOCK
-    datasource:
-        driver-class-name: com.mysql.cj.jdbc.Driver
-        url: jdbc:mysql://localhost:3306/BaseBallLOCK
-        username: root
-        password: ${mysql.password}
-    thymeleaf:
-        prefix: classpath:/templates/
-        suffix: .html
-        mode: HTML
-        encoding: UTF-8
-        cache: false
-    mvc:
-        static-path-pattern: /static/**
-    jpa:
-        hibernate: 
-            ddl-auto: none
-            naming: 
-                implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
-                physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-            
+  config:
+    import: security-variable.yml
+  application:
+    name: BaseBallLOCK
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/BaseBallLOCK
+    username: root
+    password: ${mysql.password}
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false
+  mvc:
+    static-path-pattern: /static/**
+  jpa:
+    hibernate: 
+      ddl-auto: none
+      naming: 
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl

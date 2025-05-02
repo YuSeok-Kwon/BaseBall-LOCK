@@ -1,9 +1,14 @@
 package com.kepg.BaseBallLOCK.crawler;
 
 import java.sql.Timestamp;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -14,6 +19,8 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.stereotype.Component;
 
+import com.kepg.BaseBallLOCK.game.highlight.dto.GameHighlightDTO;
+import com.kepg.BaseBallLOCK.game.highlight.service.GameHighlightService;
 import com.kepg.BaseBallLOCK.game.schedule.service.ScheduleService;
 import com.kepg.BaseBallLOCK.game.scoreBoard.domain.ScoreBoard;
 import com.kepg.BaseBallLOCK.game.scoreBoard.service.ScoreBoardService;
@@ -26,6 +33,7 @@ public class StatizGameSummaryCrawler {
 
     private final ScheduleService scheduleService;
     private final ScoreBoardService scoreBoardService;
+    private final GameHighlightService gameHighlightService;
 
     private static final Map<String, Integer> teamNameToId = new HashMap<>();
     static {
@@ -41,11 +49,11 @@ public class StatizGameSummaryCrawler {
         teamNameToId.put("키움", 10);
     }
     
-    // 1경기의 스코어보드 기록(scoreBoard)
+    // 1경기의 스코어보드 기록(scoreBoard) 및 하이라이트(gameHighlight)
     public void crawl() {
         String baseUrl = "https://statiz.sporki.com/schedule/?m=summary&s_no=%d";
 
-        for (int statizId = 20250164; statizId <= 20250165; statizId++) {
+        for (int statizId = 20250135; statizId <= 20250176; statizId++) {
             System.out.println("크롤링 시작: " + statizId);
             WebDriver driver = null;
             try {
@@ -82,46 +90,46 @@ public class StatizGameSummaryCrawler {
                 String awayTeam = awayTds.get(0).text().trim();
                 String homeTeam = homeTds.get(0).text().trim();
 
-                List<Integer> awayScores = new ArrayList<>();
-                List<Integer> homeScores = new ArrayList<>();
-
-                parseScores(awayTds, awayScores);
-                parseScores(homeTds, homeScores);
-
-                int awayR = getInt(awayTds.get(13));
-                int awayH = getInt(awayTds.get(14));
-                int awayE = getInt(awayTds.get(15));
-                int awayB = getInt(awayTds.get(16));
-
-                int homeR = getInt(homeTds.get(13));
-                int homeH = getInt(homeTds.get(14));
-                int homeE = getInt(homeTds.get(15));
-                int homeB = getInt(homeTds.get(16));
-
-                String winPitcher = extractPitcher(doc, ".game_result .win a");
-                String losePitcher = extractPitcher(doc, ".game_result .lose a");
+                int homeTeamId = teamNameToId.getOrDefault(homeTeam, 0);
+                int awayTeamId = teamNameToId.getOrDefault(awayTeam, 0);
+                if (homeTeamId == 0 || awayTeamId == 0) {
+                    System.out.println("TeamId 추출 실패");
+                    continue;
+                }
 
                 String datePart = doc.selectFirst(".callout_box .txt").text().split(",")[1].trim();
                 int year = statizId / 10000;
                 LocalDate matchDate = LocalDate.parse(year + "-" + datePart, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
                 Timestamp matchDateTime = Timestamp.valueOf(matchDate.atStartOfDay());
 
-                int homeTeamId = teamNameToId.getOrDefault(homeTeam, 0);
-                int awayTeamId = teamNameToId.getOrDefault(awayTeam, 0);
-                if (homeTeamId == 0 || awayTeamId == 0) {
-                	System.out.println("TeamId 추출 실패");
-                	continue;
-                }
-
                 Integer scheduleId = scheduleService.findIdByDateAndTeams(matchDateTime, homeTeamId, awayTeamId);
                 if (scheduleId == null) {
-                	System.out.println("SCheduleId 매칭 실패");
-                	continue;
+                    System.out.println("ScheduleId 매칭 실패");
+                    continue;
                 }
 
-                saveScoreBoard(scheduleId, homeScores, awayScores, homeR, homeH, homeE, homeB, awayR, awayH, awayE, awayB, winPitcher, losePitcher);
+                 List<Integer> awayScores = new ArrayList<>();
+                 List<Integer> homeScores = new ArrayList<>();
+                 parseScores(awayTds, awayScores);
+                 parseScores(homeTds, homeScores);
 
-                System.out.println("scoreBoard 저장 완료: " + statizId + " → ScheduleId: " + scheduleId);
+                 int awayR = getInt(awayTds.get(13));
+                 int awayH = getInt(awayTds.get(14));
+                 int awayE = getInt(awayTds.get(15));
+                 int awayB = getInt(awayTds.get(16));
+
+                 int homeR = getInt(homeTds.get(13));
+                 int homeH = getInt(homeTds.get(14));
+                 int homeE = getInt(homeTds.get(15));
+                 int homeB = getInt(homeTds.get(16));
+
+                 String winPitcher = extractPitcher(doc, ".game_result .win a");
+                 String losePitcher = extractPitcher(doc, ".game_result .lose a");
+
+                 saveScoreBoard(scheduleId, homeScores, awayScores, homeR, homeH, homeE, homeB, awayR, awayH, awayE, awayB, winPitcher, losePitcher);
+                 System.out.println("scoreBoard 저장 완료: " + statizId + " ScheduleId: " + scheduleId);
+
+                saveGameHighlights(doc, scheduleId);
                 Thread.sleep(3000);
 
             } catch (Exception e) {
@@ -161,6 +169,45 @@ public class StatizGameSummaryCrawler {
                 .build();
 
         scoreBoardService.saveOrUpdate(scoreBoard);
+    }
+    
+    private void saveGameHighlights(Document doc, Integer scheduleId) {
+        Element highlightBox = doc.selectFirst("div.sh_box:has(.box_head:contains(결정적 장면 Best 5)) table");
+        if (highlightBox == null) {
+            System.out.println("결정적 장면 테이블 없음");
+            return;
+        }
+
+        Elements rows = highlightBox.select("tbody > tr");
+        int ranking = 1;
+
+        for (Element row : rows) {
+            Elements tds = row.select("td");
+
+            String inning = tds.get(0).text().trim();
+            String pitcher = tds.get(1).text().trim();
+            String batter = tds.get(2).text().trim();
+            String pitchCount = tds.get(3).text().trim();
+            String result = tds.get(4).text().trim();
+            String beforeSituation = tds.get(5).text().trim();
+            String afterSituation = tds.get(6).text().trim();
+
+            GameHighlightDTO dto = GameHighlightDTO.builder()
+                    .scheduleId(scheduleId)
+                    .ranking(ranking++)
+                    .inning(inning)
+                    .pitcherName(pitcher)
+                    .batterName(batter)
+                    .pitchCount(pitchCount)
+                    .result(result)
+                    .beforeSituation(beforeSituation)
+                    .afterSituation(afterSituation)
+                    .build();
+
+            gameHighlightService.saveOrUpdate(dto);
+        }
+
+        System.out.println("gameHighlight 저장 완료: " + scheduleId);
     }
 
     private String toInningString(List<Integer> scores) {

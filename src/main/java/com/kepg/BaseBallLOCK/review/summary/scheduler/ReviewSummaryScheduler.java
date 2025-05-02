@@ -21,6 +21,6 @@ public class ReviewSummaryScheduler {
         LocalDate today = LocalDate.now();
         LocalDate weekStart = today.with(DayOfWeek.MONDAY);
 
-        reviewSummaryService.generateWeeklySummaryForAllUsers(weekStart);
+        reviewSummaryService.generateWeeklyReviewSummaryForAllUsers(weekStart);
     }
 }

@@ -70,4 +70,8 @@ public class LineupService {
 
         return dtoList;
     }
+    
+    public List<String> getBatterNamesByScheduleId(int scheduleId, int teamId) {
+        return batterLineupRepository.findBatterNamesByScheduleIdAndTeamId(scheduleId, teamId);
+    }
 }

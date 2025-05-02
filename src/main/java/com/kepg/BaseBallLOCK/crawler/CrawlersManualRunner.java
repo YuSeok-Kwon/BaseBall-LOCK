@@ -18,8 +18,8 @@ public class CrawlersManualRunner {
 //			context.getBean(StatizTeamWaaCrawler.class).crawl(); // 팀 WAA기록 (teamStats)
 //			context.getBean(StatizTeamDetailedstatsCrawler.class).crawl(); // 팀 투수, 타자 세부지표 (teamStats)
 //			context.getBean(StatizScheduleCrawler.class).crawl(); // 경기 일정(종료, 예정 등) (schedule)
-            context.getBean(StatizPlayerGameRecordCrawler.class).crawl(); // 1경기의 타자 및 투수 기록(batterLineUp, BatterRecord, PitcherRecord)
-        	context.getBean(StatizGameSummaryCrawler.class).crawl(); // 1경기의 스코어보드 기록(scoreBoard)
+//            context.getBean(StatizPlayerGameRecordCrawler.class).crawl(); // 1경기의 타자 및 투수 기록(batterLineUp, BatterRecord, PitcherRecord)
+        	context.getBean(StatizGameSummaryCrawler.class).crawl(); // 1경기의 스코어보드 기록(scoreBoard), 하이라이트(gameHighlight)
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

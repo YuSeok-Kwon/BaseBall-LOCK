@@ -106,7 +106,8 @@
 			  <img th:src="@{/static/emblems/{logo}.svg(logo=${game.homeTeamLogo})}" class="table-team-logo mb-1 me-2">
 			</div>
 		</div>
-	
+		
+
 	    <!-- 이닝별 점수 테이블 -->
 	    <div class="table-responsive">
 	      <table class="table table-bordered text-center bg-white fs-5"
@@ -150,14 +151,50 @@
   		<span th:if="${game.savePitcher != null}"><b>세이브 : </b><span th:text="${game.savePitcher}" class="me-2">김성은</span></span><br>
   		<span th:if="${game.losePitcher != null}"><b>패전투수 : </b><span th:text="${game.losePitcher}" class="me-2">권석유</span></span>
 	  </div>
-    </div>
+	  
+	  <!-- 결정적 장면 Best 5 -->
+		<div class="card mt-5 border-warning shadow-sm">
+			<div class="text-center px-3 py-2 border-bottom d-flex align-items-center gap-2"
+			     style="background-color: #fef9c3;">
+			  <i class="bi bi-lightning-charge-fill text-warning fs-4"></i>
+			  <h5 class="mb-0 fw-bold text-dark">결정적 장면 Best 5</h5>
+			</div>
+		    <div class="card-body p-0">
+		      <table class="table table-bordered mb-0 text-center align-middle">
+		        <thead class="table-light">
+		         <tr class="align-middle">
+		            <th style="width: 6%;">순위</th>
+		            <th style="width: 10%;">이닝</th>
+		            <th style="width: 14%;">투수</th>
+		            <th style="width: 14%;">타자</th>
+		            <th style="width: 14%;">투구 수</th>
+		            <th style="width: 18%;">결과</th>
+		            <th style="width: 12%;">이전 상황</th>
+		            <th style="width: 12%;">이후 상황</th>
+		          </tr>
+		        </thead>
+		       <tbody>
+		            <tr th:each="highlight : ${game.highlights}">
+		            <td class="fw-bold " th:text="${highlight.ranking}">1</td>
+		            <td class="fw-bold text-warning-emphasis" th:text="${highlight.inning}">2회초</td>
+		            <td th:text="${highlight.pitcherName}">김도현</td>
+		            <td th:text="${highlight.batterName}">김형준</td>
+		            <td th:text="${highlight.pitchCount}">3 (1-1)</td>
+		            <td class="text-center ps-3" th:text="${highlight.result}">좌익수 뒤 홈런</td>
+		            <td th:text="${highlight.beforeSituation}">2사 1,3루 0:0</td>
+		            <td th:text="${highlight.afterSituation}">2사 3:0</td>
+		          </tr>
+		        </tbody>
+		      </table>
+		    </div>
+		</div>
   </div>
 	
  </div> 
 
-	<!-- 홈팀 타자 기록 -->
-    <div class="row mx-4">
-		<div class="col-md-6">
+		<!-- 홈팀 타자 기록 -->
+		<div class="row mx-4" th:if="${game.status != '취소'}">
+		 <div class="col-md-6">
 		  <div class="border p-3 rounded"
 	       	   th:if="${game.homeTeamColor != null}"
 	           th:style="|background-color: rgba(${T(com.kepg.BaseBallLOCK.common.ColorUtil).toRgba(game.homeTeamColor, 0.3)});|">
@@ -216,8 +253,7 @@
 	  </div>
 	
   <!-- 홈팀 투수 기록 -->
-  <div class="row mt-4 mx-4">
-	  <div class="col-md-6">
+	<div class="row mt-4 mx-4" th:if="${game.status != '취소'}">	  <div class="col-md-6">
 		<div class="border p-3 rounded"
 	       	 th:if="${game.homeTeamColor != null}"
 	         th:style="|background-color: rgba(${T(com.kepg.BaseBallLOCK.common.ColorUtil).toRgba(game.homeTeamColor, 0.3)});|">

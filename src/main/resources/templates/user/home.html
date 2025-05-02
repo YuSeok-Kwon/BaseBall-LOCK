@@ -64,14 +64,15 @@
 				  <div class="text-center">
 				     <img th:src="@{/static/emblems/{logo}.svg(logo=${myTeam.logoName})}" class="rounded team-logo-box mb-2">
 				     <div class="fs-2 fw-bold" th:text="${myTeam.name}">우리팀</div>
-				     <div class="fs-6 mb-2 text-muted" th:text="'(' + ${myRecord} + ')'">(5승 3패)</div>
-				     <div class="fs-4 d-flex justify-content-center gap-2">
-				       <span th:each="result : ${myRecentResults}" th:switch="${result}">
-				         <span th:case="'승'" class="text-success fw-bold">승</span>
-				         <span th:case="'패'" class="text-danger fw-bold">패</span>
-				         <span th:case="'무'" class="text-secondary fw-bold">무</span>
-				       </span>
-				     </div>
+				     <div class="fs-6 mb-2 text-muted" th:text="'상대전적 : ' + ${myRecord}">(5승 3패)</div>
+				     <div class="fs-4 d-flex justify-content-center align-items-center gap-2">
+					    <span th:each="result, stat : ${myRecentResults}" th:switch="${result}"
+						      th:style="|font-size: ${1 + stat.index * 0.2}rem;|">
+						  <span th:case="'승'" class="text-success fw-bold">승</span>
+						  <span th:case="'패'" class="text-danger fw-bold">패</span>
+						  <span th:case="'무'" class="text-secondary fw-bold">무</span>
+						</span>
+					</div>
 				  </div>
 				
 				  <!-- VS -->
@@ -81,13 +82,14 @@
 				  <div class="text-center">
 				      <img th:src="@{/static/emblems/{logo}.svg(logo=${opponentTeam.logoName})}" class="rounded team-logo-box mb-2">
 				      <div class="fs-2 fw-bold" th:text="${opponentTeam.name}">상대팀</div>
-				      <div class="fs-6 mb-2 text-muted" th:text="'(' + ${opponentRecord} + ')'">(3승 5패)</div>
-				      <div class="fs-4 d-flex justify-content-center gap-2">
-				        <span th:each="result : ${opponentRecentResults}" th:switch="${result}">
-				          <span th:case="'승'" class="text-success fw-bold">승</span>
-				          <span th:case="'패'" class="text-danger fw-bold">패</span>
-				          <span th:case="'무'" class="text-secondary fw-bold">무</span>
-				        </span>
+				      <div class="fs-6 mb-2 text-muted" th:text="'상대전적 : ' + ${opponentRecord}">(3승 5패)</div>
+				      <div class="fs-4 d-flex justify-content-center align-items-center gap-2">
+				        <span th:each="result, stat : ${opponentRecentResults}" th:switch="${result}"
+						      th:style="|font-size: ${1 + (opponentRecentResults.size() - 1 - stat.index) * 0.2}rem;|">
+						  <span th:case="'승'" class="text-success fw-bold">승</span>
+						  <span th:case="'패'" class="text-danger fw-bold">패</span>
+						  <span th:case="'무'" class="text-secondary fw-bold">무</span>
+						</span>
 				      </div>
 				  </div>
 				
@@ -117,7 +119,6 @@
 		        <div class="fs-4 fw-bold mb-1" th:text="${topHitter.name}">타자이름</div>
 		        <div class="text-primary fw-bold mb-1">
 		          WAR : <span th:text="${topHitter.war}">0.0</span>
-		          <span class="text-muted small">( <span th:text="${topHitter.warRank}">1</span>위 )</span>
 		        </div>
 		        <div class="text-muted small">
 		          <span th:text="${topHitter.avg}">.000</span> /
@@ -132,12 +133,11 @@
 		        <div class="fs-4 fw-bold mb-1" th:text="${topPitcher.name}">투수이름</div>
 		        <div class="text-primary fw-bold mb-1">
 		          WAR : <span th:text="${topPitcher.war}">0.0</span>
-		          <span class="text-muted small">( <span th:text="${topPitcher.warRank}">1</span>위 )</span>
 		        </div>
 		        <div class="text-muted small">
 		          WHIP <span th:text="${topPitcher.whip}">0.00</span> /
-		          <span th:text="${topPitcher.bestStatLabel}">W</span>
-		          <span th:text="${topPitcher.bestStatValue}">0</span> /
+		          <span th:text="${topPitcher.bestStatValue}">0</span>
+		          <span th:text="${topPitcher.bestStatLabel}">W</span> /
 		          ERA <span th:text="${topPitcher.era}">0.00</span>
 		        </div>
 		      </div>

@@ -3,6 +3,7 @@ package com.kepg.BaseBallLOCK.game.schedule.dto;
 import java.sql.Timestamp;
 import java.util.List;
 
+import com.kepg.BaseBallLOCK.game.highlight.dto.GameHighlightDTO;
 import com.kepg.BaseBallLOCK.game.lineUp.dto.BatterLineupDTO;
 import com.kepg.BaseBallLOCK.game.record.dto.BatterRecordDTO;
 import com.kepg.BaseBallLOCK.game.record.dto.PitcherRecordDTO;
@@ -52,4 +53,6 @@ public class GameDetailCardView {
     
     private String homeTeamColor;
     private String awayTeamColor;
+
+    private List<GameHighlightDTO> highlights;
 }

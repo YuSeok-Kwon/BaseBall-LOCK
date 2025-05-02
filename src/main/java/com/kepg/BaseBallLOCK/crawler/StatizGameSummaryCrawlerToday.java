@@ -2,11 +2,7 @@ package com.kepg.BaseBallLOCK.crawler;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -21,6 +17,8 @@ import org.springframework.stereotype.Component;
 import com.kepg.BaseBallLOCK.game.schedule.service.ScheduleService;
 import com.kepg.BaseBallLOCK.game.scoreBoard.domain.ScoreBoard;
 import com.kepg.BaseBallLOCK.game.scoreBoard.service.ScoreBoardService;
+import com.kepg.BaseBallLOCK.game.highlight.dto.GameHighlightDTO;
+import com.kepg.BaseBallLOCK.game.highlight.service.GameHighlightService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,6 +28,7 @@ public class StatizGameSummaryCrawlerToday {
 
     private final ScheduleService scheduleService;
     private final ScoreBoardService scoreBoardService;
+    private final GameHighlightService gameHighlightService;
 
     private static final Map<String, Integer> teamNameToId = new HashMap<>();
     static {
@@ -42,10 +41,10 @@ public class StatizGameSummaryCrawlerToday {
         teamNameToId.put("NC", 7);
         teamNameToId.put("KT", 8);
         teamNameToId.put("롯데", 9);
-        teamNameToId.put("키움", 10);
+        teamNameToId.put("키울", 10);
     }
-    
-    @Scheduled(cron = "0 8 0 * * *" )
+
+    @Scheduled(cron = "0 8 0 * * *")
     public void crawl() {
         WebDriver driver = null;
         try {
@@ -86,25 +85,13 @@ public class StatizGameSummaryCrawlerToday {
 
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("스코어 저장 실패");
+            System.out.println("스코어보드 저장 실패");
 
         } finally {
             if (driver != null) driver.quit();
         }
     }
 
-    private void parseScores(Elements tds, List<Integer> scoreList) {
-        for (int i = 1; i <= 9; i++) {
-            String score = Optional.ofNullable(tds.get(i).selectFirst(".score"))
-                    .map(Element::ownText).orElse("0");
-            scoreList.add(Integer.parseInt(score.trim()));
-        }
-    }
-
-    private int getInt(Element td) {
-        return Integer.parseInt(td.selectFirst(".score").ownText().trim());
-    }
-    
     private void processSummaryPage(WebDriver driver, int statizId, LocalDate matchDate) {
         try {
             String gameUrl = "https://statiz.sporki.com/schedule/?m=summary&s_no=" + statizId;
@@ -114,10 +101,7 @@ public class StatizGameSummaryCrawlerToday {
             Document gameDoc = Jsoup.parse(driver.getPageSource());
 
             Element scoreTable = gameDoc.selectFirst("div.box_type_boared > div.item_box.w100 .table_type03 table");
-            if (scoreTable == null) {
-                System.out.println("스코어 테이블 없음: " + statizId);
-                return;
-            }
+            if (scoreTable == null) return;
 
             Elements rows = scoreTable.select("tbody > tr");
             if (rows.size() < 2) return;
@@ -153,14 +137,19 @@ public class StatizGameSummaryCrawlerToday {
 
             Timestamp matchDateTime = Timestamp.valueOf(matchDate.atStartOfDay());
             Integer scheduleId = scheduleService.findIdByDateAndTeams(matchDateTime, homeTeamId, awayTeamId);
-            if (scheduleId == null) return;
+            if (scheduleId == null) {
+            	return;
+            }
 
             saveScoreBoard(scheduleId, homeScores, awayScores,
                     homeR, homeH, homeE, homeB,
                     awayR, awayH, awayE, awayB,
                     winPitcher, losePitcher);
+            System.out.println("스코어 + 결정적장면 저장 완료: " + statizId);
 
-            System.out.println("스코어 저장 완료: " + statizId + " → ScheduleId: " + scheduleId);
+            saveGameHighlights(gameDoc, scheduleId);
+            System.out.println("결정적장면 저장 완료: " + statizId);
+
             Thread.sleep(2000);
 
         } catch (Exception e) {
@@ -168,7 +157,7 @@ public class StatizGameSummaryCrawlerToday {
             e.printStackTrace();
         }
     }
-    
+
     private void saveScoreBoard(Integer scheduleId, List<Integer> homeScores, List<Integer> awayScores,
                                 int homeR, int homeH, int homeE, int homeB,
                                 int awayR, int awayH, int awayE, int awayB,
@@ -186,6 +175,47 @@ public class StatizGameSummaryCrawlerToday {
                 .build();
 
         scoreBoardService.saveOrUpdate(scoreBoard);
+    }
+
+    private void saveGameHighlights(Document doc, Integer scheduleId) {
+        Element highlightBox = doc.selectFirst("div.sh_box:has(.box_head:contains(결정적 장면 Best 5)) table");
+        if (highlightBox == null) {
+            System.out.println("결정적 장면 테이블 없음");
+            return;
+        }
+
+        Elements rows = highlightBox.select("tbody > tr");
+        int ranking = 1;
+
+        for (Element row : rows) {
+            Elements tds = row.select("td");
+
+            GameHighlightDTO dto = GameHighlightDTO.builder()
+                    .scheduleId(scheduleId)
+                    .ranking(ranking++)
+                    .inning(tds.get(0).text().trim())
+                    .pitcherName(tds.get(1).text().trim())
+                    .batterName(tds.get(2).text().trim())
+                    .pitchCount(tds.get(3).text().trim())
+                    .result(tds.get(4).text().trim())
+                    .beforeSituation(tds.get(5).text().trim())
+                    .afterSituation(tds.get(6).text().trim())
+                    .build();
+
+            gameHighlightService.saveOrUpdate(dto);
+        }
+    }
+
+    private void parseScores(Elements tds, List<Integer> scoreList) {
+        for (int i = 1; i <= 9; i++) {
+            String score = Optional.ofNullable(tds.get(i).selectFirst(".score"))
+                    .map(Element::ownText).orElse("0");
+            scoreList.add(Integer.parseInt(score.trim()));
+        }
+    }
+
+    private int getInt(Element td) {
+        return Integer.parseInt(td.selectFirst(".score").ownText().trim());
     }
 
     private String toInningString(List<Integer> scores) {

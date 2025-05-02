@@ -59,7 +59,7 @@ public class StatizScheduleCrawler  {
     	WebDriver driver = null;
 
         for (int year = 2025; year <= 2025; year++) {
-            for (int month = 4; month <= 4; month++) {
+            for (int month = 5; month <= 5; month++) {
             	String url = String.format(baseUrl, year, month);
             	System.out.println("크롤링 시작: ");
 

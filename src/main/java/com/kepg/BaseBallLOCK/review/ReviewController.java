@@ -120,13 +120,16 @@ public class ReviewController {
         // 기존 리뷰 있으면 수정용
         if (reviewId != null) {
             Optional<Review> reviewOpt = reviewService.findById(reviewId);
-            System.out.println("🔍 리뷰 내용: " + reviewOpt.get().getSummary());
             if (reviewOpt.isPresent()) {
-                model.addAttribute("review", reviewOpt.get());
-                System.out.println("🔍 리뷰 내용: " + reviewOpt.get().getSummary());
+                Review review = reviewOpt.get();
+                model.addAttribute("review", review);
+            } else {
+                Review emptyReview = new Review();
+                emptyReview.setScheduleId(scheduleId);
+                emptyReview.setUserId(userId);
+                model.addAttribute("review", emptyReview);
             }
         } else {
-            // 새 리뷰 객체
             Review newReview = new Review();
             newReview.setScheduleId(scheduleId);
             newReview.setUserId(userId);
@@ -135,6 +138,7 @@ public class ReviewController {
         model.addAttribute("teamColor", teamColor);
         model.addAttribute("scheduleInfo", scheduleInfo);
         model.addAttribute("game", game);
+        
         
         return "review/write";
     }

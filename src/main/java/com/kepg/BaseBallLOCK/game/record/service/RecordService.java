@@ -153,4 +153,8 @@ public class RecordService {
 
         return dtoList;
     }
+    
+    public List<String> getPitcherNamesByScheduleId(int scheduleId, int teamId) {
+        return pitcherRecordRepository.findPitcherNamesByScheduleIdAndTeamId(scheduleId, teamId);
+    }
 }
