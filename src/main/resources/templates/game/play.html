@@ -1,0 +1,534 @@
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/noheadefooter}">
+
+<head>
+  <style>
+    body {
+      background-image: url('/static/game/ground.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      position: relative;
+      height: 100vh;
+    }
+    
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 0;
+    }
+
+    /* 루 및 주자 */
+    .base-point {
+      position: absolute;
+      font-size: 1.4rem;
+	  font-weight: bold;
+	  color: white;
+	  background: transparent;
+	  opacity: 1;
+	}
+
+    .runner-icon {
+      position: absolute;
+      font-size: 3rem;
+      transition: top 0.2s ease, left 0.2s ease;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+    }
+    
+	.play-by-play-wrapper {
+	  max-width: 600px;
+	  margin: 2rem auto;
+	  background-color: rgba(0, 0, 0, 0.6);
+	  padding: 1rem;
+	  border-radius: 1rem;
+	  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+	  border: 2px solid #ffffff44;
+	  overflow: hidden; /* 자식 요소가 넘치지 않게 강제 차단 */
+	}
+	
+	#play-by-play {
+	  max-height: 40px;
+	  overflow-y: auto; 
+	  font-size: 1.1rem;
+	  color: white;
+	  line-height: 1;
+	  font-family: 'Noto Sans KR', sans-serif;
+	  white-space: normal;
+	  word-break: break-word;
+	  padding-right: 4px;
+	}
+	#play-by-play::-webkit-scrollbar {
+	  display: none;
+	}
+	/* 라인업 카드 */
+	.card-mini {
+	  font-size: 0.75rem;
+	  padding: 4px 8px;
+	  border: 1px solid #ccc;
+	  border-radius: 6px;
+	  background-color: #f8f9fa;
+	  z-index: 2;
+	  box-shadow: 1px 1px 4px rgba(0,0,0,0.2);
+	}
+  </style>
+</head>
+
+<th:block layout:fragment="contents">
+  <div class="overlay"></div>
+
+  <div class="container-fluid d-flex flex-column" style="position: relative; z-index: 1;">
+    <div class="text-center mt-4">
+	  <button id="start-game-btn" class="btn btn-warning fw-bold px-4 py-2">🏁 경기 시작</button>
+	</div>
+    <!-- 스코어보드 -->
+    <div id="score-board" class="text-white text-center pt-3">
+      <table class="table table-bordered table-sm text-white mb-0" style="background-color: rgba(0,0,0,0.3);">
+        <thead>
+          <tr>
+            <th>팀</th>
+            <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
+            <th>6</th><th>7</th><th>8</th><th>9</th><th>합계</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr id="user-score-row">
+            <td>🧑</td>
+            <td id="u0"></td><td id="u1"></td><td id="u2"></td><td id="u3"></td><td id="u4"></td>
+            <td id="u5"></td><td id="u6"></td><td id="u7"></td><td id="u8"></td>
+            <td id="uTotal"></td>
+          </tr>
+          <tr id="bot-score-row">
+            <td>🤖</td>
+            <td id="b0"></td><td id="b1"></td><td id="b2"></td><td id="b3"></td><td id="b4"></td>
+            <td id="b5"></td><td id="b6"></td><td id="b7"></td><td id="b8"></td>
+            <td id="bTotal"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- 중계 텍스트 영역 -->
+    <div class="play-by-play-wrapper">
+       <h5 class="text-white">📺 중계 방송</h5>
+      <div id="play-by-play"></div>
+    </div>
+    
+    <!-- 경기장 영역 (라인업 + 루 + 주자) -->
+    <div id="field" class="d-flex justify-content-between align-items-start">
+      <!-- 왼쪽: 유저 라인업 -->
+	  <div id="user-lineup-box"
+	       class="position-relative"
+	       style="width: 300px; height: 600px; margin-top: 10px; overflow: hidden;"></div>
+      <!-- 중앙: 야구장 구성 -->
+      <div id="stadium" class="position-relative" style="width: 400px; height: 400px;">
+        <!-- 루 위치 -->
+        <div id="base-home" class="base-point" style="top: 110%; left: 43%;">
+            <img src="/static/game/home.png" width="35"/>
+        </div>
+        <div id="base-1" class="base-point" style="top: 60%; left: 120%;">
+            <img src="/static/game/base.png" width="35"/>
+        </div>
+        <div id="base-2" class="base-point" style="top: 0%; left: 43%;">
+            <img src="/static/game/base.png" width="35"/>
+        </div>
+        <div id="base-3" class="base-point" style="top: 60%; left: -34%;">
+            <img src="/static/game/base.png" width="35"/>
+        </div>
+
+        <!-- 유저 팀 주자 -->
+		<div id="runner-1" class="runner-icon" style="display:none;">🧍‍♂️</div>
+		<div id="runner-2" class="runner-icon" style="display:none;">🏃‍♂️</div>
+		<div id="runner-3" class="runner-icon" style="display:none;">🏃💨</div>
+		
+		<!-- 봇 팀 주자 -->
+		<div id="bot-runner-1" class="runner-icon" style="display:none;">🤖</div>
+		<div id="bot-runner-2" class="runner-icon" style="display:none;">👾</div>
+		<div id="bot-runner-3" class="runner-icon" style="display:none;">🛸💥</div>
+      </div>
+
+      <!-- 오른쪽: 봇 라인업 -->
+	  <div id="bot-lineup-box"
+           class="position-relative"
+           style="width: 300px; height: 600px; margin-top: 10px; overflow: hidden;"></div>
+     </div>
+  </div>
+</th:block>
+
+<th:block layout:fragment="script">
+<script th:inline="javascript">
+    const userId = [[${session.userId}]];
+    const difficulty = '[[${difficulty}]]';
+</script>
+<script>
+	//경기 상태 변수 초기화
+	let baseState = [null, null, null];
+	let botBaseState = [null, null, null];
+	let runnerCounter = 1;
+	let botRunnerCounter = 1;
+	let userLineup = [];
+	let botLineup = [];
+	
+	// 게임 시작 버튼 클릭 시
+	const startBtn = document.getElementById('start-game-btn');
+	startBtn.addEventListener('click', startGameAndLoadLineups);
+	
+	// 게임 시작 요청 및 라인업 불러오기
+	function startGameAndLoadLineups() {
+	  $.ajax({
+	    url: '/game/lineup',
+	    type: 'POST',
+	    contentType: 'application/json',
+	    data: JSON.stringify({ userId: userId, difficulty: difficulty }),
+	    success: function (data) {
+	      userLineup = data.userLineup;
+	      botLineup = data.botLineup;
+	      const gameResult = data.results;
+	
+	      renderLineup(userLineup, 'user-lineup-box');
+	      renderLineup(botLineup, 'bot-lineup-box', true);
+	      runSimulation(gameResult);
+	    }
+	  });
+	}
+	
+	// 라인업 카드 렌더링 함수 (기본 또는 봇 여부 구분)
+	function renderLineup(lineup, targetId, isBot) {
+	  const container = document.getElementById(targetId);
+	  container.innerHTML = '';
+
+	  const positionOrder = {
+	    'C': 1, '1B': 2, '2B': 3, '3B': 4, 'SS': 5,
+	    'LF': 6, 'CF': 7, 'RF': 8, 'DH': 9, 'P': 10
+	  };
+
+	  lineup.sort(function (a, b) {
+	    const aOrder = positionOrder[a.position] || 99;
+	    const bOrder = positionOrder[b.position] || 99;
+	    return aOrder - bOrder;
+	  });
+
+	  for (let i = 0; i < lineup.length; i++) {
+	    const card = lineup[i];
+	    const div = document.createElement('div');
+	    div.className = 'card-mini text-center bg-light border rounded position-absolute p-1';
+	    div.innerHTML =
+	      '<div class="fw-bold">' + card.playerName + '</div>' +
+	      '<div>' + card.position + '</div>' +
+	      '<div class="text-muted">' + card.grade + '등급</div>';
+
+	    div.style.top = (i * 40) + 'px';
+	    if (isBot) {
+	      div.style.right = (i * 20) + 'px'; // 봇은 오른쪽으로
+	    } else {
+	      div.style.left = (i * 20) + 'px';  // 유저는 왼쪽으로
+	    }
+
+	    container.appendChild(div);
+	  }
+	}
+	
+	// 주자 상태 초기화
+	function resetRunners() {
+	  for (let i = 1; i <= 3; i++) {
+	    hideRunner('runner-' + i);
+	    hideRunner('bot-runner-' + i);
+	  }
+	  baseState = [null, null, null];
+	  botBaseState = [null, null, null];
+	  runnerCounter = 1;
+	  botRunnerCounter = 1;
+	}
+	
+	// 주자 숨기기
+	function hideRunner(runnerId) {
+	  const runner = document.getElementById(runnerId);
+	  if (runner) runner.style.display = 'none';
+	}
+	
+	// 주자 득점 처리
+	function scoreRun(runnerId) {
+	  moveRunnerTo('base-home', runnerId);
+	  setTimeout(function () {
+	    hideRunner(runnerId);
+	  }, 900);
+	}
+	
+	// 주자 ID 생성 및 표시
+	function getNextRunnerId(team) {
+	  let id;
+	  if (team === 'bot') {
+	    id = 'bot-runner-' + botRunnerCounter;
+	    botRunnerCounter++;
+	  } else {
+	    id = 'runner-' + runnerCounter;
+	    runnerCounter++;
+	  }
+	
+	  const runnerDiv = document.getElementById(id);
+	  if (runnerDiv) {
+	    runnerDiv.style.display = 'block';
+	    return id;
+	  }
+	  return null;
+	}
+	
+	// 주자 이동 처리
+	function moveRunnerTo(baseId, runnerId) {
+	  const base = document.getElementById(baseId);
+	  const runner = document.getElementById(runnerId);
+	  const stadium = document.getElementById('stadium');
+	  if (!base || !runner || !stadium) return;
+	
+	  const rect = base.getBoundingClientRect();
+	  const stadiumRect = stadium.getBoundingClientRect();
+	
+	  const left = rect.left - stadiumRect.left + rect.width / 2;
+	  const top = rect.top - stadiumRect.top + rect.height / 2;
+	
+	  runner.style.left = left + 'px';
+	  runner.style.top = top + 'px';
+	  runner.style.display = 'block';
+	}
+	
+	// 타자 이름 치환
+	function replaceBatterName(playText, lineup) {
+	  const match = playText.match(/^([0-9]+)번 타자: (.+)$/);
+	  if (!match) return playText;
+	
+	  const batterIndex = parseInt(match[1], 10) - 1;
+	  const playerName = (lineup[batterIndex] && lineup[batterIndex].playerName) || '???';
+	  return playerName + ': ' + match[2];
+	}
+	
+	// 경기 로그 출력
+	function logPlayByPlay(message) {
+	  const container = document.getElementById('play-by-play');
+	  const line = document.createElement('p');
+	  line.innerText = message;
+	  container.appendChild(line);
+	  container.scrollTop = container.scrollHeight;
+	}
+	
+	// 경기 로그 및 AI 해설 출력
+	function logPlayByPlayWithAI(play) {
+	  const parts = play.split(': ');
+	  const result = parts.length > 1 ? parts[1] : '';
+	  const comment = getAiComment(result);
+	
+	  let message = play;
+	  if (comment) message += ' ' + comment;
+	
+	  logPlayByPlay(message);
+	}
+	
+	// 결과 기반 AI 해설 텍스트 반환
+	function getAiComment(result) {
+      const comments = {
+        '안타': [
+          '⚾ 유격수 옆을 통과하는 안타!',
+          '🧢 빠른 타구가 외야로!',
+          '🔔 깨끗한 중전 안타!',
+          '🎯 타이밍 완벽한 안타!'
+        ],
+        '2루타': [
+          '💥 깊숙한 2루타!',
+          '📦 외야수 사이를 뚫었습니다!',
+          '🚀 빠르게 2루까지 도달!',
+          '💪 파워 있는 타구, 2루타!'
+        ],
+        '3루타': [
+          '🔥 질주하는 3루타!',
+          '🎢 장타! 주자 3루까지!',
+          '💨 외야 구석까지 굴러갑니다!',
+          '🌪️ 슬라이딩으로 3루 도착!'
+        ],
+        '홈런': [
+          '💣 담장을 넘겼습니다!',
+          '🎉 대형 홈런! 팬들 열광!',
+          '🧨 중견수 넘어가는 비거리!',
+          '⚡ 이것이 홈런입니다!'
+        ],
+        '볼넷': [
+          '⚾ 볼넷 출루!',
+          '🙄 제구 난조! 1루로 출루합니다.',
+          '🧍 스트라이크 존을 벗어났습니다.',
+          '🧠 침착하게 볼넷을 얻어냅니다.'
+        ],
+        '삼진': [
+          '💨 헛스윙 삼진!',
+          '😓 변화구에 속았습니다.',
+          '⚔️ 루킹 삼진! 움직이지 못했어요.',
+          '🌀 완벽한 삼진 처리!'
+        ],
+        '아웃': [
+          '🧤 평범한 내야 땅볼 아웃!',
+          '🪃 뜬공! 잡혔습니다.',
+          '🧊 타이밍이 늦었습니다, 아웃!',
+          '🔒 수비가 침착하게 처리합니다.'
+        ],
+        '병살': [
+          '😱 병살! 찬스를 놓칩니다.',
+          '🧱 병살타! 공격 흐름이 끊깁니다.',
+          '😖 아쉬운 병살 플레이!',
+          '☠️ 두 명이 동시에 아웃됩니다!'
+        ]
+      };
+	
+	  const options = comments[result];
+	  if (!options) return '';
+	  const index = Math.floor(Math.random() * options.length);
+	  return options[index];
+	}
+	
+	// 플레이 메시지 출력과 딜레이 조절
+	function delayAndLog(playMessage) {
+	  return new Promise(function (resolve) {
+	    const container = document.getElementById('play-by-play');
+	    const parts = playMessage.split(': ');
+	    const result = parts.length > 1 ? parts[1] : '';
+	    const comment = getAiComment(result);
+	
+	    const line = document.createElement('p');
+	    line.innerText = comment ? playMessage + ' ' + comment : playMessage;
+	    container.appendChild(line);
+	    container.scrollTop = container.scrollHeight;
+	
+	    let delayTime = 2000;
+	    if (result === '홈런') delayTime = 6000;
+	    else if (result === '2루타' || result === '3루타') delayTime = 4000;
+	    else if (result === '안타' || result === '볼넷') delayTime = 3000;
+	
+	    setTimeout(resolve, delayTime);
+	  });
+	}
+	
+	// 이닝 사이 짧은 딜레이
+	function delayInningBreak() {
+	  return new Promise(function (resolve) {
+	    setTimeout(resolve, 1000);
+	  });
+	}
+	
+	// 점수판 업데이트
+	function updateScoreBoard(inningIndex, userScore, botScore) {
+	  const userCell = document.getElementById('u' + inningIndex);
+	  const botCell = document.getElementById('b' + inningIndex);
+	  if (userCell) userCell.innerText = userScore;
+	  if (botCell) botCell.innerText = botScore;
+	
+	  let uSum = 0;
+	  let bSum = 0;
+	  for (let i = 0; i <= inningIndex; i++) {
+	    const u = parseInt(document.getElementById('u' + i)?.innerText || 0);
+	    const b = parseInt(document.getElementById('b' + i)?.innerText || 0);
+	    uSum += u;
+	    bSum += b;
+	  }
+	  document.getElementById('uTotal').innerText = uSum;
+	  document.getElementById('bTotal').innerText = bSum;
+	}
+	
+	// 시뮬레이션 실행 및 진행
+	async function runSimulation(gameResult) {
+	  for (let i = 0; i < gameResult.length; i++) {
+	    const inning = gameResult[i];
+	
+	    resetRunners();
+	    for (let j = 0; j < inning.userPlays.length; j++) {
+	      const play = inning.userPlays[j];
+	      const replaced = replaceBatterName(play, userLineup);
+	      handlePlayResult(replaced.split(': ')[1], 'user');
+	      await delayAndLog(replaced);
+	    }
+	    updateScoreBoard(i, inning.userScore, 0);
+	    await delayInningBreak();
+	
+	    resetRunners();
+	    for (let j = 0; j < inning.botPlays.length; j++) {
+	      const play = inning.botPlays[j];
+	      const replaced = replaceBatterName(play, botLineup);
+	      handlePlayResult(replaced.split(': ')[1], 'bot');
+	      await delayAndLog(replaced);
+	    }
+	    updateScoreBoard(i, inning.userScore, inning.botScore);
+	    await delayInningBreak();
+	  }
+	
+	  await delayAndLog('경기 종료');
+	}
+	
+	// 각 상황별 주자 처리
+	function handlePlayResult(result, team) {
+	  const state = (team === 'bot') ? botBaseState : baseState;
+	
+	  if (result === '안타') {
+	    if (state[2]) scoreRun(state[2]);
+	    if (state[1]) moveRunnerTo('base-3', state[1]);
+	    state[2] = state[1];
+	    if (state[0]) moveRunnerTo('base-2', state[0]);
+	    state[1] = state[0];
+	    const newRunner = getNextRunnerId(team);
+	    if (newRunner) moveRunnerTo('base-1', newRunner);
+	    state[0] = newRunner;
+	  } else if (result === '2루타') {
+	    if (state[2]) scoreRun(state[2]);
+	    if (state[1]) scoreRun(state[1]);
+	    if (state[0]) moveRunnerTo('base-3', state[0]);
+	    state[2] = state[0];
+	    const newRunner = getNextRunnerId(team);
+	    if (newRunner) moveRunnerTo('base-2', newRunner);
+	    state[1] = newRunner;
+	    state[0] = null;
+	  } else if (result === '3루타') {
+	    for (let i = 0; i < 3; i++) {
+	      if (state[i]) scoreRun(state[i]);
+	    }
+	    const newRunner = getNextRunnerId(team);
+	    if (newRunner) moveRunnerTo('base-3', newRunner);
+	    state[0] = null;
+	    state[1] = null;
+	    state[2] = newRunner;
+	  } else if (result === '홈런') {
+	    for (let i = 0; i < 3; i++) {
+	      if (state[i]) scoreRun(state[i]);
+	    }
+	    const newRunner = getNextRunnerId(team);
+	    if (newRunner) {
+	      moveRunnerTo('base-1', newRunner);
+	      setTimeout(function () {
+	        moveRunnerTo('base-2', newRunner);
+	      }, 500);
+	      setTimeout(function () {
+	        moveRunnerTo('base-3', newRunner);
+	      }, 1000);
+	      setTimeout(function () {
+	        scoreRun(newRunner);
+	      }, 1500);
+	    }
+	    state[0] = null;
+	    state[1] = null;
+	    state[2] = null;
+	  } else if (result === '볼넷') {
+	    if (state[2]) scoreRun(state[2]);
+	    if (state[1]) moveRunnerTo('base-3', state[1]);
+	    state[2] = state[1];
+	    if (state[0]) moveRunnerTo('base-2', state[0]);
+	    state[1] = state[0];
+	    const newRunner = getNextRunnerId(team);
+	    if (newRunner) moveRunnerTo('base-1', newRunner);
+	    state[0] = newRunner;
+	  } else if (result === '병살') {
+	    if (state[0]) hideRunner(state[0]);
+	    state[0] = null;
+	  }
+	}
+
+</script>
+</th:block>
+</html>

@@ -1,0 +1,518 @@
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/reviewDefault}">
+<head>
+  <style>
+    input[type="checkbox"][disabled] + label {
+      color: #000 !important;
+      opacity: 1 !important;
+    }
+  </style>
+</head>
+<th:block layout:fragment="contents">
+
+	<!-- 라인업 슬롯 영역 -->
+	<div class="bg-light p-4 rounded shadow-sm mb-4">
+	  <h5 class="text-center mb-3 fw-bold">라인업 구성</h5>
+	  <div id="lineupArea" class="d-flex flex-wrap justify-content-center gap-3">
+		  <div class="lineup-slot border rounded text-center py-3 px-2 fw-semibold" style="width: 150px;" data-position="1">1번 타자</div>
+		  <div class="lineup-slot border rounded text-center py-3 px-2 fw-semibold" style="width: 150px;" data-position="2">2번 타자</div>
+		  <div class="lineup-slot border rounded text-center py-3 px-2 fw-semibold" style="width: 150px;" data-position="3">3번 타자</div>
+		  <div class="lineup-slot border rounded text-center py-3 px-2 fw-semibold" style="width: 150px;" data-position="4">4번 타자</div>
+		  <div class="lineup-slot border rounded text-center py-3 px-2 fw-semibold" style="width: 150px;" data-position="5">5번 타자</div>
+		  <div class="lineup-slot border rounded text-center py-3 px-2 fw-semibold" style="width: 150px;" data-position="6">6번 타자</div>
+		  <div class="lineup-slot border rounded text-center py-3 px-2 fw-semibold" style="width: 150px;" data-position="7">7번 타자</div>
+		  <div class="lineup-slot border rounded text-center py-3 px-2 fw-semibold" style="width: 150px;" data-position="8">8번 타자</div>
+		  <div class="lineup-slot border rounded text-center py-3 px-2 fw-semibold" style="width: 150px;" data-position="9">9번 타자</div>
+		  <div class="lineup-slot border rounded text-center py-3 px-2 fw-semibold" style="width: 150px;" data-position="P">투수</div>
+		</div>
+		
+		<div class="text-center my-4">
+  <h6 class="fw-bold mb-3">포지션 구성 체크</h6>
+  <div id="positionCheckArea" class="position-layout d-flex flex-column align-items-center gap-2">
+    
+    <div class="d-flex gap-4">
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" id="check-LF" disabled>
+        <label class="form-check-label" for="check-LF">좌익수</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" id="check-CF" disabled>
+        <label class="form-check-label" for="check-CF">중견수</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" id="check-RF" disabled>
+        <label class="form-check-label" for="check-RF">우익수</label>
+      </div>
+    </div>
+
+    <div class="d-flex gap-4 mt-3">
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" id="check-SS" disabled>
+        <label class="form-check-label" for="check-SS">유격수</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" id="check-2B" disabled>
+        <label class="form-check-label" for="check-2B">2루수</label>
+      </div>
+    </div>  
+    
+    <div class="d-flex gap-4 mt-2">
+      <div class="form-check form-check-inline pe-3">
+        <input class="form-check-input" type="checkbox" id="check-3B" disabled>
+        <label class="form-check-label" for="check-3B">3루수</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" id="check-P" disabled>
+        <label class="form-check-label" for="check-P">투수</label>
+      </div>
+      <div class="form-check form-check-inline ps-5">
+        <input class="form-check-input" type="checkbox" id="check-1B" disabled>
+        <label class="form-check-label" for="check-1B">1루수</label>
+      </div>
+    </div>
+
+    <div class="d-flex gap-4 mt-2">
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" id="check-C" disabled>
+        <label class="form-check-label" for="check-C">포수</label>
+      </div>
+    </div>
+
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="checkbox" id="check-DH" disabled>
+      <label class="form-check-label" for="check-DH">지명타자</label>
+    </div>
+  </div>
+</div>
+	</div>
+	
+	<!-- 카드 보관함 -->
+	<div class="bg-light p-4 rounded shadow-sm">
+	  <!-- 등급/포지션 필터 -->
+	  <div class="d-flex gap-3 align-items-center mb-3">
+	    <h5 class="fw-bold mb-3">보유한 선수 카드</h5>
+	    <select id="gradeFilter" class="form-select" style="width: 150px;">
+	      <option value="">전체 등급</option>
+	      <option value="S">S</option>
+	      <option value="A">A</option>
+	      <option value="B">B</option>
+	      <option value="C">C</option>
+	    </select>
+	    <select id="positionFilter" class="form-select" style="width: 150px;">
+	      <option value="">전체 포지션</option>
+	      <option value="P">투수</option>
+	      <option value="1B">1루수</option>
+	      <option value="2B">2루수</option>
+	      <option value="3B">3루수</option>
+	      <option value="SS">유격수</option>
+	      <option value="LF">좌익수</option>
+	      <option value="CF">중견수</option>
+	      <option value="RF">우익수</option>
+	      <option value="C">포수</option>
+	      <option value="DH">지명타자</option>
+	    </select>
+	  </div>
+	  <div id="cardStorageArea" class="d-flex flex-wrap gap-2"></div>
+	</div>
+	
+	<!-- 저장 버튼 -->
+	<div class="text-center mt-4">
+	  <button id="saveLineupBtn" class="btn btn-success btn-lg px-5 mb-5">
+	    💾 라인업 저장
+	  </button>
+	  <a href="/game/ready-view" class="btn btn-primary btn-lg px-5 mb-5">
+	    🎮 게임하러 가기
+	  </a>
+    </div>
+</th:block>
+
+<th:block layout:fragment="script">
+<script>
+	//카드 필터 적용
+	function applyCardFilter() {
+	  const grade = document.getElementById('gradeFilter').value;
+	  const pos = document.getElementById('positionFilter').value;
+	  const storage = document.getElementById('cardStorageArea');
+	  storage.innerHTML = '';
+	
+	  const positionOrder = {
+	    'P': 0, 'C': 1, '1B': 2, '2B': 3, '3B': 4, 'SS': 5,
+	    'LF': 6, 'CF': 7, 'RF': 8, 'DH': 9
+	  };
+	
+	  const sorted = [];
+	  for (let i = 0; i < allMyCards.length; i++) {
+	    sorted.push(allMyCards[i]);
+	  }
+	  sorted.sort(function (a, b) {
+	    return (positionOrder[a.position] || 99) - (positionOrder[b.position] || 99);
+	  });
+	
+	  for (let i = 0; i < sorted.length; i++) {
+	    const c = sorted[i];
+	    if (grade && c.grade !== grade) continue;
+	    if (pos && c.position !== pos) continue;
+	    storage.appendChild(createStorageCard(c));
+	  }
+	}
+	
+	// 라인업 유효성 검사
+	function isValidLineup() {
+	  if (selectedLineup.length !== 10) {
+	    alert('모든 슬롯을 채워주세요');
+	    return false;
+	  }
+	
+	  let pitcherCount = 0;
+	  let positionCount = {};
+	  let playerSet = {};
+	
+	  for (let i = 0; i < selectedLineup.length; i++) {
+	    const entry = selectedLineup[i];
+	    if (playerSet[entry.playerId]) {
+	      alert('동일 선수를 중복 배치할 수 없습니다.');
+	      return false;
+	    }
+	    playerSet[entry.playerId] = true;
+	
+	    if (positionCount[entry.position]) {
+	      positionCount[entry.position]++;
+	    } else {
+	      positionCount[entry.position] = 1;
+	    }
+	
+	    if (entry.position === 'P') {
+	      pitcherCount++;
+	    }
+	  }
+	
+	  if (pitcherCount !== 1) {
+	    alert('투수는 반드시 1명만 있어야 합니다.');
+	    return false;
+	  }
+	
+	  const requiredPositions = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF'];
+	  let missing = [];
+	  let duplicated = [];
+	
+	  for (let i = 0; i < requiredPositions.length; i++) {
+	    const pos = requiredPositions[i];
+	    const count = positionCount[pos] || 0;
+	    if (count === 0) missing.push(pos);
+	    else if (count > 1) duplicated.push(pos);
+	  }
+	
+	  if (duplicated.length > 1) {
+	    alert('포지션 중복은 하나만 허용됩니다.\n중복된 포지션: ' + duplicated.join(', '));
+	    return false;
+	  }
+	
+	  if (missing.length > 1) {
+	    alert('다음 포지션이 누락되었습니다: ' + missing.join(', ') + '\n최대 한 개만 지명타자로 대체 가능합니다.');
+	    return false;
+	  }
+	
+	  return true;
+	}
+	
+	// 포지션 체크박스 갱신
+	function updatePositionSummary() {
+	  const checkIds = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH', 'P'];
+	  for (let i = 0; i < checkIds.length; i++) {
+	    const checkbox = document.getElementById('check-' + checkIds[i]);
+	    if (checkbox) {
+	      checkbox.checked = false;
+	    }
+	  }
+	
+	  const positionCount = {};
+	  let dhAssigned = false;
+	
+	  for (let i = 0; i < selectedLineup.length; i++) {
+	    const pos = selectedLineup[i].position;
+	    positionCount[pos] = (positionCount[pos] || 0) + 1;
+	  }
+	
+	  for (const pos in positionCount) {
+	    const checkbox = document.getElementById('check-' + pos);
+	    if (checkbox) checkbox.checked = true;
+	
+	    if (positionCount[pos] > 1 && !dhAssigned && pos !== 'DH') {
+	      const dhCheckbox = document.getElementById('check-DH');
+	      if (dhCheckbox) dhCheckbox.checked = true;
+	      dhAssigned = true;
+	    }
+	  }
+	}
+	
+	// 카드 UI 생성
+	function createStorageCard(card) {
+	  const cardDiv = document.createElement('div');
+	  cardDiv.className = 'storage-card card text-center p-2';
+	  cardDiv.style.width = '90px';
+	  cardDiv.style.fontSize = '0.75rem';
+	  cardDiv.style.border = '2px solid ' + card.teamColor;
+	
+	  cardDiv.setAttribute('draggable', 'true');
+	  cardDiv.setAttribute('data-player-id', card.playerId);
+	  cardDiv.setAttribute('data-player-name', card.playerName);
+	  cardDiv.setAttribute('data-position', card.position);
+	  cardDiv.setAttribute('data-season', card.season);
+	
+	  cardDiv.innerHTML =
+	    '<div class="fw-bold">' + card.playerName + '</div>' +
+	    '<div>' + card.grade + '등급</div>' +
+	    '<div class="text-secondary">' + card.position + '</div>';
+	
+	  cardDiv.addEventListener('dragstart', function (event) {
+	    event.dataTransfer.setData('playerId', card.playerId);
+	    event.dataTransfer.setData('playerName', card.playerName);
+	    event.dataTransfer.setData('position', card.position);
+	    event.dataTransfer.setData('season', card.season);
+	  });
+	
+	  return cardDiv;
+	}
+	
+	// 저장된 카드 목록을 서버에서 불러오는 함수
+	function loadMyCards() {
+	  $.ajax({
+	    url: '/game/lineup/my-cards',
+	    method: 'GET',
+	    success: function(cards) {
+	      allMyCards = cards;
+
+	      var positionOrder = {
+	        'P': 10, 'C': 1, '1B': 2, '2B': 3, '3B': 4, 'SS': 5,
+	        'LF': 6, 'CF': 7, 'RF': 8, 'DH': 9
+	      };
+
+	      cards.sort(function(a, b) {
+	        var aOrder = positionOrder[a.position] || 99;
+	        var bOrder = positionOrder[b.position] || 99;
+	        return aOrder - bOrder;
+	      });
+
+	      var container = $('#cardStorageArea');
+	      container.empty();
+
+	      for (var i = 0; i < cards.length; i++) {
+	        container.append(createStorageCard(cards[i]));
+	      }
+	    },
+	    error: function() {
+	      alert('카드 목록을 불러오는 데 실패했습니다.');
+	    }
+	  });
+	}
+
+	// 저장된 라인업 정보를 서버에서 불러오는 함수
+	function loadExistingLineup() {
+	  $.ajax({
+	    url: '/game/lineup/my-lineup',
+	    method: 'GET',
+	    success: function(lineup) {
+	      for (var i = 0; i < lineup.length; i++) {
+	        var p = lineup[i];
+	        var slot = $('.lineup-slot[data-position="' + p.orderNum + '"]');
+
+	        if (slot.length > 0) {
+	          slot.text(p.playerName + ' (' + p.position + ')');
+	          slot.attr('data-player-id', p.playerId);
+	          slot.addClass('bg-warning');
+
+	          selectedLineup.push({
+	            playerId: p.playerId,
+	            position: p.position,
+	            orderNum: p.orderNum,
+	            season: p.season
+	          });
+	        }
+	      }
+	      updatePositionSummary();
+	    },
+	    error: function() {
+	      alert('라인업 정보를 불러오는 데 실패했습니다.');
+	    }
+	  });
+	}
+	
+	// 슬롯 드롭 및 클릭 이벤트 바인딩
+	function setupSlotEvents() {
+	  const slots = document.querySelectorAll('.lineup-slot');
+	  for (let i = 0; i < slots.length; i++) {
+	    const slot = slots[i];
+	    slot.addEventListener('dragover', function (e) { e.preventDefault(); });
+	
+	    slot.addEventListener('drop', function (e) {
+    	  e.preventDefault();
+
+    	  const playerId = parseInt(e.dataTransfer.getData('playerId'));
+    	  const playerName = e.dataTransfer.getData('playerName');
+    	  const position = e.dataTransfer.getData('position');
+    	  const season = parseInt(e.dataTransfer.getData('season'));
+    	  const orderNum = this.getAttribute('data-position');
+
+    	  if (this.getAttribute('data-player-id')) {
+    	    alert('이미 배치된 슬롯입니다.');
+    	    return;
+    	  }
+
+    	  // 동일 선수 중복 방지
+    	  for (let i = 0; i < selectedLineup.length; i++) {
+    	    if (selectedLineup[i].playerId === playerId) {
+    	      alert('동일 선수를 중복 배치할 수 없습니다.');
+    	      return;
+    	    }
+    	  }
+
+    	  const isPitcherSlot = orderNum === 'P';
+    	  const isPitcher = position === 'P';
+    	  if (isPitcherSlot !== isPitcher) {
+    	    alert('포지션이 일치하지 않습니다.');
+    	    return;
+    	  }
+
+    	  const mainPositions = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF'];
+    	  const positionCount = {};
+    	  let dhExists = false;
+
+    	  for (let i = 0; i < selectedLineup.length; i++) {
+    	    const pos = selectedLineup[i].position;
+    	    if (positionCount[pos]) {
+    	      positionCount[pos]++;
+    	    } else {
+    	      positionCount[pos] = 1;
+    	    }
+    	    if (pos === 'DH') {
+    	      dhExists = true;
+    	    }
+    	  }
+
+    	  // 현재 드래그 중인 선수 포지션도 반영
+    	  if (positionCount[position]) {
+    	    positionCount[position]++;
+    	  } else {
+    	    positionCount[position] = 1;
+    	  }
+
+    	  // 중복된 포지션이 2개 이상인지 수동 검사
+    	  let duplicateCount = 0;
+    	  const duplicateList = [];
+
+    	  for (let i = 0; i < mainPositions.length; i++) {
+    	    const pos = mainPositions[i];
+    	    const count = positionCount[pos] || 0;
+    	    if (count > 1) {
+    	      duplicateCount++;
+    	      duplicateList.push(pos);
+    	    }
+    	    if (count > 2) {
+    	      alert(pos + ' 포지션은 최대 2명까지만 배치할 수 있습니다.');
+    	      return;
+    	    }
+    	  }
+
+    	  if (duplicateCount > 1) {
+    	    alert('포지션 중복은 하나까지만 허용됩니다.\n중복된 포지션: ' + duplicateList.join(', '));
+    	    return;
+    	  }
+
+    	  if (dhExists && duplicateCount > 0) {
+    	    alert('지명타자가 배치되어 있어 포지션 중복은 허용되지 않습니다.');
+    	    return;
+    	  }
+    	  
+    	  if (position === 'DH' && duplicateCount > 0) {
+    		  alert('포지션 중복이 이미 존재해 지명타자를 추가할 수 없습니다.');
+    		  return;
+    		}
+    	  
+    	  for (let i = 0; i < selectedLineup.length; i++) {
+    	    if (selectedLineup[i].orderNum === orderNum) {
+    	      selectedLineup.splice(i, 1);
+    	      break;
+    	    }
+    	  }
+
+    	  selectedLineup.push({
+    	    playerId: playerId,
+    	    position: position,
+    	    orderNum: orderNum,
+    	    season: season
+    	  });
+
+    	  this.innerText = playerName + ' (' + position + ')';
+    	  this.setAttribute('data-player-id', playerId);
+    	  this.classList.remove('bg-white');
+    	  this.classList.add('bg-warning');
+
+    	  updatePositionSummary();
+    	});
+	
+	    slot.addEventListener('click', function () {
+	      const playerId = this.getAttribute('data-player-id');
+	      const orderNum = this.getAttribute('data-position');
+	      if (!playerId) return;
+	
+	      for (let n = 0; n < selectedLineup.length; n++) {
+	        if (selectedLineup[n].playerId === parseInt(playerId)) {
+	          selectedLineup.splice(n, 1);
+	          break;
+	        }
+	      }
+	      this.removeAttribute('data-player-id');
+	      this.classList.remove('bg-warning');
+	      this.innerText = (orderNum === 'P') ? '투수' : orderNum + '번 타자';
+	      updatePositionSummary();
+	    });
+	  }
+	}
+	
+	// 라인업 저장 요청을 서버에 보내는 함수
+	function setupSaveButton() {
+	  $('#saveLineupBtn').on('click', function() {
+	    if (!isValidLineup()) return;
+
+	    $.ajax({
+	      url: '/game/lineup/clear',
+	      method: 'DELETE',
+	      success: function() {
+	        $.ajax({
+	          url: '/game/lineup/save-all',
+	          method: 'POST',
+	          contentType: 'application/json',
+	          data: JSON.stringify(selectedLineup),
+	          success: function() {
+	            alert('라인업 저장 완료');
+	          },
+	          error: function() {
+	            alert('라인업 저장 실패');
+	          }
+	        });
+	      },
+	      error: function() {
+	        alert('라인업 초기화 실패');
+	      }
+	    });
+	  });
+	}
+	
+	// 초기 실행
+	let selectedLineup = [];
+	let allMyCards = [];
+	
+	document.addEventListener('DOMContentLoaded', async function () {
+	  await loadMyCards();
+	  await loadExistingLineup();
+	  setupSlotEvents();
+	  setupSaveButton();
+	  document.getElementById('gradeFilter').addEventListener('change', applyCardFilter);
+	  document.getElementById('positionFilter').addEventListener('change', applyCardFilter);
+	});
+</script>
+</th:block>
+
+</html>

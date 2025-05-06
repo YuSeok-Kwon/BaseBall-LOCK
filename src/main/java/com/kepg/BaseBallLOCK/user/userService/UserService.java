@@ -118,6 +118,7 @@ public class UserService {
 		return true;
 	}
 	
+	// 모든 유저의 pk_Id정보 찾기
 	public List<Integer> findAllUserIds(){
 		return userRepository.findAllUserIds();
 	}

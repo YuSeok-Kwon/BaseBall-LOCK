@@ -38,6 +38,7 @@ public class ReviewService {
     private final LineupService lineupService;
     private final RecordService recordService;
 
+    // 해당 월에 대한 달력 데이터를 생성 (리뷰 여부 및 경기 정보 포함)
     public List<List<CalendarDayDTO>> generateCalendar(int year, int month, int userId, int myTeamId) {
 
         List<List<CalendarDayDTO>> calendar = new ArrayList<>();
@@ -119,11 +120,14 @@ public class ReviewService {
         return calendar;
     }
     
+    // 팀 ID를 기반으로 팀 색상을 조회
     public String getTeamColorByTeamId(int teamId) {
     	String color = teamService.findColorById(teamId);
         return color;
     }
     
+    // 리뷰를 저장하거나 이미 존재하는 경우 수정함 (scheduleId 기준)
+    // 저장 이후, 해당 주차의 리뷰 요약을 자동 생성
     @Transactional
     public void saveOrUpdateReview(int userId, ReviewDTO reviewDTO) {
 
@@ -155,10 +159,12 @@ public class ReviewService {
         reviewSummaryService.generateWeeklyReviewSummary(review.getUserId(), weekStart);
     }
     
+    // 리뷰 ID로 단일 리뷰 조회
     public Optional<Review> findById(Integer id) {
         return reviewRepository.findById(id);
     }
     
+    // 특정 경기에서 유저 팀(myTeamId)이 포함된 타자/투수 이름을 리스트로 조회 (중복 제거 및 가나다 정렬)
     public List<String> findPlayerNamesByScheduleId(int scheduleId, int myTeamId) {
         Set<String> names = new HashSet<>();
 

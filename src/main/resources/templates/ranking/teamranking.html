@@ -59,18 +59,18 @@
 	</div>
   </th:block>
 
-  <th:block layout:fragment="script">
-	<script>
-	document.addEventListener('DOMContentLoaded', function() {
-		var season = document.getElementById('season-select').value;
-		changeSeason(season);
-		});
+ <th:block layout:fragment="script">
+<script>
+	//페이지 로드 시 시즌 값 읽어와 데이터 요청
+	$(document).ready(function () {
+	  var season = $('#season-select').val();
+	  changeSeason(season);
+	});
 	
-	// 시즌 변경
+	// 시즌 변경 시 Ajax로 데이터 요청
 	function changeSeason(season) {
-		
-	  var currentSort = document.querySelector('input[name="sort"]').value;
-	  var currentDirection = document.querySelector('input[name="direction"]').value;
+	  var currentSort = $('input[name="sort"]').val();
+	  var currentDirection = $('input[name="direction"]').val();
 	
 	  $.ajax({
 	    url: '/ranking/teamranking-view-json',
@@ -80,35 +80,27 @@
 	      sort: currentSort,
 	      direction: currentDirection
 	    },
-	    success: function(data) {
-	    	console.log("받은 데이터:", data);
-	      // 카드뷰 부분
-	      document.getElementById('team-ranking-list').innerHTML = renderTeamRankingList(data.rankingList);
-	      document.getElementById('top-batter-list').innerHTML = renderTopBatterList(data.topBatterStats, data.categoryNameMap);
-	      document.getElementById('top-pitcher-list').innerHTML = renderTopPitcherList(data.topPitcherStats, data.categoryNameMap);
-	      document.getElementById('top-waa-list').innerHTML = renderTopWaaList(data.topWaaStats);
-	
-	      // 테이블 부분
+	    success: function (data) {
+	      $('#team-ranking-list').html(renderTeamRankingList(data.rankingList));
+	      $('#top-batter-list').html(renderTopBatterList(data.topBatterStats, data.categoryNameMap));
+	      $('#top-pitcher-list').html(renderTopPitcherList(data.topPitcherStats, data.categoryNameMap));
+	      $('#top-waa-list').html(renderTopWaaList(data.topWaaStats));
 	      renderStatTable(data.statRankingList, data.headers, data.categoryNameMap, data.currentSort, data.sortDirection);
 	
-	      // hidden input 업데이트
-	      document.querySelector('input[name="sort"]').value = data.currentSort;
-	      document.querySelector('input[name="direction"]').value = data.sortDirection;
+	      $('input[name="sort"]').val(data.currentSort);
+	      $('input[name="direction"]').val(data.sortDirection);
 	    },
-	    error: function(xhr, status, error) {
+	    error: function (xhr, status, error) {
 	      console.error('시즌 변경 실패:', error);
 	    }
 	  });
 	}
 	
-	// 테이블 정렬
+	// 정렬 요청 처리
 	function sortTable(sortKey) {
-	  var season = document.querySelector('select[name="season"]').value;
-	  var currentSortInput = document.querySelector('input[name="sort"]');
-	  var directionInput = document.querySelector('input[name="direction"]');
-	
-	  var currentSort = currentSortInput ? currentSortInput.value : 'TotalWAR';
-	  var currentDirection = directionInput ? directionInput.value : 'DESC';
+	  var season = $('select[name="season"]').val();
+	  var currentSort = $('input[name="sort"]').val() || 'TotalWAR';
+	  var currentDirection = $('input[name="direction"]').val() || 'DESC';
 	
 	  var newDirection = 'ASC';
 	  if (currentSort.toUpperCase() === sortKey.toUpperCase() && currentDirection === 'ASC') {
@@ -123,83 +115,76 @@
 	      sort: sortKey,
 	      direction: newDirection
 	    },
-	    success: function(data) {
-	      // 카드뷰 부분
-	      document.getElementById('team-ranking-list').innerHTML = renderTeamRankingList(data.rankingList);
-	      document.getElementById('top-batter-list').innerHTML = renderTopBatterList(data.topBatterStats, data.categoryNameMap);
-	      document.getElementById('top-pitcher-list').innerHTML = renderTopPitcherList(data.topPitcherStats, data.categoryNameMap);
-	      document.getElementById('top-waa-list').innerHTML = renderTopWaaList(data.topWaaStats);
-	
-	      // 테이블 부분
+	    success: function (data) {
+	      $('#team-ranking-list').html(renderTeamRankingList(data.rankingList));
+	      $('#top-batter-list').html(renderTopBatterList(data.topBatterStats, data.categoryNameMap));
+	      $('#top-pitcher-list').html(renderTopPitcherList(data.topPitcherStats, data.categoryNameMap));
+	      $('#top-waa-list').html(renderTopWaaList(data.topWaaStats));
 	      renderStatTable(data.statRankingList, data.headers, data.categoryNameMap, data.currentSort, data.sortDirection);
 	
-	      // hidden input 업데이트
-	      if (currentSortInput) currentSortInput.value = sortKey;
-	      if (directionInput) directionInput.value = newDirection;
+	      $('input[name="sort"]').val(sortKey);
+	      $('input[name="direction"]').val(newDirection);
 	    },
-	    error: function(xhr, status, error) {
+	    error: function (xhr, status, error) {
 	      console.error('정렬 실패:', error);
 	    }
 	  });
 	}
 	
-	//테이블 출력
+	// 통계 테이블 렌더링
 	function renderStatTable(list, headers, categoryNameMap, currentSort, sortDirection) {
-	    var html = '<table id="ranking-table" class="table table-bordered table-striped text-center">';
-	    html += '<thead><tr><th>순위</th><th>팀명</th>';
+	  var html = '<table id="ranking-table" class="table table-bordered table-striped text-center">';
+	  html += '<thead><tr><th>순위</th><th>팀명</th>';
 	
-	    $.each(headers, function(j, header) {
-	        html += '<th><a href="javascript:void(0);" onclick="sortTable(\'' + header + '\')" data-header="' + header + '">' +
-	            (categoryNameMap[header] || header) + ' ' +
-	            (currentSort === header ? (sortDirection === 'ASC' ? '▲' : '▼') : '') +
-	            '</a></th>';
-	    });
+	  for (var j = 0; j < headers.length; j++) {
+	    var header = headers[j];
+	    var arrow = (currentSort === header) ? (sortDirection === 'ASC' ? '▲' : '▼') : '';
+	    html += '<th><a href="javascript:void(0);" onclick="sortTable(\'' + header + '\')" data-header="' + header + '">' +
+	      (categoryNameMap[header] || header) + ' ' + arrow + '</a></th>';
+	  }
 	
-	    html += '</tr></thead><tbody>';
+	  html += '</tr></thead><tbody>';
 	
-	    $.each(list, function(i, team) {
-	        html += '<tr>';
-	        html += '<td>' + (i + 1) + '</td>';
-	        html += '<td>' + (team.teamName || '-') + '</td>';
+	  for (var i = 0; i < list.length; i++) {
+	    var team = list[i];
+	    html += '<tr>';
+	    html += '<td>' + (i + 1) + '</td>';
+	    html += '<td>' + (team.teamName || '-') + '</td>';
 	
-	        $.each(headers, function(j, header) {
-	            var field = convertHeaderToField(header);
-	            var value = team[field];
+	    for (var k = 0; k < headers.length; k++) {
+	      var headerKey = headers[k];
+	      var field = convertHeaderToField(headerKey);
+	      var value = team[field];
+	      var formatClass = getFormatClassForCategory(headerKey);
 	
-	            var formatClass = getFormatClassForCategory(header);
+	      if (value === undefined || value === null) {
+	        value = '-';
+	      } else {
+	        if (formatClass === 'format-decimal-3') value = formatDecimal(value, 3);
+	        else if (formatClass === 'format-decimal-2') value = formatDecimal(value, 2);
+	        else if (formatClass === 'format-decimal-1') value = formatDecimal(value, 1);
+	        else if (formatClass === 'format-integer') value = formatInteger(value);
+	      }
 	
-	            if (value === undefined || value === null) {
-	                value = '-';
-	            } else {
-	                if (formatClass === 'format-decimal-3') {
-	                    value = formatDecimal(value, 3);
-	                } else if (formatClass === 'format-decimal-2') {
-	                    value = formatDecimal(value, 2);
-	                } else if (formatClass === 'format-decimal-1') {
-	                    value = formatDecimal(value, 1);
-	                } else if (formatClass === 'format-integer') {
-	                    value = formatInteger(value);
-	                }
-	            }
+	      html += '<td class="' + formatClass + '">' + value + '</td>';
+	    }
 	
-	            html += '<td class="' + formatClass + '">' + value + '</td>';
-	        });
+	    html += '</tr>';
+	  }
 	
-	        html += '</tr>';
-	    });
+	  html += '</tbody></table>';
 	
-	    html += '</tbody></table>';
-	
-	    $('#ranking-table-wrapper').html(html);
-	
-	    formatPlayerStats();
+	  $('#ranking-table-wrapper').html(html);
+	  formatPlayerStats();
 	}
 	
-	// 팀 순위 카드
+	// 팀 순위 카드 렌더링
 	function renderTeamRankingList(list) {
 	  var html = '<table class="table text-center">';
 	  html += '<thead><tr><th>순위</th><th>팀</th><th>경기</th><th>승</th><th>패</th><th>무</th><th>승률</th><th>승차</th></tr></thead><tbody>';
-	  $.each(list, function(i, team) {
+	
+	  for (var i = 0; i < list.length; i++) {
+	    var team = list[i];
 	    html += '<tr>' +
 	      '<td>' + team.ranking + '</td>' +
 	      '<td class="d-flex align-items-center gap-2"><img src="' + getLogoPath(team.logoName) + '" style="width:28px;height:28px;">' +
@@ -211,116 +196,121 @@
 	      '<td>' + team.winRate + '</td>' +
 	      '<td>' + team.gamesBehind + '</td>' +
 	      '</tr>';
-	  });
+	  }
+	
 	  html += '</tbody></table>';
 	  return html;
 	}
 	
-	// 타자 스탯 카드
+	// 타자 통계 카드 렌더링
 	function renderTopBatterList(list, categoryNameMap) {
 	  var html = '';
-	  $.each(list, function(i, stat) {
+	  for (var i = 0; i < list.length; i++) {
+	    var stat = list[i];
 	    var categoryName = categoryNameMap[stat.category] || stat.category;
 	    html += '<li class="list-group-item d-flex justify-content-between">' +
 	      '<span>' + categoryName + '</span>' +
-		  '<span><img src="' + getLogoPath(stat.teamLogo) + '" style="width:28px;height:28px;">' +
+	      '<span><img src="' + getLogoPath(stat.teamLogo) + '" style="width:28px;height:28px;">' +
 	      stat.teamName + ' <strong>' + stat.formattedValue + '</strong></span></li>';
-	  });
+	  }
 	  return html;
 	}
 	
-	// 투수 스탯 카드
+	// 투수 통계 카드 렌더링
 	function renderTopPitcherList(list, categoryNameMap) {
 	  var html = '';
-	  $.each(list, function(i, stat) {
+	  for (var i = 0; i < list.length; i++) {
+	    var stat = list[i];
 	    var categoryName = categoryNameMap[stat.category] || stat.category;
 	    html += '<li class="list-group-item d-flex justify-content-between">' +
 	      '<span>' + categoryName + '</span>' +
-		  '<span><img src="' + getLogoPath(stat.teamLogo) + '" style="width:28px;height:28px;">' +
+	      '<span><img src="' + getLogoPath(stat.teamLogo) + '" style="width:28px;height:28px;">' +
 	      stat.teamName + ' <strong>' + stat.formattedValue + '</strong></span></li>';
-	  });
+	  }
 	  return html;
 	}
 	
-	// WAA 스탯 카드
+	// WAA 통계 카드 렌더링
 	function renderTopWaaList(list) {
 	  var html = '';
-	  $.each(list, function(i, stat) {
-		  html += '<li class="list-group-item d-flex justify-content-between">' +
-		    '<span>' + stat.category + '</span>' +
-		    '<span><img src="' + getLogoPath(stat.teamLogo) + '" style="width:28px;height:28px;">' +
-		    stat.teamName + ' <strong>' + stat.formattedValue + '</strong></span></li>';
-		});
+	  for (var i = 0; i < list.length; i++) {
+	    var stat = list[i];
+	    html += '<li class="list-group-item d-flex justify-content-between">' +
+	      '<span>' + stat.category + '</span>' +
+	      '<span><img src="' + getLogoPath(stat.teamLogo) + '" style="width:28px;height:28px;">' +
+	      stat.teamName + ' <strong>' + stat.formattedValue + '</strong></span></li>';
+	  }
 	  return html;
 	}
 	
-	// 숫자 포맷 함수 통일
+	// 숫자 포맷 함수들
 	function formatDecimal(value, decimals) {
-		if (value == null || isNaN(value)) return '-';
-		return parseFloat(value).toFixed(decimals);
+	  if (value == null || isNaN(value)) return '-';
+	  return parseFloat(value).toFixed(decimals);
 	}
 	
 	function formatInteger(value) {
-		if (value == null || isNaN(value)) return '-';
-		return Math.round(value);
+	  if (value == null || isNaN(value)) return '-';
+	  return Math.round(value);
 	}
 	
+	// 카테고리별 포맷 클래스 지정
 	function getFormatClassForCategory(category) {
-		if (!category) return 'format-decimal-2';
-		const upper = category.toUpperCase();
-		if (['ERA', 'WHIP', 'WAR', 'BetterWAR', 'PitcherWAR', '타격', '주루', '수비', '선발', '불펜'].includes(upper)) return 'format-decimal-2';
-		if (['OPS', 'AVG'].includes(upper)) return 'format-decimal-3';
-		if (upper === 'IP') return 'format-decimal-1';
-		if (['W', 'L', 'SV', 'HLD', 'SO', 'BB', 'H', 'HR', 'G', 'SB', 'RBI', '2B', '3B'].includes(upper)) return 'format-integer';
-		return 'format-decimal-2';
+	  var upper = category.toUpperCase();
+	  if (['ERA', 'WHIP', 'WAR', 'BetterWAR', 'PitcherWAR', '타격', '주루', '수비', '선발', '불펜'].includes(upper)) return 'format-decimal-2';
+	  if (['OPS', 'AVG'].includes(upper)) return 'format-decimal-3';
+	  if (upper === 'IP') return 'format-decimal-1';
+	  if (['W', 'L', 'SV', 'HLD', 'SO', 'BB', 'H', 'HR', 'G', 'SB', 'RBI', '2B', '3B'].includes(upper)) return 'format-integer';
+	  return 'format-decimal-2';
 	}
 	
-	// 숫자 포맷 일괄 적용
+	// 테이블 숫자 포맷 일괄 적용
 	function formatPlayerStats() {
-		document.querySelectorAll('.format-decimal-2').forEach(function(td) {
-			let value = parseFloat(td.innerText);
-			if (!isNaN(value)) td.innerText = value.toFixed(2);
-		});
-		document.querySelectorAll('.format-decimal-3').forEach(function(td) {
-			let value = parseFloat(td.innerText);
-			if (!isNaN(value)) td.innerText = value.toFixed(3);
-		});
-		document.querySelectorAll('.format-decimal-1').forEach(function(td) {
-			let value = parseFloat(td.innerText);
-			if (!isNaN(value)) td.innerText = value.toFixed(1);
-		});
-		document.querySelectorAll('.format-integer').forEach(function(td) {
-			let value = parseFloat(td.innerText);
-			if (!isNaN(value)) td.innerText = Math.round(value);
-		});
+	  $('.format-decimal-2').each(function () {
+	    var value = parseFloat($(this).text());
+	    if (!isNaN(value)) $(this).text(value.toFixed(2));
+	  });
+	  $('.format-decimal-3').each(function () {
+	    var value = parseFloat($(this).text());
+	    if (!isNaN(value)) $(this).text(value.toFixed(3));
+	  });
+	  $('.format-decimal-1').each(function () {
+	    var value = parseFloat($(this).text());
+	    if (!isNaN(value)) $(this).text(value.toFixed(1));
+	  });
+	  $('.format-integer').each(function () {
+	    var value = parseFloat($(this).text());
+	    if (!isNaN(value)) $(this).text(Math.round(value));
+	  });
 	}
 	
-	// 기타 유틸
+	// 로고 경로 반환
 	function getLogoPath(logoName) {
-		return logoName != null ? '/static/emblems/' + logoName + '.svg' : '/static/emblems/' + logoName + '.png';
+	  return logoName ? '/static/emblems/' + logoName + '.svg' : '/static/emblems/default.png';
 	}
 	
+	// header 명칭 → 실제 필드명 변환
 	function convertHeaderToField(header) {
-		var map = {
-			'TotalWAR': 'totalWar',
-			'BetterWAR': 'betterWar',
-			'OPS': 'ops',
-			'AVG': 'avg',
-			'HR': 'hr',
-			'SB': 'sb',
-			'PitcherWAR': 'pitcherWar',
-			'SO': 'so',
-			'ERA': 'era',
-			'WHIP': 'whip',
-			'BB': 'bb',
-			'타격': 'battingWaa',
-			'주루': 'baserunningWaa',
-			'수비': 'defenseWaa',
-			'선발': 'startingWaa',
-			'불펜': 'bullpenWaa'
-		};
-		return map[header] || header;
+	  var map = {
+	    'TotalWAR': 'totalWar',
+	    'BetterWAR': 'betterWar',
+	    'OPS': 'ops',
+	    'AVG': 'avg',
+	    'HR': 'hr',
+	    'SB': 'sb',
+	    'PitcherWAR': 'pitcherWar',
+	    'SO': 'so',
+	    'ERA': 'era',
+	    'WHIP': 'whip',
+	    'BB': 'bb',
+	    '타격': 'battingWaa',
+	    '주루': 'baserunningWaa',
+	    '수비': 'defenseWaa',
+	    '선발': 'startingWaa',
+	    '불펜': 'bullpenWaa'
+	  };
+	  return map[header] || header;
 	}
-	</script>
-	</th:block>
+</script>
+</th:block>
 </html>

@@ -18,6 +18,7 @@ public class TeamRankingService {
 
     private final TeamRankingRepository teamRankingRepository;
     
+    // 팀 랭킹을 저장하거나, 기존 데이터가 존재하면 업데이트
     @Transactional
     public void saveOrUpdate(TeamRankingDTO dto) {
         Optional<TeamRanking> optional = teamRankingRepository.findBySeasonAndTeamId(dto.getSeason(), dto.getTeamId());
@@ -49,6 +50,7 @@ public class TeamRankingService {
         teamRankingRepository.save(entity);
     }
     
+    // 특정 시즌의 팀 랭킹 목록을 랭킹 기준 오름차순으로 조회
     public List<TeamRanking> getTeamRankings(int season) {
         return teamRankingRepository.findBySeasonOrderByRankingAsc(season);
     }

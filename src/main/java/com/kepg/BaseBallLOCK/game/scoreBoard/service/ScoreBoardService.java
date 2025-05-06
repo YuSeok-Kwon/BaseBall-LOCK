@@ -14,6 +14,7 @@ public class ScoreBoardService {
 
     private final ScoreBoardRepository scoreBoardRepository;
 
+    // 경기 스케줄(scheduleId)에 해당하는 스코어보드를 저장하거나, 기존 값이 있으면 업데이트함
     @Transactional
     public void saveOrUpdate(ScoreBoard scoreBoard) {
         ScoreBoard existing = scoreBoardRepository.findByScheduleId(scoreBoard.getScheduleId());
@@ -44,6 +45,7 @@ public class ScoreBoardService {
         }
     }
     
+    // scheduleId에 해당하는 스코어보드 정보를 조회
     public ScoreBoard findByScheduleId(int scheduleId) {
         return scoreBoardRepository.findByScheduleId(scheduleId);
     }

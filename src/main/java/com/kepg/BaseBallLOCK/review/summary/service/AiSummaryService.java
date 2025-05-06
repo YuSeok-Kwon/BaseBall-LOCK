@@ -18,7 +18,7 @@ public class AiSummaryService {
 
     private final GeminiClient geminiClient;
 
-//    날짜별 감정 흐름을 GPT를 통해 요약
+    // 날짜별 감정 흐름을 GPT를 통해 요약
     public String summarizeFeelings(Map<LocalDate, List<String>> dailyFeelings) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("다음은 한 야구팬이 일주일 동안 남긴 감정 기록입니다.\n")
@@ -40,7 +40,7 @@ public class AiSummaryService {
         return geminiClient.callGemini(prompt.toString());
     }
 
-//    주간 리뷰 요약 생성 (summary 필드를 기반으로 요약문 생성)
+    // 주간 리뷰 요약 생성 (summary 필드를 기반으로 요약문 생성)
     public String generateFullSummary(List<Review> reviews) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("다음은 사용자가 일주일 동안 남긴 야구 리뷰 요약입니다.\n")

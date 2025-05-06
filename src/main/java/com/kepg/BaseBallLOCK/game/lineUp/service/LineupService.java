@@ -21,6 +21,7 @@ public class LineupService {
     private final BatterLineupRepository batterLineupRepository;
     private final PlayerService playerService;
 
+	// 중복 확인 후 타자 라인업 저장
     public void saveBatterLineup(int scheduleId, int teamId, int order, String position, String playerName) {
         Optional<Player> player = playerService.findByNameAndTeamId(playerName, teamId);
         if (player.isEmpty()) return;
@@ -41,6 +42,7 @@ public class LineupService {
         batterLineupRepository.save(lineup);
     }
     
+	 // 타자 라인업 조회 후 엔티티를 DTO로 변환
     public List<BatterLineupDTO> getBatterLineup(int scheduleId, int teamId) {
         List<BatterLineup> entities = batterLineupRepository.findByScheduleIdAndTeamId(scheduleId, teamId);
         List<BatterLineupDTO> dtoList = new ArrayList<>();
@@ -71,6 +73,7 @@ public class LineupService {
         return dtoList;
     }
     
+    // 타자 이름 목록 조회
     public List<String> getBatterNamesByScheduleId(int scheduleId, int teamId) {
         return batterLineupRepository.findBatterNamesByScheduleIdAndTeamId(scheduleId, teamId);
     }

@@ -25,6 +25,7 @@ public class RecordService {
     private final PitcherRecordRepository pitcherRecordRepository;
     private final PlayerService playerService;
 
+    // 타자 기록 저장 (중복 시 저장하지 않음)
     public void saveBatterRecord(int scheduleId, int teamId, int pa, int ab, int hits, int hr, int rbi, int bb, int so, int sb, String playerName) {
         Optional<Player> player = playerService.findByNameAndTeamId(playerName, teamId);
         if (player.isEmpty()) {
@@ -55,6 +56,7 @@ public class RecordService {
         batterRecordRepository.save(record);
     }
 
+    // 투수 기록 저장 (중복 시 저장하지 않음)	
     public void savePitcherRecord(int scheduleId, int teamId, String playerName, double innings, int strikeouts, int bb, int hbp, int runs, int er, int hits, int hr, String decision) {
         Optional<Player> player = playerService.findByNameAndTeamId(playerName, teamId);
         if (player.isEmpty()) return;
@@ -82,6 +84,7 @@ public class RecordService {
         pitcherRecordRepository.save(record);
     }
     
+    // scheduleId와 teamId의 타자 기록을 DTO 리스트로 반환
     public List<BatterRecordDTO> getBatterRecords(int scheduleId, int teamId) {
         List<BatterRecord> records = batterRecordRepository.findByScheduleIdAndTeamId(scheduleId, teamId);
         List<BatterRecordDTO> dtoList = new ArrayList<>();
@@ -105,6 +108,7 @@ public class RecordService {
         return dtoList;
     }
 
+    // scheduleId)와 teamId의 투수 기록을 DTO 리스트로 반환
     public List<PitcherRecordDTO> getPitcherRecords(int scheduleId, int teamId) {
         List<PitcherRecord> records = pitcherRecordRepository.findByScheduleIdAndTeamId(scheduleId, teamId);
         List<PitcherRecordDTO> dtoList = new ArrayList<>();
@@ -129,6 +133,7 @@ public class RecordService {
         return dtoList;
     }
     
+    // 특정 경기(scheduleId)의 전체 투수 기록을 DTO 리스트로 반환
     public List<PitcherRecordDTO> getAllPitcherRecordsByScheduleId(int scheduleId) {
         List<PitcherRecord> entities = pitcherRecordRepository.findByScheduleId(scheduleId);
         List<PitcherRecordDTO> dtoList = new ArrayList<>();
@@ -154,6 +159,7 @@ public class RecordService {
         return dtoList;
     }
     
+    // 특정 경기와 팀의 투수 이름 리스트를 반환 (중복 제거됨)
     public List<String> getPitcherNamesByScheduleId(int scheduleId, int teamId) {
         return pitcherRecordRepository.findPitcherNamesByScheduleIdAndTeamId(scheduleId, teamId);
     }

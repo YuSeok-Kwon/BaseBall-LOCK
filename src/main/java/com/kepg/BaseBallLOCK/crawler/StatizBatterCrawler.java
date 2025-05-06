@@ -29,13 +29,13 @@ public class StatizBatterCrawler {
 
     public void crawl() {
         String baseUrl = "https://statiz.sporki.com/stats/?m=main&m2=batting&m3=default&so=WAR&ob=DESC&year=%d&po=%d&lt=10100&reg=A&pr=50";
-        int[] years = {2025};
-        int[] positions = {2};
+        int[] years = {2020,2021,2022,2023,2024};
+        int[] positions = {10};
 
         for (int year : years) {
             for (int po : positions) {
                 String url = String.format(baseUrl, year, po);
-                System.out.println("크로마링 시작: year=" + year + ", position=" + po);
+                System.out.println("크롤링 시작: year=" + year + ", position=" + po);
                 WebDriver driver = null;
                 try {
                     ChromeOptions options = new ChromeOptions();

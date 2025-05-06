@@ -1,10 +1,10 @@
 package com.kepg.BaseBallLOCK.game.schedule.service;
 
 import java.sql.Timestamp;
+
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -43,6 +43,7 @@ public class ScheduleService {
     private final RecordService recordService;
     private final GameHighlightService gameHighlightService;
 
+    // 주어진 경기 일정이 존재하면 업데이트, 없으면 새로 저장
     @Transactional
     public void saveOrUpdate(Schedule newSchedule) {
         Optional<Schedule> optional = scheduleRepository.findByMatchDateAndHomeTeamIdAndAwayTeamId(
@@ -60,18 +61,21 @@ public class ScheduleService {
         scheduleRepository.save(schedule);
     }
 
+    // 오늘 날짜 기준 가장 이른 경기 한 개 조회
     public Schedule getTodaySchedule() {
         Timestamp start = Timestamp.valueOf(LocalDate.now().atStartOfDay());
         Timestamp end = Timestamp.valueOf(LocalDate.now().atTime(23, 59, 59));
         return scheduleRepository.findFirstByMatchDateBetween(start, end);
     }
 
+    // 오늘 날짜 기준, 특정 팀의 경기 한 개 조회
     public Schedule getTodayScheduleByTeam(int teamId) {
         Timestamp start = Timestamp.valueOf(LocalDate.now().atStartOfDay());
         Timestamp end = Timestamp.valueOf(LocalDate.now().atTime(23, 59, 59));
         return scheduleRepository.findTodayScheduleByTeam(start, end, teamId);
     }
 
+    // 특정 팀의 최근 종료된 5경기 결과(승/패/무)를 리스트로 반환
     public List<String> getRecentResults(int teamId) {
         Timestamp todayStart = Timestamp.valueOf(LocalDate.now().atStartOfDay());
         List<Schedule> matches = scheduleRepository.findRecentSchedules(teamId, todayStart);
@@ -102,6 +106,7 @@ public class ScheduleService {
         return results;
     }
 
+    // 특정 팀 vs 상대 팀의 2025년 전적을 "X승 Y패 Z무" 형식으로 반환
     public String getHeadToHeadRecord(int myTeamId, int opponentTeamId) {
         Timestamp todayStart = Timestamp.valueOf(LocalDate.now().atStartOfDay());
         List<Schedule> matches = scheduleRepository.findHeadToHeadMatches2025(myTeamId, opponentTeamId, todayStart);
@@ -126,6 +131,7 @@ public class ScheduleService {
         return String.format("%d승 %d패 %d무", wins, losses, draws);
     }
 
+    // 특정 팀 vs 상대 팀의 2025년 전적을 "X승 Y패 Z무" 형식으로 반환
     public Map<LocalDate, List<ScheduleCardView>> getGroupedScheduleByMonth(int year, int month) {
         Timestamp start = Timestamp.valueOf(YearMonth.of(year, month).atDay(1).atStartOfDay());
         Timestamp end = Timestamp.valueOf(YearMonth.of(year, month).atEndOfMonth().atTime(23, 59, 59));
@@ -157,7 +163,30 @@ public class ScheduleService {
 
         return grouped;
     }
+    
+    // 오늘 날짜 우선으로 Map정리
+    public Map<LocalDate, List<ScheduleCardView>> sortScheduleWithTodayFirst(Map<LocalDate, List<ScheduleCardView>> originalMap, LocalDate today) {
+        Map<LocalDate, List<ScheduleCardView>> sortedMap = new LinkedHashMap<>();
 
+        // 1. 오늘 날짜 먼저 넣기
+        if (originalMap.containsKey(today)) {
+            sortedMap.put(today, originalMap.get(today));
+        }
+
+        // 2. 나머지 날짜들 중 오늘이 아닌 날짜를 오름차순으로 정렬하여 넣기
+        List<LocalDate> keys = new ArrayList<>(originalMap.keySet());
+        Collections.sort(keys); // 날짜 오름차순 정렬
+
+        for (LocalDate date : keys) {
+            if (!date.equals(today)) {
+                sortedMap.put(date, originalMap.get(date));
+            }
+        }
+
+        return sortedMap;
+    }
+    
+    // 특정 날짜에 해당하는 경기 일정 리스트 반환
     public List<ScheduleCardView> getSchedulesByDate(LocalDate date) {
         Timestamp start = Timestamp.valueOf(date.atStartOfDay());
         Timestamp end = Timestamp.valueOf(date.atTime(23, 59, 59));
@@ -182,6 +211,7 @@ public class ScheduleService {
         }).collect(Collectors.toList());
     }
 
+    // matchId로 경기 상세 정보(GameDetailCardView)를 구성해서 반환
     public ScheduleCardView getScheduleDetailById(int matchId) {
         Optional<Schedule> optional = scheduleRepository.findById(matchId);
         if (optional.isEmpty()) return null;
@@ -202,10 +232,12 @@ public class ScheduleService {
                 .build();
     }
 
+    // 경기 ID 찾기 (날짜 + 홈팀 + 원정팀 기준)
     public Integer findScheduleIdByMatchInfo(Timestamp matchDateTime, int homeTeamId, int awayTeamId) {
         return scheduleRepository.findIdByDateAndTeams(matchDateTime, homeTeamId, awayTeamId);
     }
 
+    // 경기 상세 정보 + 타자/투수 기록 + 스코어보드 + 하이라이트 포함한 전체 DTO 반환
     public GameDetailCardView getGameDetail(int matchId) {
         Optional<Schedule> optionalSchedule = scheduleRepository.findById(matchId);
         if (optionalSchedule.isEmpty()) return null;
@@ -282,15 +314,29 @@ public class ScheduleService {
                 .build();
     }
 
+    // 스코어보드 이닝별 점수 문자열("1 0 2") → 정수 리스트로 변환 (내부 메서드용)
     private List<Integer> convertInningScores(String scoreString) {
+
+
+        List<Integer> scores = new ArrayList<>();
+
         if (scoreString == null || scoreString.isBlank()) {
-            return Collections.emptyList();
+            return scores;
         }
-        return Arrays.stream(scoreString.split(" "))
-                .map(Integer::parseInt)
-                .collect(Collectors.toList());
+
+        String[] parts = scoreString.split(" ");
+        for (int i = 0; i < parts.length; i++) {
+            try {
+                int score = Integer.parseInt(parts[i]);
+                scores.add(score);
+            } catch (NumberFormatException e) {
+            }
+        }
+
+        return scores;
     }
     
+    // 이전 경기 ID 조회 (현재 경기 기준)
     public Integer getPrevMatchId(int currentMatchId) {
         Optional<Schedule> current = scheduleRepository.findById(currentMatchId);
         if (current.isEmpty()) return null;
@@ -299,6 +345,7 @@ public class ScheduleService {
         return scheduleRepository.findPrevMatchId(currentDate);
     }
 
+    // 다음 경기 ID 조회 (현재 경기 기준)
     public Integer getNextMatchId(int currentMatchId) {
         Optional<Schedule> current = scheduleRepository.findById(currentMatchId);
         if (current.isEmpty()) return null;
@@ -307,10 +354,12 @@ public class ScheduleService {
         return scheduleRepository.findNextMatchId(currentDate);
     }
     
+    // 날짜, 홈팀, 원정팀 기준으로 해당 경기의 scheduleId 조회
     public Integer findIdByDateAndTeams(Timestamp matchDateTime, int homeTeamId, int awayTeamId) {
         return scheduleRepository.findIdByDateAndTeams(matchDateTime, homeTeamId, awayTeamId);
     }
     
+    // 특정 날짜에 특정 팀이 출전한 경기 리스트 반환
     public List<Schedule> findByMatchDateAndTeam(LocalDate matchDate, int teamId) {
         Timestamp start = Timestamp.valueOf(matchDate.atStartOfDay());
         Timestamp end = Timestamp.valueOf(matchDate.atTime(23, 59, 59));
@@ -318,6 +367,7 @@ public class ScheduleService {
         return scheduleRepository.findByMatchDateBetweenAndTeam(start, end, teamId);
     }
     
+    // 시즌별 각 팀이 치른 경기 수 반환 (Map<teamId, count>)
     public Map<Integer, Integer> getTeamGamesPlayedBySeason(int season) {
         List<Object[]> resultList = scheduleRepository.countGamesByTeam(season);
         Map<Integer, Integer> teamGamesMap = new HashMap<>();
@@ -331,6 +381,7 @@ public class ScheduleService {
         return teamGamesMap;
     }
     
+    // matchId로 경기 날짜(Timestamp) 반환
     public Timestamp findMatchDateById(int scheduleId) {
     	return scheduleRepository.findMatchDateById(scheduleId);
     }

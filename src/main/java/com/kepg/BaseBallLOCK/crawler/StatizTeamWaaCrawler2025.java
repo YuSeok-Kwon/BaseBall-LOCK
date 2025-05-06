@@ -37,7 +37,7 @@ public class StatizTeamWaaCrawler2025 {
         teamNameToId.put("키움", 10);
     }
 
-    @Scheduled(cron = "0 0 5 * * *")  
+    @Scheduled(cron = "0 50 23 * * *")  
     public void run() {
     	int[] years = {2025};
         String baseUrl = "https://statiz.sporki.com/season/?m=teamoverall&year=%d";

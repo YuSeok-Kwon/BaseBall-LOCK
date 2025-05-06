@@ -1,7 +1,7 @@
 package com.kepg.BaseBallLOCK.user;
 
 import java.util.HashMap;
-
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.kepg.BaseBallLOCK.simulationGame.card.userCard.domain.UserCard;
+import com.kepg.BaseBallLOCK.simulationGame.card.userCard.dto.UserCardViewDTO;
+import com.kepg.BaseBallLOCK.simulationGame.card.userCard.service.UserCardService;
 import com.kepg.BaseBallLOCK.user.userDomain.User;
 import com.kepg.BaseBallLOCK.user.userService.UserService;
 
@@ -22,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 public class UserRestController {
 	
 	private final UserService userService;
+	private final UserCardService userCardService;
+
 
 	// 로그인 API 
 	@PostMapping("/login")
@@ -154,7 +159,23 @@ public class UserRestController {
 			}
 			return resultMap;
 			}
+				
+		@GetMapping("/my-cards")
+		public List<UserCard> getMyCards(HttpSession session) {
+		    Integer userId = (Integer) session.getAttribute("userId"); 
+
+		    if (userId == null) {
+		        throw new IllegalStateException("로그인된 사용자 정보가 없습니다.");
+		    }
+
+		    return userCardService.findByUserId(userId);
+		}
 		
+		@GetMapping("/cards")
+		public List<UserCardViewDTO> getCardList(HttpSession session) {
+		    Integer userId = (Integer) session.getAttribute("userId");
+		    return userCardService.getUserCardViewList(userId);
+		}
 //		// 정보 수정 API
 //		@PostMapping("/addInfo")
 //		public Map<String, String> addInfo(

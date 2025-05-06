@@ -28,91 +28,86 @@ public class StatizPitcherCrawler2025 {
     private final PlayerService playerService;
     private final PitcherStatsService statsService;
 
-    private static final Map<String, Integer> colorToTeamIdMap = new HashMap<>();
+    private static final Map<Integer, String> teamUrls = new HashMap<>();
     static {
-        colorToTeamIdMap.put("#042071", 2); // 두산
-        colorToTeamIdMap.put("#cf152d", 4); // SSG
-        colorToTeamIdMap.put("#ff0000", 4); // SSG + SK
-        colorToTeamIdMap.put("#ed1c24", 1); // KIA
-        colorToTeamIdMap.put("#002b69", 7); // NC
-        colorToTeamIdMap.put("#000000", 8); // KT
-        colorToTeamIdMap.put("#888888", 9); // 롯데
-        colorToTeamIdMap.put("#f37321", 6); // 한화
-        colorToTeamIdMap.put("#0061AA", 3); // 삼성
-        colorToTeamIdMap.put("#fc1cad", 5); // LG
-        colorToTeamIdMap.put("#86001f", 10); // 키움
+        teamUrls.put(5, "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=DESC&year=2025&te=5002&po=1&lt=10100&reg=A");   // LG
+        teamUrls.put(6, "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=DESC&year=2025&te=7002&po=1&lt=10100&reg=A");   // 한화
+        teamUrls.put(9, "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=DESC&year=2025&te=3001&po=1&lt=10100&reg=A");   // 롯데
+        teamUrls.put(3, "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=DESC&year=2025&te=1001&po=1&lt=10100&reg=A");   // 삼성
+        teamUrls.put(8, "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=DESC&year=2025&te=12001&po=1&lt=10100&reg=A");  // KT
+        teamUrls.put(4, "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=DESC&year=2025&te=9002&po=1&lt=10100&reg=A");   // SSG
+        teamUrls.put(1, "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=DESC&year=2025&te=2002&po=1&lt=10100&reg=A");   // KIA
+        teamUrls.put(2, "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=DESC&year=2025&te=6002&po=1&lt=10100&reg=A");   // 두산
+        teamUrls.put(7, "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=DESC&year=2025&te=11001&po=1&lt=10100&reg=A");  // NC
+        teamUrls.put(10, "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=DESC&year=2025&te=10001&po=1&lt=10100&reg=A");  // 키움 (두산과 te 중복 사용)
     }
     
-    @Scheduled(cron = "0 0 1 * * *")  
+    @Scheduled(cron = "0 20 23 * * *")  
     public void runDailyCrawlingTask() {
         crawlStats();
     }
 
     public void crawlStats() {
-        String urlPattern = "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=DESC&year=%d&lt=10100&reg=A";
         int[] years = {2025};
 
-        for (int year : years) {
-            String url = String.format(urlPattern, year);
-            System.out.println("투수 크롤링: year=" + year);
+        for (Map.Entry<Integer, String> entry : teamUrls.entrySet()) {
+        	int teamId = entry.getKey();
+            String url = entry.getValue();
 
-            WebDriver driver = null;
-            try {
-            	ChromeOptions options = new ChromeOptions();
-            	options.addArguments("--headless");  // UI 없이 백그라운드 실행
-            	options.addArguments("--no-sandbox");
-            	options.addArguments("--disable-dev-shm-usage");
-
-            	driver = new ChromeDriver(options);
-            	driver.get(url);
-
-            	Thread.sleep(5000);
-                
-            	String pageSource = driver.getPageSource();
-            	Document doc = Jsoup.parse(pageSource);
+            for (int year : years) {
+            	System.out.println("크롤링 시작 - teamId=" + teamId + ", year=" + year);
             	
-                Element table = doc.selectFirst("table");
-                if (table == null) {
-                	continue;
-                }
+                WebDriver driver = null;
+                try {
+                    ChromeOptions options = new ChromeOptions();
+                    options.addArguments("--headless");
+                    options.addArguments("--no-sandbox");
+                    options.addArguments("--disable-dev-shm-usage");
 
-                for (Element row : table.select("tr")) {
-                    Elements cols = row.select("td");
-                    if (cols.size() <= 36) continue;
-                    processRow(cols, year);
+                    driver = new ChromeDriver(options);
+                    driver.get(url);
+
+                    Thread.sleep(10000);
+                    
+                    String pageSource = driver.getPageSource();
+                	Document doc = Jsoup.parse(pageSource);
+                    
+                	Element table = doc.selectFirst("table");
+                    if (table == null) {
+                        continue;
+                    }
+                    
+                    Elements rows = table.select("tr");
+                    for (Element row : rows) {
+                        Elements cols = row.select("td");
+                        if (cols.size() <= 36) continue;
+
+                        processRow(cols, 2025, teamId); // 여기가 반드시 호출돼야 함
+                    }
+
+                } catch (Exception e) {
+                    System.out.println("에러 발생: teamId=" + teamId + ", year=" + year);
+                    e.printStackTrace();
+                } finally {
+                    if (driver != null) driver.quit();
                 }
-                
-            } catch (Exception e) {
-                System.out.println("에러 발생: year=" + year);
-                e.printStackTrace();
-            } finally {
-                if (driver != null) driver.quit();
             }
         }
     }
-    
-    private int resolveTeamId(Element colorElem) {
-        if (colorElem == null) return 0;
-        String bg = colorElem.attr("style").split("background:")[1].split(";")[0].trim();
-        return colorToTeamIdMap.getOrDefault(bg, 0);
-    }
 
-    private int parseSeason(String raw) {
-        String[] parts = raw.split(" ");
-        return Integer.parseInt(parts[0]);
-    }
-
-    private void processRow(Elements cols, int year) {
+    private void processRow(Elements cols, int year, int teamId) {
         String name = cols.get(1).text().trim();
-        int season = parseSeason(cols.get(2).text().trim());
+        System.out.println("processRow 진입 - 선수명: " + cols.get(1).text());
+        int season = 2025;
         String position = "P";
-        int teamId = resolveTeamId(cols.get(2).selectFirst("span[style]"));
 
         PlayerDTO dto = PlayerDTO.builder().name(name).teamId(teamId).build();
         Player player = playerService.findOrCreatePlayer(dto);
         int playerId = player.getId();
 
         save(playerId, season, "G", parseInt(cols.get(4).text()), null, position);
+        save(playerId, season, "GS", parseInt(cols.get(5).text()), null, position);
+        save(playerId, season, "GR", parseInt(cols.get(6).text()), null, position);
         save(playerId, season, "W", parseInt(cols.get(10).text()), null, position);
         save(playerId, season, "L", parseInt(cols.get(11).text()), null, position);
         save(playerId, season, "SV", parseInt(cols.get(12).text()), null, position);
@@ -126,7 +121,7 @@ public class StatizPitcherCrawler2025 {
         save(playerId, season, "WHIP", parseDouble(cols.get(35).text()), null, position);
         save(playerId, season, "WAR", parseDouble(cols.get(36).text()), null, position);
     }
-    
+
     private void save(int playerId, int season, String category, double value, Integer ranking, String position) {
         PitcherStatsDTO dto = PitcherStatsDTO.builder()
                 .playerId(playerId)

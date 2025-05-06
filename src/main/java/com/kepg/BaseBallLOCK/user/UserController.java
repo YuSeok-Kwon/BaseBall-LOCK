@@ -36,6 +36,7 @@ public class UserController {
     private final BatterStatsService batterStatsService;
     private final PitcherStatsService pitcherStatsService;
 
+
     @GetMapping("/login-view")
     public String loginView() {
         return "user/login";
@@ -116,4 +117,5 @@ public class UserController {
 
         return "user/home";
     }
+    
 }

@@ -53,7 +53,7 @@ public class StatizGameSummaryCrawler {
     public void crawl() {
         String baseUrl = "https://statiz.sporki.com/schedule/?m=summary&s_no=%d";
 
-        for (int statizId = 20250135; statizId <= 20250176; statizId++) {
+        for (int statizId = 20250191; statizId <= 20250200; statizId++) {
             System.out.println("크롤링 시작: " + statizId);
             WebDriver driver = null;
             try {

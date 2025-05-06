@@ -18,6 +18,7 @@ public class GameHighlightService {
 
     private final GameHighlightRepository gameHighlightRepository;
 
+	 // 주어진 scheduleId의 하이라이트 존재 여부 확인 후 있으면 업데이트, 없으면 새로 저장
     @Transactional
     public void saveOrUpdate(GameHighlightDTO dto) {
         GameHighlight existing = gameHighlightRepository.findByScheduleIdAndRanking(dto.getScheduleId(), dto.getRanking());
@@ -54,6 +55,7 @@ public class GameHighlightService {
         }
     }
     
+	 // 특정 scheduleId에 해당하는 하이라이트 목록을 조회해서 DTO 리스트로 변환
     public List<GameHighlightDTO> findByScheduleId(Integer scheduleId) {
         List<GameHighlight> highlights = gameHighlightRepository.findByScheduleIdOrderByRankingAsc(scheduleId);
 

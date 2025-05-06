@@ -208,7 +208,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const teamColor = "[[${teamColor}]]" || '#000000';
 
-    // ====== 감정 선택 ======
+    // 감정 선택
     const feelingList = document.getElementById('feelingList');
     const selectedFeelings = document.getElementById('selectedFeelings');
     const hiddenFeelingsInput = document.getElementById('feelingsInput');
@@ -290,7 +290,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     updateSelectedFeelings();
 
-    // ====== BEST / WORST 선수 초기화 (AJAX + select2) ======
+    // BEST / WORST 선수 초기화
     $('#bestPlayerSelect').select2({
         placeholder: 'BEST 선수 선택',
         width: '100%',
@@ -313,14 +313,11 @@ document.addEventListener('DOMContentLoaded', function() {
         method: 'GET',
         success: function(data) {
             if (data.success) {
-                // option 추가
                 for (let i = 0; i < data.players.length; i++) {
                     const name = data.players[i].trim();
                     $('#bestPlayerSelect').append('<option value="' + name + '">' + name + '</option>');
                     $('#worstPlayerSelect').append('<option value="' + name + '">' + name + '</option>');
                 }
-
-                // select2 초기화는 option 추가 후!
                 $('#bestPlayerSelect').select2({ placeholder: 'BEST 선수 선택', width: '100%', allowClear: true });
                 $('#worstPlayerSelect').select2({ placeholder: 'WORST 선수 선택', width: '100%', allowClear: true });
 
@@ -348,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function() {
         $('#worstPlayerInput').val(selected ? selected.join(',') : '');
     });
 
-    // ====== 별점 ======
+    // 별점
     const stars = document.querySelectorAll('#star-rating span');
     const ratingInput = document.getElementById('ratingInput');
     let currentRating = parseInt(ratingInput.value) || 0;
@@ -371,11 +368,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     updateStars(currentRating);
 
-    // ====== 버튼 텍스트 ======
+    // 버튼 텍스트
     const isEditing = $('input[name="id"]').val();
     $('#saveReviewButton').text(isEditing ? '수정' : '등록');
 
-    // ====== 저장 ======
+    // 저장 
     $('#saveReviewButton').click(function(event) {
         event.preventDefault();
 

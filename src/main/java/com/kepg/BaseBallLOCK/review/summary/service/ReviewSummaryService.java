@@ -32,6 +32,7 @@ public class ReviewSummaryService {
 	private final AiSummaryService aiSummaryService;
 	private final ScheduleService scheduleService;
 	
+	// 특정 주차의 ReviewSummary를 userId와 weekStartDate 기준으로 조회
 	public ReviewSummary getWeeklySummaryByStartDate(int userId, LocalDate weekStartDate) {
         // LocalDate → java.sql.Date 변환
 		Date sqlStartDate = Date.valueOf(weekStartDate);
@@ -39,6 +40,7 @@ public class ReviewSummaryService {
 	    return list.isEmpty() ? null : list.get(0);
     }
 	
+	// 유저 특정 주차(weekStart~weekEnd) 동안 작성된 리뷰들을 기반으로 주간 요약 생성 또는 수정
 	public ReviewSummary generateWeeklyReviewSummary(Integer userId, LocalDate weekStart) {
 	    LocalDate weekEnd = weekStart.plusDays(6);
 
@@ -135,12 +137,13 @@ public class ReviewSummaryService {
 	    return reviewSummaryRepository.save(summary);  // INSERT
 	}
 	
+	// 특정 주차(weekStartDate)에 대한 요약이 이미 존재하는지 여부 확인
 	public boolean summaryExistsForWeek(int userId, LocalDate weekStartDate) {
 	    Date sqlDate = Date.valueOf(weekStartDate);
 	    return reviewSummaryRepository.existsByUserIdAndWeekStartDate(userId, sqlDate);
 	}
 	
-	// 선수 이름 추출
+	// "이름 (횟수회)" 형식으로 BEST/WORST 선수 통계를 문자열로 정리
 	private String formatPlayerCount(Map<String, Integer> playerMap) {
 	    Map<String, Integer> resolved = new HashMap<>();
 
@@ -188,6 +191,7 @@ public class ReviewSummaryService {
 	    return result.toString();
 	}
 	
+	// 리뷰의 summary/feelings 내용을 바탕으로 키워드를 추출하여 "#키워드" 형식으로 반환
 	public String extractKeywords(List<Review> reviews) {
 	    // 전체 텍스트 결합
 	    StringBuilder text = new StringBuilder();
@@ -239,6 +243,7 @@ public class ReviewSummaryService {
 	    return keywords.toString();
 	}
 	
+	// 전체 유저의 주간 요약을 한 번에 생성 또는 갱신 (AI 요약 포함)
 	public void generateWeeklyReviewSummaryForAllUsers(LocalDate weekStart) {
 	    List<Integer> userIds = userService.findAllUserIds();
 

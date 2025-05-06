@@ -23,7 +23,7 @@ public class StatizTeamDetailedstatsCrawler2025 {
 
     private final TeamStatsService teamStatsService;
 
-    @Scheduled(cron = "0 0 4 * * *") 
+    @Scheduled(cron = "0 40 23 * * *") 
     public void runScheduledTeamStatCrawler() {
     	String baseUrl = "https://statiz.sporki.com/stats/?m=team&m2=%s&m3=default&so=WAR&ob=DESC&year=%d";
         String[] types = {"batting", "pitching"};

@@ -20,6 +20,7 @@ public class GameService {
     private final TeamRankingService teamRankingService;
     private final TeamService teamService;
 
+    // 시즌별 팀 순위(teamRanking)와 팀 정보(team)를 합쳐 카드 뷰 리스트로 반환
     public List<TeamRankingCardView> getTeamRankingCardViews(int season) {
         List<TeamRanking> rankings = teamRankingService.getTeamRankings(season);
         List<TeamRankingCardView> cardViewList = new ArrayList<>();

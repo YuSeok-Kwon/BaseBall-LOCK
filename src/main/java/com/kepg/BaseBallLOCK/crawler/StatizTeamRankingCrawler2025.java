@@ -24,7 +24,7 @@ public class StatizTeamRankingCrawler2025 {
 
     private final TeamRankingRepository teamRankingRepository;
 
-    @Scheduled(cron = "0 30 5 * * *")
+    @Scheduled(cron = "0 59 23 * * *")
     public void runScheduledCrawling() {
         crawlTeamRankings();
     }

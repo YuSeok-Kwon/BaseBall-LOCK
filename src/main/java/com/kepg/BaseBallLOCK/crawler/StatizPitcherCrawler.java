@@ -1,7 +1,6 @@
 package com.kepg.BaseBallLOCK.crawler;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -27,92 +26,96 @@ public class StatizPitcherCrawler {
     private final PlayerService playerService;
     private final PitcherStatsService statsService;
 
-    private static final Map<String, Integer> colorToTeamIdMap = new HashMap<>();
+    private static final Map<Integer, String> teamTeIds = new HashMap<>();
+
     static {
-        colorToTeamIdMap.put("#042071", 2); // 두산
-        colorToTeamIdMap.put("#cf152d", 4); // SSG
-        colorToTeamIdMap.put("#ff0000", 4); // SSG + SK
-        colorToTeamIdMap.put("#ed1c24", 1); // KIA
-        colorToTeamIdMap.put("#002b69", 7); // NC
-        colorToTeamIdMap.put("#000000", 8); // KT
-        colorToTeamIdMap.put("#888888", 9); // 롯데
-        colorToTeamIdMap.put("#f37321", 6); // 한화
-        colorToTeamIdMap.put("#0061AA", 3); // 삼성
-        colorToTeamIdMap.put("#fc1cad", 5); // LG
-        colorToTeamIdMap.put("#86001f", 10); // 키움
+        teamTeIds.put(1, "2002");   // KIA
+        teamTeIds.put(2, "6002");   // 두산
+        teamTeIds.put(3, "1001");   // 삼성
+        teamTeIds.put(4, "9002");   // SSG
+        teamTeIds.put(5, "5002");   // LG
+        teamTeIds.put(6, "7002");   // 한화	
+        teamTeIds.put(7, "11001");  // NC
+        teamTeIds.put(8, "12001");  // KT
+        teamTeIds.put(9, "3001");   // 롯데
+        teamTeIds.put(10, "10001"); // 키움
     }
 
     public void crawl() {
-        String[] urlPatterns = {
-            "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=DESC&year=%d&lt=10100&reg=A",
-            "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=ASC&year=%d&sy=&ey=&te=&po=&lt=10100&reg=A&pe=&ds=&de=&we=&hr=&ha=&ct=&st=&vp=&bo=&pt=&pp=&ii=&vc=&um=&oo=&rr=&sc=&bc=&ba=&li=&as=&ae=&pl=&gc=&lr=&pr=50&ph=&hs=&us=&na=&ls=&sf1=&sk1=&sv1=&sf2=&sk2=&sv2="
-        };
+        int[] years = {2021,2022};  // 크롤링할 시즌
+        for (int year : years) {
+            for (Map.Entry<Integer, String> entry : teamTeIds.entrySet()) {
+                int teamId = entry.getKey();
+                String teCode = entry.getValue();
 
-        int[] years = {2025};
+                String url = String.format(
+                    "https://statiz.sporki.com/stats/?m=main&m2=pitching&m3=default&so=WAR&ob=DESC&year=%d&te=%s&po=1&lt=10100&reg=A",
+                    year, teCode
+                );
 
-        for (String urlPattern : urlPatterns) {
-            for (int year : years) {
-                String url = String.format(urlPattern, year);
-                System.out.println("투수 크롤링: year=" + year);
-
-                WebDriver driver = null;
-                try {
-                	ChromeOptions options = new ChromeOptions();
-                	options.addArguments("--headless");  // UI 없이 백그라운드 실행
-                	options.addArguments("--no-sandbox");
-                	options.addArguments("--disable-dev-shm-usage");
-
-                	driver = new ChromeDriver(options);
-                	driver.get(url);
-
-                	Thread.sleep(5000);
-                    
-                	String pageSource = driver.getPageSource();
-                	Document doc = Jsoup.parse(pageSource);
-
-                    Element table = doc.selectFirst("table");
-                    if (table == null) {
-                    	continue;
-                    }
-
-                    for (Element row : table.select("tr")) {
-                        Elements cols = row.select("td");
-                        if (cols.size() <= 36) continue;
-                        processRow(cols, year);
-                    }
-
-                } catch (Exception e) {
-                    System.out.println("에러 발생: year=" + year);
-                    e.printStackTrace();
-                } finally {
-                    if (driver != null) driver.quit();
-                }
+                // 크롤링 처리 로직 호출
+                crawlTeamPitcherStats(teamId, year, url);
             }
         }
     }
-    
-    private int resolveTeamId(Element colorElem) {
-        if (colorElem == null) return 0;
-        String bg = colorElem.attr("style").split("background:")[1].split(";")[0].trim();
-        return colorToTeamIdMap.getOrDefault(bg, 0);
+
+    public void crawlTeamPitcherStats(int teamId, int year, String url) {
+    	
+        System.out.printf("크롤링 중: teamId=%d, year=%d, url=%s%n", teamId, year, url);
+
+        WebDriver driver = null;
+        try {
+            ChromeOptions options = new ChromeOptions();
+            options.addArguments("--headless");
+            options.addArguments("--no-sandbox");
+            options.addArguments("--disable-dev-shm-usage");
+
+            driver = new ChromeDriver(options);
+            driver.get(url);
+
+            Thread.sleep(10000);
+            
+            String pageSource = driver.getPageSource();
+        	Document doc = Jsoup.parse(pageSource);
+            
+        	Element table = doc.selectFirst("table");
+            if (table == null) {
+                System.out.println("테이블 없음: " + teamId);
+                return;
+            }
+            
+            Elements rows = table.select("tr");
+
+            for (Element row : rows) {
+                Elements cols = row.select("td");
+                if (cols.size() <= 36) continue;
+
+                processRow(cols, year, teamId);
+            }
+
+        } catch (Exception e) {
+            System.out.println("에러 발생: teamId=" + teamId + ", year=" + year);
+            e.printStackTrace();
+        } finally {
+            if (driver != null) driver.quit();
+        }
+            
+        
     }
 
-    private int parseSeason(String raw) {
-        String[] parts = raw.split(" ");
-        return Integer.parseInt(parts[0]);
-    }
-
-    private void processRow(Elements cols, int year) {
+    private void processRow(Elements cols, int year, int teamId) {
         String name = cols.get(1).text().trim();
-        int season = parseSeason(cols.get(2).text().trim());
+        System.out.println("processRow 진입 - 선수명: " + cols.get(1).text());
+        int season = year;
         String position = "P";
-        int teamId = resolveTeamId(cols.get(2).selectFirst("span[style]"));
 
         PlayerDTO dto = PlayerDTO.builder().name(name).teamId(teamId).build();
         Player player = playerService.findOrCreatePlayer(dto);
         int playerId = player.getId();
 
         save(playerId, season, "G", parseInt(cols.get(4).text()), null, position);
+        save(playerId, season, "GS", parseInt(cols.get(5).text()), null, position);
+        save(playerId, season, "GR", parseInt(cols.get(6).text()), null, position);
         save(playerId, season, "W", parseInt(cols.get(10).text()), null, position);
         save(playerId, season, "L", parseInt(cols.get(11).text()), null, position);
         save(playerId, season, "SV", parseInt(cols.get(12).text()), null, position);
@@ -126,8 +129,9 @@ public class StatizPitcherCrawler {
         save(playerId, season, "WHIP", parseDouble(cols.get(35).text()), null, position);
         save(playerId, season, "WAR", parseDouble(cols.get(36).text()), null, position);
     }
-    
+
     private void save(int playerId, int season, String category, double value, Integer ranking, String position) {
+    	System.out.println("[DEBUG] save 호출 - category=ERA");
         PitcherStatsDTO dto = PitcherStatsDTO.builder()
                 .playerId(playerId)
                 .season(season)

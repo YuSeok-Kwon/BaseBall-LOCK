@@ -45,6 +45,7 @@ public class ScheduleController {
 	    }
 	    
         Map<LocalDate, List<ScheduleCardView>> groupedSchedule = scheduleService.getGroupedScheduleByMonth(selectedYear, selectedMonth);
+        groupedSchedule = scheduleService.sortScheduleWithTodayFirst(groupedSchedule, today);
         
         LocalDate current = LocalDate.of(selectedYear, selectedMonth, 1);
 	    LocalDate prev = current.minusMonths(1);

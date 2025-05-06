@@ -1,0 +1,424 @@
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/noheader}">
+<head>
+  <style>
+    html, body {
+	  margin: 0;
+	  padding: 0;
+	  width: 100%;
+	  height: 100%;
+	  overflow-x: hidden; /* 좌우 스크롤 방지 */
+	}
+	body {
+	  background-image: url('/static/game/ready.png');
+	  background-size: cover;
+	  background-position: center;
+	  background-repeat: no-repeat;
+	  min-height: 100vh;
+	  width: 100%;
+	}
+	
+	#wrap {
+	  height: 100%;
+	  width: 100%;
+	  display: flex;
+      flex-direction: column;
+	}
+	
+	.main-wrapper {
+	  flex: 1;
+      display: flex;
+	  position: relative;
+	  flex-direction: column;
+      justify-content: space-between;
+	  width: 100%;
+	  min-height: 100%;
+	  overflow: hidden;
+	  padding-bottom: 80px;
+	}
+	
+	.overlay {
+	  position: absolute;
+	  top: 0;
+	  left: 0;
+	  width: 100%;
+	  height: 100%;
+	  background-color: rgba(0,0,0,0.6);
+	  z-index: 0;
+	}
+	
+	.content.container,
+	.content.container-fluid {
+	  padding-left: 0 !important;
+	  padding-right: 0 !important;
+	  margin: 0 auto;     /* 중앙 정렬을 보장 */
+	  max-width: 100%;    /* 🔥 Bootstrap 기본 제한 해제 */
+	}
+
+	.content {
+	  flex-grow: 1;
+	  position: relative;
+	  z-index: 1;
+	}
+	
+	#user-lineup > div,
+	#bot-lineup > div {
+	  min-width: unset;
+	  max-width: 10%;
+	  box-sizing: border-box;
+	}
+	
+	footer {
+  flex-shrink: 0;
+}
+	/* 크기를 줄인 카드 레이아웃 */
+	.pokemon-card {
+	  width: 100%;
+	  max-width: 130px;
+	  height: 220px;    
+	  perspective: 1000px;
+	  margin: 0 !important;
+	  font-size: 0.65rem; 
+	  border-radius: 10px;
+	  overflow: hidden;
+	}
+	
+	.card-banner {
+	  border-top-left-radius: 10px;
+	  border-top-right-radius: 10px;
+	  border-bottom-left-radius: 0;
+	  border-bottom-right-radius: 0;
+	  padding: 0.25rem 0.5rem;
+	  position: absolute;
+	  top: 0;
+	  left: 0;
+	  right: 0;
+	  background-color: rgba(0, 0, 0, 0.5);
+	  color: white;
+	  font-size: 0.7rem;
+	  z-index: 2;
+	}
+	.card-inner {
+	  width: 100%;
+	  height: 100%;
+	  transition: transform 0.6s;
+	  transform-style: preserve-3d;
+	  position: relative;
+	}
+	
+	.card-front, .card-back {
+	  width: 100%;
+	  height: 100%;
+	  backface-visibility: hidden;
+	  position: absolute;
+	  border-radius: 10px;
+	  padding: 0.5rem;
+	}
+	
+	.card-front {
+	  background-color: #ffffff10;
+	  color: white;
+	}
+	.card-stats{
+	  font-size: 0.8rem;
+	  color: black;
+	}
+	.card-back {
+	  background-color: #000000cc;
+	  color: white;
+	  transform: rotateY(180deg);
+	}
+	#user-lineup,
+	#bot-lineup {
+	  display: grid !important;
+	  grid-template-columns: repeat(10, 1fr);
+	  gap: 1px;
+	  justify-items: center;
+	}
+	
+	#user-lineup > div,
+	#bot-lineup > div {
+	  flex: 1 1 10%;
+	  max-width: 10%; 
+	  min-width: 100px; 
+}
+  </style>
+</head>
+<th:block layout:fragment="contents">
+    <main class="main-wrapper" data-user-id="[[${session.userId}]]">
+      <div class="overlay"></div>
+		<div class="content container-fluid">
+		
+		  <!-- 유저 라인업 -->
+		  <div class="pt-3">
+		    <h3 class="text-center text-white mb-2 d-flex justify-content-center align-items-center gap-3">
+			  내 라인업
+                <a href="/game/lineup-view" class="btn btn-light btn-sm ms-3">라인업 구성하기</a>
+            </h3>
+		    <div class="text-white text-center mb-1" id="user-summary"></div>
+            <div class="d-flex flex-wrap justify-content-center" id="user-lineup"></div>
+		  </div>
+		
+		  <!-- 봇 라인업 -->
+		  <div class="">
+		    <div class="d-flex justify-content-center align-items-center text-center text-white mb-2">
+		    <h3 class="text-center text-white mb-2">BOT 라인업</h3>
+			  <label for="difficulty-select" class="mx-2">난이도</label>
+			  <select id="difficulty-select" class="form-select d-inline-block w-auto">
+			    <option value="easy">쉬움</option>
+			    <option value="normal" selected>보통</option>
+			    <option value="hard">어려움</option>
+			  </select>
+			</div>
+		    <div class="text-white text-center mb-1" id="bot-summary"></div>
+            <div class="d-flex flex-wrap justify-content-center" id="bot-lineup"></div>
+		  </div>
+		
+		  <!-- 시작 버튼 -->
+		  <div class="text-center mt-2 mb-5">
+		    <a href="/game/play-view" class="btn btn-light btn-sm ms-3">게임 시작</a>
+		  </div>
+		  
+		</div>
+	</main>
+</th:block>
+
+<th:block layout:fragment="script">
+<script th:inline="javascript">
+    const userId = [[${session.userId}]];
+</script>
+<script>
+	//페이지 로드 시 실행: 난이도 선택 및 라인업 초기 로드
+	$(document).ready(function () {
+	  var difficulty = $('#difficulty-select').val();
+	
+	  // 서버에서 라인업을 불러오고 봇 팀과 함께 구성
+	  function loadLineups() {
+	    $.ajax({
+	      url: '/game/user/lineup',
+	      method: 'GET',
+	      data: { userId: userId },
+	      success: function (userLineup) {
+	        $.ajax({
+	          url: '/game/ready?difficulty=' + encodeURIComponent(difficulty),
+	          method: 'POST',
+	          contentType: 'application/json',
+	          data: JSON.stringify(userLineup),
+	          success: function (data) {
+	            renderCardLineup(data.user, $('#user-lineup')[0]);
+	            renderCardLineup(data.bot, $('#bot-lineup')[0]);
+	            renderSummaryStats(data.user, $('#user-summary')[0]);
+	            renderSummaryStats(data.bot, $('#bot-summary')[0]);
+	          },
+	          error: function () {
+	            console.error('상대 라인업 생성 실패');
+	          }
+	        });
+	      },
+	      error: function () {
+	        console.error('유저 라인업 불러오기 실패');
+	      }
+	    });
+	  }
+	
+	  // 난이도 선택 변경 시 라인업 재로딩
+	  $('#difficulty-select').on('change', function () {
+	    difficulty = $(this).val();
+	    loadLineups();
+	  });
+	
+	  loadLineups();
+	});
+	
+	
+	// 라인업 카드 리스트를 화면에 출력
+	function renderCardLineup(cardViews, container) {
+	  container.innerHTML = '';
+	
+	  cardViews.sort(function (a, b) {
+	    return parseInt(a.lineup.orderNum) - parseInt(b.lineup.orderNum);
+	  });
+	
+	  for (var i = 0; i < cardViews.length; i++) {
+	    var view = cardViews[i];
+	    var element = createCardElement(view.card, view.lineup.orderNum);
+	    container.appendChild(element);
+	  }
+	}
+	
+	// 카드 요소 하나를 생성하여 반환
+	function createCardElement(card, orderNum) {
+	  var wrapper = document.createElement('div');
+	  wrapper.className = 'd-flex flex-column align-items-center mb-3';
+	  wrapper.style.minWidth = '180px';
+	
+	  var flipWrapper = document.createElement('div');
+	  flipWrapper.className = 'pokemon-card card card-flip';
+	  flipWrapper.setAttribute('data-player-id', card.playerId);
+	
+	  var inner = document.createElement('div');
+	  inner.className = 'card-inner';
+	
+	  // 앞면 구성
+	  var front = document.createElement('div');
+	  front.className = 'card-front grade-' + card.grade;
+	
+	  var banner = document.createElement('div');
+	  banner.className = 'card-banner d-flex justify-content-between';
+	  banner.innerHTML = '<span class="grade-label">' + card.grade + ' 등급</span><span class="season">' + card.season + '</span>';
+	  front.appendChild(banner);
+	
+	  if (card.grade === 'S' && card.imagePath) {
+	    var imageWrapper = document.createElement('div');
+	    imageWrapper.className = 'card-image-wrapper';
+	    imageWrapper.innerHTML = '<img src="/' + card.imagePath + '" class="card-image hologram" alt="' + card.playerName + '">';
+	    front.appendChild(imageWrapper);
+	  }
+	
+	  var info = document.createElement('div');
+	  info.className = 'card-info text-center text-black mt-5';
+	  info.innerHTML = '<h5 class="player-name">' + card.playerName + '</h5>';
+	  front.appendChild(info);
+	
+	  var overall = document.createElement('div');
+	  overall.className = 'text-center fw-bold text-black fs-6';
+	  overall.innerHTML = '<strong>Overall: ' + card.overall + '</strong>';
+	  front.appendChild(overall);
+	
+	  var stats = document.createElement('div');
+	  stats.className = 'card-stats text-center';
+	  stats.innerHTML = getStatHTML(card);
+	  front.appendChild(stats);
+	
+	  // 뒷면 구성
+	  var back = document.createElement('div');
+	  back.className = 'card-back grade-' + card.grade;
+	  back.innerHTML = getBackStatHTML(card);
+	
+	  // 마우스 방향에 따라 카드 회전
+	  flipWrapper.addEventListener('mousemove', function (e) {
+	    var rect = flipWrapper.getBoundingClientRect();
+	    var x = e.clientX - rect.left;
+	    if (x < rect.width / 2) {
+	      inner.style.transform = 'rotateY(0deg)';
+	    } else {
+	      inner.style.transform = 'rotateY(180deg)';
+	    }
+	  });
+	
+	  flipWrapper.addEventListener('mouseleave', function () {
+	    inner.style.transform = 'rotateY(0deg)';
+	  });
+	
+	  inner.appendChild(front);
+	  inner.appendChild(back);
+	  flipWrapper.appendChild(inner);
+	  wrapper.appendChild(flipWrapper);
+	
+	  var orderLabel = document.createElement('div');
+	  orderLabel.className = 'mt-2 text-white fw-bold';
+	  orderLabel.innerText = orderNum === '10' ? '투수' : orderNum + '번 타자';
+	  wrapper.appendChild(orderLabel);
+	
+	  return wrapper;
+	}
+	
+	// 카드 앞면 스탯 정보 출력
+	function getStatHTML(card) {
+	  var html = '<p>WAR: ' + (card.war ?? 0) + '</p>';
+	  if (card.position === 'P') {
+	    html += '<p>ERA: ' + (card.era ?? 0) + '</p>';
+	    html += '<p>WHIP: ' + (card.whip ?? 0) + '</p>';
+	    if (card.wins >= card.saves && card.wins >= card.holds && card.wins > 0) {
+	      html += '<p>' + card.wins + '승</p>';
+	    } else if (card.saves >= card.holds && card.saves > 0) {
+	      html += '<p>' + card.saves + '세이브</p>';
+	    } else if (card.holds > 0) {
+	      html += '<p>' + card.holds + '홀드</p>';
+	    }
+	  } else {
+	    html += '<p>AVG: ' + (card.avg ?? 0) + '</p>';
+	    html += '<p>OPS: ' + (card.ops ?? 0) + '</p>';
+	  }
+	  return html;
+	}
+	
+	// 카드 뒷면 능력치 출력
+	function getBackStatHTML(card) {
+	  if (card.position === 'P') {
+	    return (
+	      '<h6>능력치 요약</h6>' +
+	      '<p>컨트롤: ' + card.control + '</p>' +
+	      '<p>구위: ' + card.stuff + '</p>' +
+	      '<p>지구력: ' + card.stamina + '</p>' +
+	      '<p><strong>Overall: ' + card.overall + '</strong></p>'
+	    );
+	  } else {
+	    return (
+	      '<h6>능력치 요약</h6>' +
+	      '<p>파워: ' + card.power + '</p>' +
+	      '<p>컨택: ' + card.contact + '</p>' +
+	      '<p>선구: ' + card.discipline + '</p>' +
+	      '<p>스피드: ' + card.speed + '</p>' +
+	      '<p><strong>Overall: ' + card.overall + '</strong></p>'
+	    );
+	  }
+	}
+	
+	// 요약 스탯 평균을 계산해 화면에 출력
+	function renderSummaryStats(cardViews, targetElement) {
+	  var sum = {
+	    overall: 0,
+	    power: 0,
+	    contact: 0,
+	    discipline: 0,
+	    speed: 0,
+	    control: 0,
+	    stuff: 0,
+	    stamina: 0,
+	    count: 0,
+	    batterCount: 0,
+	    pitcherCount: 0
+	  };
+	
+	  for (var i = 0; i < cardViews.length; i++) {
+	    var card = cardViews[i].card;
+	    sum.overall += card.overall || 0;
+	    sum.count++;
+	
+	    if (card.position === 'P') {
+	      sum.control += card.control || 0;
+	      sum.stuff += card.stuff || 0;
+	      sum.stamina += card.stamina || 0;
+	      sum.pitcherCount++;
+	    } else {
+	      sum.power += card.power || 0;
+	      sum.contact += card.contact || 0;
+	      sum.discipline += card.discipline || 0;
+	      sum.speed += card.speed || 0;
+	      sum.batterCount++;
+	    }
+	  }
+	
+	  var avg = {
+	    overall: (sum.overall / sum.count).toFixed(1),
+	    power: (sum.power / sum.batterCount).toFixed(1),
+	    contact: (sum.contact / sum.batterCount).toFixed(1),
+	    discipline: (sum.discipline / sum.batterCount).toFixed(1),
+	    speed: (sum.speed / sum.batterCount).toFixed(1),
+	    control: (sum.control / sum.pitcherCount).toFixed(1),
+	    stuff: (sum.stuff / sum.pitcherCount).toFixed(1),
+	    stamina: (sum.stamina / sum.pitcherCount).toFixed(1)
+	  };
+	
+	  targetElement.innerHTML =
+	    '<p class="mb-1">Overall: ' + avg.overall + '</p>' +
+	    '<p class="mb-1">타자 → 파워 ' + avg.power + ' / 컨택 ' + avg.contact +
+	    ' / 선구 ' + avg.discipline + ' / 스피드 ' + avg.speed + '</p>' +
+	    '<p class="mb-3">투수 → 컨트롤 ' + avg.control + ' / 구위 ' + avg.stuff +
+	    ' / 지구력 ' + avg.stamina + '</p>';
+	}
+</script>
+</th:block>

@@ -12,13 +12,22 @@ import com.kepg.BaseBallLOCK.game.record.domain.PitcherRecord;
 @Repository
 public interface PitcherRecordRepository extends JpaRepository<PitcherRecord, Integer> {
 	
+	// scheduleId와 teamId의 투수 기록 전체 조회
 	List<PitcherRecord> findByScheduleIdAndTeamId(int scheduleId, int teamId);
 	
+	// 특정 경기/팀/선수의 투수 기록 존재 여부 확인
 	boolean existsByScheduleIdAndTeamIdAndPlayerId(int scheduleId, int teamId, int playerId);
 	
+	// 특정 경기의 모든 투수 기록 조회
 	List<PitcherRecord> findByScheduleId(int scheduleId);
 	
-	@Query("SELECT DISTINCT p.player.name FROM PitcherRecord p WHERE p.scheduleId = :scheduleId AND p.teamId = :teamId")
+	// 특정 경기/팀의 투수 이름 목록 조회
+	@Query(value = """
+	    SELECT DISTINCT p.name
+	    FROM pitcherRecord pr
+	    JOIN player p ON pr.playerId = p.id
+	    WHERE pr.scheduleId = :scheduleId AND pr.teamId = :teamId
+	""", nativeQuery = true)
 	List<String> findPitcherNamesByScheduleIdAndTeamId(@Param("scheduleId") int scheduleId,
 	                                                   @Param("teamId") int teamId);
 }

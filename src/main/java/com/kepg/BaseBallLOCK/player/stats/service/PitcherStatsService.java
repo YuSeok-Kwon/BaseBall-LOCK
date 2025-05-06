@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.kepg.BaseBallLOCK.game.schedule.service.ScheduleService;
 import com.kepg.BaseBallLOCK.player.dto.TopPlayerCardView;
@@ -28,34 +29,32 @@ public class PitcherStatsService {
 	private final PlayerService playerService; 
 	private final ScheduleService scheduleService;
 	
+	// 투수 스탯 저장 또는 업데이트 (playerId + season + category 기준 중복 확인)
+	@Transactional
 	public void savePitcherStats(PitcherStatsDTO dto) {
-		
-        Optional<PitcherStats> optional = pitcherStatsRepository
-                .findByPlayerIdAndSeasonAndCategory(dto.getPlayerId(), dto.getSeason(), dto.getCategory());
+	    Optional<PitcherStats> optional = pitcherStatsRepository
+	            .findByPlayerIdAndSeasonAndCategory(dto.getPlayerId(), dto.getSeason(), dto.getCategory());
 
-        PitcherStats entity;
-        if (optional.isPresent()) {
-            entity = optional.get();
-            entity.setValue(dto.getValue());
-            entity.setRanking(dto.getRanking());
-            entity.setPosition(dto.getPosition());
-            System.out.println("[UPDATE] playerId=" + dto.getPlayerId() + ", category=" + dto.getCategory()
-            + ", oldValue=" + entity.getValue() + ", newValue=" + dto.getValue());
-        } else {
-            entity = PitcherStats.builder()
-                    .playerId(dto.getPlayerId())
-                    .season(dto.getSeason())
-                    .position(dto.getPosition())
-                    .category(dto.getCategory())
-                    .value(dto.getValue())
-                    .ranking(dto.getRanking())
-                    .position(dto.getPosition()) 
-                    .build();
-        }
+	    if (optional.isPresent()) {
+	        pitcherStatsRepository.delete(optional.get());
+	        System.out.println("[DELETE-AND-INSERT] 기존 데이터 삭제: playerId=" + dto.getPlayerId() + ", category=" + dto.getCategory());
+	    }
 
-        pitcherStatsRepository.save(entity);
-    }
+	    PitcherStats entity = PitcherStats.builder()
+	            .playerId(dto.getPlayerId())
+	            .season(dto.getSeason())
+	            .category(dto.getCategory())
+	            .value(dto.getValue())
+	            .ranking(dto.getRanking())
+	            .position(dto.getPosition())
+	            .build();
+
+	    pitcherStatsRepository.save(entity);
+	    System.out.println("[INSERT] playerId=" + dto.getPlayerId() + ", category=" + dto.getCategory()
+	            + ", value=" + dto.getValue());
+	}
 	
+	// 팀별 WAR 1위 투수 조회 (ERA, WHIP, W/SV/HLD 중 최고값 포함)
 	public TopPlayerCardView getTopPitcher(int teamId, int season) {
 	    List<Object[]> result = playerService.getTopPitcherByTeamAndSeason(teamId, season);
 	    if (result.isEmpty()) {
@@ -143,7 +142,7 @@ public class PitcherStatsService {
 	    return result;
 	}
 
-	// 전체 투수 기록 정렬 리스트 조회
+	// 전체 투수 랭킹 리스트 정렬 (규정 조건 없이)
 	public List<PitcherRankingDTO> getPitcherRankingsSorted(int season, String sort, String direction) {
 
 	    List<Object[]> projections = pitcherStatsRepository.findAllPitchers(season);
@@ -199,11 +198,12 @@ public class PitcherStatsService {
 	    return result;
 	}
 	
+	// 규정 이닝을 충족한 투수 랭킹 리스트 조회 및 정렬
 	public List<PitcherRankingDTO> getQualifiedPitchers(int season, String sort, String direction) {
-	    // 1. 팀별 경기 수를 가져온다 (2025만)
+	    // 팀별 경기 수를 가져오기
 	    Map<Integer, Integer> teamGamesMap = scheduleService.getTeamGamesPlayedBySeason(season);
 
-	    // 2. 투수 전체 기록 가져오기 (조건 없이)
+	    // 투수 전체 기록 가져오기 (조건 없이)
 	    List<Object[]> projections = pitcherStatsRepository.findAllPitchers(season);
 
 	    List<PitcherRankingDTO> result = new ArrayList<>();
@@ -229,7 +229,7 @@ public class PitcherStatsService {
 	                Double war = row[14] != null ? ((Number) row[14]).doubleValue() : 0.0;
 	                int teamId = row[15] != null ? ((Number) row[15]).intValue() : 0;
 
-	                // 3. 규정이닝 계산
+	                // 규정이닝 계산
 	                int teamGames = teamGamesMap.getOrDefault(teamId, 0);
 	                int requiredIP = getQualifiedInnings(season, teamGames);
 
@@ -259,13 +259,12 @@ public class PitcherStatsService {
 	        }
 	    }
 
-	    // 4. 마지막에 정렬
 	    sortPitcherRankingList(result, sort, direction);
 
 	    return result;
 	}
 	
-	// 정렬 기준 추출용
+	// PitcherRankingDTO 정렬 기준 값 추출용 메서드
 	private double getSortValue(PitcherRankingDTO dto, String sortKey) {
 	    if ("ERA".equalsIgnoreCase(sortKey)) return dto.getEra() != null ? dto.getEra() : Double.MAX_VALUE;
 	    if ("WHIP".equalsIgnoreCase(sortKey)) return dto.getWhip() != null ? dto.getWhip() : Double.MAX_VALUE;
@@ -282,7 +281,7 @@ public class PitcherStatsService {
 	    return 0.0;
 	}
 	
-	// 수동 정렬
+	// 투수 랭킹 수동 정렬 (정렬 키 및 방향 기반)
 	public void sortPitcherRankingList(List<PitcherRankingDTO> list, String sort, String direction) {
 	    if (sort == null || direction == null) return;
 
@@ -315,13 +314,18 @@ public class PitcherStatsService {
 	    }
 	}
 	
-		// 규정이닝구하기
-		public int getQualifiedInnings(int season, int teamGames) {
-		    if (season == 2025) {
-		        return teamGames;
-		    } else {
-		        return 144;
-		    }
-		}
+	// 시즌 및 팀 경기 수 기준 규정 이닝 계산
+	public int getQualifiedInnings(int season, int teamGames) {
+	    if (season == 2025) {
+	        return teamGames;
+	    } else {
+	        return 144;
+	    }
+	}
+	
+	// 해당 playerId와 시즌에 대한 기록 존재 여부 확인
+	public boolean existsByPlayerIdAndSeason(int playerId, int season) {
+    	return pitcherStatsRepository.existsByPlayerIdAndSeason(playerId, season);
+    }
 }
 

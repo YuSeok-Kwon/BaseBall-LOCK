@@ -8,9 +8,9 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import com.kepg.BaseBallLOCK.team.teamStat.dto.TeamStatRankingInterface;
 import com.kepg.BaseBallLOCK.team.teamStats.domain.TeamStats;
 import com.kepg.BaseBallLOCK.team.teamStats.dto.TeamStatRankingDTO;
+import com.kepg.BaseBallLOCK.team.teamStats.dto.TeamStatRankingInterface;
 import com.kepg.BaseBallLOCK.team.teamStats.dto.TopStatTeamDTO;
 import com.kepg.BaseBallLOCK.team.teamStats.dto.TopStatTeamInterface;
 import com.kepg.BaseBallLOCK.team.teamStats.repository.TeamStatsRepository;
@@ -55,7 +55,7 @@ public class TeamStatsService {
                 .build();
     }
 
- // TeamStatRankingInterface → TeamStatRankingDTO 변환
+    // TeamStatRankingInterface → TeamStatRankingDTO 변환
     private TeamStatRankingDTO convertToTeamStatRankingDTO(TeamStatRankingInterface projection) {
         if (projection == null) return null;
 
@@ -106,7 +106,7 @@ public class TeamStatsService {
         }
     }
 
- // --- 타자 스탯 Top 팀 조회
+    // 타자 스탯 Top 팀 조회
     public List<TopStatTeamDTO> getTopBatterStats(int season) {
         List<String> batterOrder = Arrays.asList("BetterWAR", "AVG", "OPS", "HR", "SB");
         List<TopStatTeamDTO> result = new ArrayList<>();
@@ -120,7 +120,7 @@ public class TeamStatsService {
         return result;
     }
 
-    // --- 투수 스탯 Top 팀 조회
+    // 투수 스탯 Top 팀 조회
     public List<TopStatTeamDTO> getTopPitcherStats(int season) {
         List<String> pitcherOrder = Arrays.asList("PitcherWAR", "ERA", "WHIP", "SO", "BB");
         List<TopStatTeamDTO> result = new ArrayList<>();
@@ -139,7 +139,7 @@ public class TeamStatsService {
         return result;
     }
 
-    // --- WAA 스탯 Top 팀 조회
+    // WAA 스탯 Top 팀 조회
     public List<TopStatTeamDTO> getTopWaaStats(int season) {
         List<String> waaOrder = Arrays.asList("타격", "선발", "불펜", "수비", "주루");
         List<TopStatTeamDTO> result = new ArrayList<>();

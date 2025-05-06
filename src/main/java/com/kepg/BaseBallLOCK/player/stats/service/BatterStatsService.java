@@ -29,37 +29,30 @@ public class BatterStatsService {
     private final PlayerService playerService; 
 	private final ScheduleService scheduleService;
 
-	
-    public void saveBatterStats(BatterStatsDTO dto) {
-        Optional<BatterStats> optional = batterStatsRepository.findByPlayerIdAndSeasonAndCategory(dto.getPlayerId(), dto.getSeason(), dto.getCategory());
+	// 타자 스탯 저장 또는 업데이트 (playerId + season + category 기준 중복 확인)
+	public void saveBatterStats(BatterStatsDTO dto) {
+	    Optional<BatterStats> optional = batterStatsRepository.findByPlayerIdAndSeasonAndCategory(dto.getPlayerId(), dto.getSeason(), dto.getCategory());
 
-        BatterStats entity;
-        
-        if (optional.isPresent()) {
-            entity = optional.get();
-            System.out.println("[UPDATE] playerId=" + dto.getPlayerId() + ", category=" + dto.getCategory()
-            + ", oldValue=" + entity.getValue() + ", newValue=" + dto.getValue());
-            
-            entity.setValue(dto.getValue());
-            entity.setRanking(dto.getRanking());
-            entity.setPosition(dto.getPosition());
-        } else {
-            entity = BatterStats.builder()
-                    .playerId(dto.getPlayerId())
-                    .season(dto.getSeason())
-                    .position(dto.getPosition())
-                    .category(dto.getCategory())
-                    .value(dto.getValue())
-                    .ranking(dto.getRanking())
-                    .build();
-            System.out.println("[INSERT] playerId=" + dto.getPlayerId() + ", category=" + dto.getCategory()
-            + ", value=" + dto.getValue());
-        }
-        
-        batterStatsRepository.save(entity);
-        System.out.println("저장 완료");
-    }
+	    if (optional.isPresent()) {
+	        batterStatsRepository.delete(optional.get());
+	        System.out.println("[DELETE-AND-INSERT] 기존 데이터 삭제: playerId=" + dto.getPlayerId() + ", category=" + dto.getCategory());
+	    }
+
+	    BatterStats entity = BatterStats.builder()
+	            .playerId(dto.getPlayerId())
+	            .season(dto.getSeason())
+	            .position(dto.getPosition())
+	            .category(dto.getCategory())
+	            .value(dto.getValue())
+	            .ranking(dto.getRanking())
+	            .build();
+
+	    batterStatsRepository.save(entity);
+	    System.out.println("[INSERT] playerId=" + dto.getPlayerId() + ", category=" + dto.getCategory()
+	            + ", value=" + dto.getValue());
+	}
     
+    // 팀별 WAR 1위 타자 조회 (AVG, OPS, HR 포함)
     public TopPlayerCardView getTopHitter(int teamId, int season) {
         List<Object[]> result = playerService.getTopHitterByTeamAndSeason(teamId, season);
         if (result.isEmpty()) {
@@ -120,8 +113,8 @@ public class BatterStatsService {
                 .ops(ops)
                 .build();
     }
-    
-    // 포지션별 WAR 1위 타자 가져오기
+        
+    // 시즌별 포지션 WAR 1위 타자 목록 조회
     public List<BatterTopDTO> getTopBattersByPosition(int season) {
         List<Object[]> projections = batterStatsRepository.findTopBattersByPosition(season);
         List<BatterTopDTO> result = new ArrayList<>();
@@ -147,16 +140,15 @@ public class BatterStatsService {
 
         return result;
     }
-
-    // 전체 타자 랭킹
+   
+    // 전체 타자 랭킹 조회 및 정렬 (필터 없음)
     public List<BatterRankingDTO> getPlayerRankingsSorted(int season, String sort, String direction) {
         List<Object[]> projections = batterStatsRepository.findAllBatters(season);
         List<BatterRankingDTO> result = new ArrayList<>();
 
         for (Object[] row : projections) {
 
-        	// 각 필드를 정확히 타입에 맞게 캐스팅
-        	String position = (String) row[0];     // 포지션
+        	String position = (String) row[0];     
         	String playerName = (String) row[1];                       // 선수 이름
         	String teamName = (String) row[2];                         // 팀 이름
         	String logoName = (String) row[3];                         // 로고 이름
@@ -177,7 +169,6 @@ public class BatterStatsService {
         	Double obp = row[18] != null ? (Double) row[18] : 0.0;     // 출루율 (OBP)
         	Double slg = row[19] != null ? (Double) row[19] : 0.0;     // 장타율 (SLG)
             
-            // DTO 객체를 빌드
             BatterRankingDTO dto = BatterRankingDTO.builder()
                     .g(g)
                     .pa(pa)
@@ -209,14 +200,12 @@ public class BatterStatsService {
         return result;
     }
 
-    
-    
-
+    // 규정 타석 충족한 타자만 필터링하여 랭킹 조회 및 정렬
     public List<BatterRankingDTO> getQualifiedBatters(int season, String sort, String direction) {
-        // 1. 팀별 경기 수 가져오기
+        // 팀별 경기 수 가져오기
         Map<Integer, Integer> teamGamesMap = scheduleService.getTeamGamesPlayedBySeason(season);
 
-        // 2. 타자 전체 기록 가져오기
+        // 타자 전체 기록 가져오기
         List<Object[]> rows = batterStatsRepository.findAllBatters(season);
 
         List<BatterRankingDTO> result = new ArrayList<>();
@@ -266,7 +255,7 @@ public class BatterStatsService {
         return result;
     }
 
-    // 정렬 기준 추출용
+    // 정렬 기준별 값 추출 (WAR, AVG, OPS 등)
     private double getSortValue(BatterRankingDTO dto, String sortKey) {
     	if ("WAR".equals(sortKey)) return dto.getWar() != null ? dto.getWar() : 0.0;  // WAR는 많을수록 좋음
     	if ("AVG".equals(sortKey)) return dto.getAvg() != null ? dto.getAvg() : 0.0;  // 타율 (AVG)
@@ -286,8 +275,8 @@ public class BatterStatsService {
     	if ("WRCPLUS".equalsIgnoreCase(sortKey)) return dto.getWrcPlus() != null ? dto.getWrcPlus() : 0.0;
     	return 0.0; // 기본값
     }
-    
-    // 수동 정렬
+        
+    // DTO 리스트 수동 정렬 (sortKey, direction 기준)
     public void sortBatterRankingList(List<BatterRankingDTO> list, String sort, String direction) {
     	if (sort == null || direction == null) return;
     	
@@ -319,13 +308,18 @@ public class BatterStatsService {
     		}
     	}
     }
-    
-    // 규정 타석 구하기
+        
+    // 시즌 및 경기 수 기준으로 규정 타석 계산
     public int getQualifiedPA(int season, int teamGames) {
         if (season == 2025) {
             return (int) Math.floor(teamGames * 3.1);
         } else {
             return 446;
         }
+    }
+    
+    // playerId + season 기준 데이터 존재 여부 확인
+    public boolean existsByPlayerIdAndSeason(int playerId, int season) {
+    	return batterStatsRepository.existsByPlayerIdAndSeason(playerId, season);
     }
 }
