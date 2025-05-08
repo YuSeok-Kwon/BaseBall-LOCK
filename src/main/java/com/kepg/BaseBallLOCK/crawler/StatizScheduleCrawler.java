@@ -1,10 +1,9 @@
 package com.kepg.BaseBallLOCK.crawler;
 
 import java.sql.Timestamp;
-
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.jsoup.Jsoup;
@@ -23,151 +22,131 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class StatizScheduleCrawler  {
+public class StatizScheduleCrawler {
 
     private final ScheduleService scheduleService;
 
-    private static final Map<String, Integer> teamNameToId = new HashMap<>();
-    private static final Map<Integer, String> teamIdToStadium = new HashMap<>();
+    private static final Map<String, Integer> teamNameToId = Map.of(
+            "KIA", 1, "두산", 2, "삼성", 3, "SSG", 4,
+            "LG", 5, "한화", 6, "NC", 7, "KT", 8,
+            "롯데", 9, "키움", 10
+    );
 
-    static {
-        teamNameToId.put("KIA", 1);
-        teamNameToId.put("두산", 2);
-        teamNameToId.put("삼성", 3);
-        teamNameToId.put("SSG", 4);
-        teamNameToId.put("LG", 5);
-        teamNameToId.put("한화", 6);
-        teamNameToId.put("NC", 7);
-        teamNameToId.put("KT", 8);
-        teamNameToId.put("롯데", 9);
-        teamNameToId.put("키움", 10);
+    private static final Map<Integer, String> teamIdToStadium = Map.of(
+            1, "광주 기아챔피언스필드", 2, "서울 잠실종합운동장", 3, "대구 삼성라이온즈파크",
+            4, "인천 SSG랜더스필드", 5, "서울 잠실종합운동장", 6, "대전 한화생명이글스파크",
+            7, "창원 NC파크", 8, "수원 KT위즈파크", 9, "부산 사직야구장",
+            10, "서울 고척스카이돔"
+    );
 
-        teamIdToStadium.put(1, "광주 기아챔피언스필드");
-        teamIdToStadium.put(2, "서울 잠실종합운동장");
-        teamIdToStadium.put(3, "대구 삼성라이온즈파크");
-        teamIdToStadium.put(4, "인천 SSG랜더스필드");
-        teamIdToStadium.put(5, "서울 잠실종합운동장");
-        teamIdToStadium.put(6, "대전 한화생명이글스파크");
-        teamIdToStadium.put(7, "창원 NC파크");
-        teamIdToStadium.put(8, "수원 KT위즈파크");
-        teamIdToStadium.put(9, "부산 사직야구장");
-        teamIdToStadium.put(10, "서울 고척스카이돔");
+    public void crawlGameRange(LocalDate startDate, LocalDate endDate) {
+        LocalDate currentDate = startDate;
+        while (!currentDate.isAfter(endDate)) {
+            processDailySchedule(currentDate);
+            currentDate = currentDate.plusDays(1);
+        }
     }
 
-    // 경기 일정(종료, 예정 등) (schedule)
-    public void crawl(String... args) throws Exception {
-        String baseUrl = "https://statiz.sporki.com/schedule/?year=%d&month=%d";
-    	WebDriver driver = null;
+    private void processDailySchedule(LocalDate date) {
+        WebDriver driver = null;
+        try {
+            String dateStr = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            String url = "https://statiz.sporki.com/schedule/?m=daily&date=" + dateStr;
 
-        for (int year = 2025; year <= 2025; year++) {
-            for (int month = 5; month <= 5; month++) {
-            	String url = String.format(baseUrl, year, month);
-            	System.out.println("크롤링 시작: ");
+            ChromeOptions options = new ChromeOptions();
+            options.addArguments("--headless", "--no-sandbox", "--disable-dev-shm-usage");
+            driver = new ChromeDriver(options);
+            driver.get(url);
+            Thread.sleep(3000);
 
-        	    ChromeOptions options = new ChromeOptions();
-        	    options.addArguments("--headless");
-        	    options.addArguments("--no-sandbox");
-        	    options.addArguments("--disable-dev-shm-usage");
+            Document doc = Jsoup.parse(driver.getPageSource());
+            Elements games = doc.select(".box_type_boared .item_box");
 
-        	    driver = new ChromeDriver(options);
-        	    driver.get(url);
+            for (Element game : games) {
+                try {
+                	// 경기 일시
+                	String boxHead = game.selectFirst(".box_head").text(); // 예: "정규 05-07 18:30 (고척) 경기전"
+                	String dateTimePart = boxHead.replaceAll(".*?(\\d{2}-\\d{2})\\s+(\\d{2}:\\d{2}).*", "$1 $2"); // "05-07 18:30"
+                	String[] dateTimeTokens = dateTimePart.split(" "); // ["05-07", "18:30"]
 
-        	    Thread.sleep(5000);
+                	int year = 2025;
+                	String fullDateStr = year + "-" + dateTimeTokens[0]; // "2025-05-07"
+                	String timeStr = dateTimeTokens[1]; // "18:30"
 
-        	    String html = driver.getPageSource();
-        	    Document doc = Jsoup.parse(html);
+                	LocalDate matchDate = LocalDate.parse(fullDateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                	LocalTime matchTime = LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HH:mm"));
 
-                Elements tdElements = doc.select("div.calendar_area td");
+                	Timestamp matchDateTime = Timestamp.valueOf(matchDate.atTime(matchTime));
+                    
+                    // 팀 이름
+                    Elements rows = game.select(".table_type03 tbody tr");
+                    String awayTeam = rows.get(0).selectFirst("td").text().trim();
+                    String homeTeam = rows.get(1).selectFirst("td").text().trim();
+                    
+                 // 점수 
+                    Integer awayScore = null;
+                    Integer homeScore = null;
 
-                for (Element td : tdElements) {
-                    Element dayElement = td.selectFirst("span.day");
-                    if (dayElement == null || dayElement.text().isEmpty()) continue;
+                    try {
+                        Elements awayTds = rows.get(0).select("td");
+                        Elements homeTds = rows.get(1).select("td");
 
-                    String matchDateStr = String.format("%d%02d%02d", year, month, Integer.parseInt(dayElement.text().trim()));
-                    LocalDate localDate = LocalDate.parse(matchDateStr, DateTimeFormatter.ofPattern("yyyyMMdd"));
-                    Timestamp matchDate = Timestamp.valueOf(localDate.atStartOfDay());
+                        Element awayScoreEl = awayTds.get(awayTds.size() - 1).selectFirst(".score");
+                        Element homeScoreEl = homeTds.get(homeTds.size() - 1).selectFirst(".score");
 
-                    Elements gameItems = td.select("div.games li");
+                        if (awayScoreEl != null) {
+                            String scoreText = awayScoreEl.text().trim();
+                            awayScore = scoreText.equals("-") ? null : Integer.parseInt(scoreText);
+                        }
 
-                    for (Element game : gameItems) {
-                        Elements teamSpans = game.select("a > span.team");
-                        Elements scoreSpans = game.select("a > span.score");
-                        Element rainSpan = game.selectFirst("span.weather.rain");
-
-                        if (teamSpans.size() != 2) continue;
-
-                        String awayTeam = teamSpans.get(0).text().trim();
-                        String homeTeam = teamSpans.get(1).text().trim();
-
-                        int[] teamIds = new int[2];
-                        if (!parseTeamIds(homeTeam, awayTeam, teamIds)) continue;
-                        int homeTeamId = teamIds[0];
-                        int awayTeamId = teamIds[1];
-
-                        int[] scores = new int[2];
-                        String status = determineMatchStatus(rainSpan, scoreSpans, scores);
-                        Integer homeScore = (status.equals("종료")) ? scores[0] : null;
-                        Integer awayScore = (status.equals("종료")) ? scores[1] : null;
-
-                        saveSchedule(matchDate, homeTeamId, awayTeamId,
-                                homeScore, awayScore, status,
-                                teamIdToStadium.get(homeTeamId),
-                                matchDateStr, homeTeam, awayTeam);
+                        if (homeScoreEl != null) {
+                            String scoreText = homeScoreEl.text().trim();
+                            homeScore = scoreText.equals("-") ? null : Integer.parseInt(scoreText);
+                        }
+                    } catch (Exception e) {
+                        System.out.println("점수 파싱 실패 (무시됨): " + e.getMessage());
                     }
+
+                    int awayTeamId = teamNameToId.getOrDefault(awayTeam, 0);
+                    int homeTeamId = teamNameToId.getOrDefault(homeTeam, 0);
+                    if (homeTeamId == 0 || awayTeamId == 0) continue;
+
+                    // 경기장 (homeTeamId 기준으로만 설정)
+                    String stadium = teamIdToStadium.getOrDefault(homeTeamId, "미정");
+
+                    // 상태
+                    String status = boxHead.contains("경기전") ? "예정" : (boxHead.contains("경기종료") ? "종료" : "경기취소");
+
+                    // statizId
+                    Element previewLink = game.selectFirst("a[href*='preview']");
+                    Element summaryLink = game.selectFirst("a[href*='summary']");
+                    String statizUrl = previewLink != null ? previewLink.attr("href") : (summaryLink != null ? summaryLink.attr("href") : null);
+                    if (statizUrl == null || !statizUrl.contains("s_no=")) continue;
+                    int statizId = Integer.parseInt(statizUrl.split("s_no=")[1]);
+
+                    Schedule schedule = new Schedule();
+                    schedule.setMatchDate(matchDateTime);
+                    schedule.setHomeTeamId(homeTeamId);
+                    schedule.setAwayTeamId(awayTeamId);
+                    schedule.setHomeTeamScore(homeScore);
+                    schedule.setAwayTeamScore(awayScore);
+                    schedule.setStadium(stadium);
+                    schedule.setStatus(status);
+                    schedule.setStatizId(statizId);
+
+                    scheduleService.saveOrUpdate(schedule);
+
+                    System.out.printf("[Schedule 업데이트 완료] statizId=%d, matchDateTime=%s, %d vs %d (%s)\n",
+                            statizId, matchDateTime, homeTeamId, awayTeamId, status);
+
+                } catch (Exception e) {
+                    System.out.println("[개별 경기 처리 실패] " + e.getMessage());
                 }
             }
-        }
-    }
-
-    private boolean parseTeamIds(String homeTeam, String awayTeam, int[] teamIds) {
-        Integer homeTeamId = teamNameToId.getOrDefault(homeTeam, 0);
-        Integer awayTeamId = teamNameToId.getOrDefault(awayTeam, 0);
-
-        if (homeTeamId == 0 || awayTeamId == 0) return false;
-
-        teamIds[0] = homeTeamId;
-        teamIds[1] = awayTeamId;
-        return true;
-    }
-
-    private String determineMatchStatus(Element rainSpan, Elements scoreSpans, int[] scores) {
-        if (rainSpan != null) {
-            return "우천취소";
-        } else if (scoreSpans.size() == 2) {
-            scores[0] = tryParseInt(scoreSpans.get(1).text().trim()); // home
-            scores[1] = tryParseInt(scoreSpans.get(0).text().trim()); // away
-            return "종료";
-        }
-        return "예정";
-    }
-
-    private void saveSchedule(Timestamp matchDate, int homeTeamId, int awayTeamId,
-                              Integer homeScore, Integer awayScore, String status,
-                              String stadium, String matchDateStr, String homeTeam, String awayTeam) {
-        Schedule schedule = Schedule.builder()
-                .matchDate(matchDate)
-                .homeTeamId(homeTeamId)
-                .awayTeamId(awayTeamId)
-                .homeTeamScore(homeScore)
-                .awayTeamScore(awayScore)
-                .status(status)
-                .stadium(stadium)
-                .build();
-
-        scheduleService.saveOrUpdate(schedule);
-
-        System.out.printf("schedule 저장 완료: %s - %s(%s) vs %s(%s) [%s]\n",
-                matchDateStr,
-                homeTeam, homeScore != null ? homeScore : "-",
-                awayTeam, awayScore != null ? awayScore : "-",
-                status);
-    }
-    
-    private Integer tryParseInt(String str) {
-        try {
-            return Integer.parseInt(str);
         } catch (Exception e) {
-            return null;
+            System.out.println("[일일 일정 처리 실패] " + e.getMessage());
+        } finally {
+            if (driver != null) driver.quit();
         }
     }
 }

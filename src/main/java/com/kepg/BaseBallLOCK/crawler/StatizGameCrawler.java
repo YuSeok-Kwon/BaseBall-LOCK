@@ -426,8 +426,7 @@ public class StatizGameCrawler {
                 if (tokens.length >= 3) {
                     status = tokens[0].trim(); // 예: 경기종료 or 경기전
                     String timeStr = tokens[2].trim(); // 예: "18:30"
-                    String stadiumStr = tokens[3].trim(); // 예: "광주 기아챔피언스필드"
-                    stadium = stadiumStr;
+                    stadium = teamIdToStadium.getOrDefault(homeTeamId, "미정");
 
                     LocalTime gameTime = LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HH:mm"));
                     matchDateTime = Timestamp.valueOf(matchDateTime.toLocalDateTime().toLocalDate().atTime(gameTime));
@@ -469,7 +468,9 @@ public class StatizGameCrawler {
 
         scheduleService.saveOrUpdate(schedule);
 
-        System.out.printf("[Schedule 업데이트 완료] %s %d vs %d (%s)\n",
-                matchDateTime.toString(), homeTeamId, awayTeamId, status);
+        System.out.printf(
+        	    "[Schedule 업데이트 완료] statizId=%d, matchDateTime=%s, homeTeamId=%d vs awayTeamId=%d (%s)\n",
+        	    statizId, matchDateTime.toString(), homeTeamId, awayTeamId, status
+        	);
     }
 }

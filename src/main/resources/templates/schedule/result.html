@@ -5,12 +5,16 @@
 
 <th:block layout:fragment="contents">
   <div class="container py-5">
-
+    
+    
+        
     <!-- 월 이동 -->
     <div class="text-center mb-4 d-flex align-items-center">
-      <a th:href="@{/schedule/result-view(year=${prevYear}, month=${prevMonth})}" class="btn btn-outline-secondary me-2">&laquo; 이전</a>
-      <strong class="fs-3" th:text="${year} + '년 ' + ${month} + '월'">2025년 4월</strong>
-      <a th:href="@{/schedule/result-view(year=${nextYear}, month=${nextMonth})}" class="btn btn-outline-secondary ms-2">다음 &raquo;</a>
+      <a th:href="@{/schedule/result-view(year=${prevYear}, month=${prevMonth})}" class="btn btn-outline-secondary me-2" style="background-color: #FACC15;">&laquo; 이전</a>
+	  <strong class="fs-3 month-title" onclick="openDatePicker(this)">2025년 4월</strong>
+      <!-- 달력용 input -->
+      <input type="date" id="hiddenDatePicker" style="display: none;" onchange="goToSelectedDate()" />
+      <a th:href="@{/schedule/result-view(year=${nextYear}, month=${nextMonth})}" class="btn btn-outline-secondary ms-2" style="background-color: #FACC15;">다음 &raquo;</a>
     </div>
 
     <!-- 날짜별 카드 -->
@@ -19,10 +23,10 @@
 
         <!-- 날짜 헤더 -->
         <div class="card-header bg-warning text-dark fw-bold fs-5 py-2"
-             th:text="${#temporals.format(entry.key, 'M월 d일 (E)')}">
-          4월 20일 (일)
-        </div>
-
+		     th:text="${#temporals.format(entry.key, 'M월 d일 (E)')}">
+		  4월 20일 (일)
+		</div>
+        
         <!-- 카드 바디 -->
         <div class="card-body px-3 py-2">
 
@@ -65,4 +69,25 @@
     </div>
 
   </div>
+</th:block>
+<th:block layout:fragment="script">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/ko.js"></script>
+<script>
+flatpickr.localize(flatpickr.l10ns.ko);
+const flatpickrInstance = flatpickr("#hiddenDatePicker", {
+    dateFormat: "Y-m-d",
+    locale : "ko",
+    onChange: function(selectedDates, dateStr) {
+        if (dateStr) {
+            window.location.href = `/schedule/detail-redirect-view?date=${dateStr}`;
+        }
+    }
+});
+	
+function openDatePicker(el) {
+    flatpickrInstance._positionElement = el;
+    flatpickrInstance.open();
+}
+</script>
 </th:block>

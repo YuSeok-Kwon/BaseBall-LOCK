@@ -1,7 +1,6 @@
 package com.kepg.BaseBallLOCK.game.schedule.service;
 
 import java.sql.Timestamp;
-
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -46,17 +45,24 @@ public class ScheduleService {
     // 주어진 경기 일정이 존재하면 업데이트, 없으면 새로 저장
     @Transactional
     public void saveOrUpdate(Schedule newSchedule) {
-        Optional<Schedule> optional = scheduleRepository.findByMatchDateAndHomeTeamIdAndAwayTeamId(
-                newSchedule.getMatchDate(),
-                newSchedule.getHomeTeamId(),
-                newSchedule.getAwayTeamId()
-        );
+    	Timestamp matchDate = Timestamp.valueOf(
+    		    newSchedule.getMatchDate().toLocalDateTime().toLocalDate().atStartOfDay()
+    		);
+    	Optional<Schedule> optional = scheduleRepository.findByMatchDateAndHomeTeamIdAndAwayTeamId(
+    	    matchDate,  // 수정된 날짜만 있는 Timestamp 사용
+    	    newSchedule.getHomeTeamId(),
+    	    newSchedule.getAwayTeamId()
+    	);
 
         Schedule schedule = optional.orElse(newSchedule);
-        schedule.setHomeTeamScore(newSchedule.getHomeTeamScore());
-        schedule.setAwayTeamScore(newSchedule.getAwayTeamScore());
+        schedule.setMatchDate(newSchedule.getMatchDate());
         schedule.setStadium(newSchedule.getStadium());
         schedule.setStatus(newSchedule.getStatus());
+        schedule.setStatizId(newSchedule.getStatizId());
+        if ("종료".equals(newSchedule.getStatus())) {
+            schedule.setHomeTeamScore(newSchedule.getHomeTeamScore());
+            schedule.setAwayTeamScore(newSchedule.getAwayTeamScore());
+        }
 
         scheduleRepository.save(schedule);
     }
@@ -245,6 +251,7 @@ public class ScheduleService {
         Schedule schedule = optionalSchedule.get();
         int homeTeamId = schedule.getHomeTeamId();
         int awayTeamId = schedule.getAwayTeamId();
+        String status = schedule.getStatus();
 
         Team homeTeam = teamService.getTeamById(homeTeamId);
         Team awayTeam = teamService.getTeamById(awayTeamId);
@@ -277,7 +284,7 @@ public class ScheduleService {
                 .awayTeamLogo(awayTeam.getLogoName())
                 .homeScore(null)
                 .awayScore(null)
-                .status("취소")
+                .status(status)
                 .homeTeamColor(homeTeam.getColor())
                 .awayTeamColor(awayTeam.getColor())
                 .build();

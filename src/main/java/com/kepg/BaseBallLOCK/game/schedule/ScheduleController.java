@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -80,5 +81,15 @@ public class ScheduleController {
         model.addAttribute("game", detail);
         model.addAttribute("otherGames", allGames);
         return "schedule/detail";
+    }
+    
+    @GetMapping("/detail-redirect-view")
+    public String redirectToMatchDetail(@RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        List<ScheduleCardView> schedules = scheduleService.getSchedulesByDate(date);
+        if (!schedules.isEmpty()) {
+            int firstMatchId = schedules.get(0).getId();
+            return "redirect:/schedule/detail-view?matchId=" + firstMatchId;
+        }
+        return "redirect:/schedule/result-view?year=" + date.getYear() + "&month=" + date.getMonthValue();
     }
 }

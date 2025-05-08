@@ -13,8 +13,7 @@
 	     class="btn btn-outline-secondary">
 	    &laquo;
 	  </a>
-	  <div class="fs-3 fw-bold" th:text="${#temporals.format(game.matchDate.toLocalDateTime(), 'yy년 M월 d일')}">25년 4월 1일</div>
-	  <a th:if="${nextMatchId != null}"
+      <div class="fs-3 fw-bold" th:text="${#temporals.format(game.matchDate.toLocalDateTime(), 'yy년 M월 d일 a H:mm')}">25년 4월 1일 18:30</div>	  <a th:if="${nextMatchId != null}"
 	     th:href="@{/schedule/detail-view(matchId=${nextMatchId})}"
 	     class="btn btn-outline-secondary">
 	    &raquo;
@@ -68,43 +67,52 @@
 	  </div>
 	</div>
 
-	<!-- 경기 취소 여부 판단 -->
-	<div th:if="${game.status == '취소'}" class="alert alert-danger text-center fs-4 fw-bold my-5">
-	  취소된 경기 입니다.
-	</div>
+	<!-- 경기 취소 / 예정 상태 메시지 -->
+	<div class="text-center mt-3 fs-5 fw-bold"
+         th:classappend="|${game.status == '취소' ? 'alert alert-danger' : ''} ${game.status == '예정' ? 'alert alert-primary' : ''}|">
 	
+	  <span th:if="${game.status == '예정'}">
+	    예정된 경기입니다.
+	    <span id="countdownText"
+	          th:data-datetime="|${#dates.format(game.matchDate, 'yyyy-MM-dd''T''HH:mm:ss')}|"></span>
+	  </span>
+	
+	  <span th:if="${game.status == '취소'}">취소된 경기입니다.</span>
+	</div>
+    
 	<!-- 경기 상태가 정상인 경우만 출력 -->
-	<div th:if="${game.status != '취소'}">
+	<div th:if="${game.status != '취소' && game.status != '예정'}">
 	
 	  <!-- 메인 경기 박스 -->
 	  <div class="border bg-warning-subtle rounded text-center py-4 px-2 mb-4 shadow-sm">
 		    <!-- 상단: 경기 팀 정보 -->
 		    <div class="fs-3 mb-4 d-flex justify-content-center align-items-center text-center" style="width: 100%;">
-			<!-- 원정팀 -->
-			<div class="d-flex align-items-center justify-content-end gap-2" style="flex: 1;">
-			  <img th:src="@{/static/emblems/{logo}.svg(logo=${game.awayTeamLogo})}" class="table-team-logo mb-1 me-2">  
-			  <span th:if="${game.awayScore > game.homeScore}" th:text="${game.awayTeamName}" class="fs-4 fw-bold">기아 타이거즈</span>
-			  <span th:unless="${game.awayScore > game.homeScore}" th:text="${game.awayTeamName}" class="fs-4">기아 타이거즈</span>
-			
-			  <span th:if="${game.awayScore > game.homeScore}" th:text="${game.awayScore}" class="fs-3 fw-bold text-dark">3</span>
-			  <span th:unless="${game.awayScore > game.homeScore}" th:text="${game.awayScore}" class="fs-3 text-dark">3</span>
-			</div>
-			
-			<!-- VS -->
-			<div style="flex: 0 0 100px;">
-			  <span class="text-secondary fs-3">VS</span>
-			</div>
-			
-			<!-- 홈팀 -->
-			<div class="d-flex align-items-center justify-content-start gap-2" style="flex: 1;">
-			  <span th:if="${game.homeScore > game.awayScore}" th:text="${game.homeScore}" class="fs-3 fw-bold text-dark">6</span>
-			  <span th:unless="${game.homeScore > game.awayScore}" th:text="${game.homeScore}" class="fs-3 text-dark">6</span>
-			
-			  <span th:if="${game.homeScore > game.awayScore}" th:text="${game.homeTeamName + ' (홈)'}" class="fs-4 fw-bold">롯데 자이언츠 (홈)</span>
-			  <span th:unless="${game.homeScore > game.awayScore}" th:text="${game.homeTeamName + ' (홈)'}" class="fs-4">롯데 자이언츠 (홈)</span>
-			
-			  <img th:src="@{/static/emblems/{logo}.svg(logo=${game.homeTeamLogo})}" class="table-team-logo mb-1 me-2">
-			</div>
+		    
+				<!-- 원정팀 -->
+				<div class="d-flex align-items-center justify-content-end gap-2" style="flex: 1;">
+				  <img th:src="@{/static/emblems/{logo}.svg(logo=${game.awayTeamLogo})}" class="table-team-logo mb-1 me-2">  
+				  <span th:if="${game.awayScore > game.homeScore}" th:text="${game.awayTeamName}" class="fs-4 fw-bold">기아 타이거즈</span>
+				  <span th:unless="${game.awayScore > game.homeScore}" th:text="${game.awayTeamName}" class="fs-4">기아 타이거즈</span>
+				
+				  <span th:if="${game.awayScore > game.homeScore}" th:text="${game.awayScore}" class="fs-3 fw-bold text-dark">3</span>
+				  <span th:unless="${game.awayScore > game.homeScore}" th:text="${game.awayScore}" class="fs-3 text-dark">3</span>
+				</div>
+				
+				<!-- VS -->
+				<div style="flex: 0 0 100px;">
+				  <span class="text-secondary fs-3">VS</span>
+				</div>
+				
+				<!-- 홈팀 -->
+				<div class="d-flex align-items-center justify-content-start gap-2" style="flex: 1;">
+				  <span th:if="${game.homeScore > game.awayScore}" th:text="${game.homeScore}" class="fs-3 fw-bold text-dark">6</span>
+				  <span th:unless="${game.homeScore > game.awayScore}" th:text="${game.homeScore}" class="fs-3 text-dark">6</span>
+				
+				  <span th:if="${game.homeScore > game.awayScore}" th:text="${game.homeTeamName + ' (홈)'}" class="fs-4 fw-bold">롯데 자이언츠 (홈)</span>
+				  <span th:unless="${game.homeScore > game.awayScore}" th:text="${game.homeTeamName + ' (홈)'}" class="fs-4">롯데 자이언츠 (홈)</span>
+				
+				  <img th:src="@{/static/emblems/{logo}.svg(logo=${game.homeTeamLogo})}" class="table-team-logo mb-1 me-2">
+				</div>
 		</div>
 		
 
@@ -182,7 +190,7 @@
 		            <td th:text="${highlight.pitchCount}">3 (1-1)</td>
 		            <td class="text-center ps-3" th:text="${highlight.result}">좌익수 뒤 홈런</td>
 		            <td th:text="${highlight.beforeSituation}">2사 1,3루 0:0</td>
-		            <td th:text="${highlight.afterSituation}">2사 3:0</td>
+		            <td class="fw-bold text-warning-emphasis" th:text="${highlight.afterSituation}">2사 3:0</td>
 		          </tr>
 		        </tbody>
 		      </table>
@@ -193,7 +201,7 @@
  </div> 
 
 		<!-- 홈팀 타자 기록 -->
-		<div class="row mx-4" th:if="${game.status != '취소'}">
+		<div class="row mx-4" th:if="${game.status != '취소' && game.status != '예정'}">
 		 <div class="col-md-6">
 		  <div class="border p-3 rounded"
 	       	   th:if="${game.homeTeamColor != null}"
@@ -253,7 +261,7 @@
 	  </div>
 	
   <!-- 홈팀 투수 기록 -->
-	<div class="row mt-4 mx-4" th:if="${game.status != '취소'}">	  <div class="col-md-6">
+	<div class="row mt-4 mx-4" th:if="${game.status != '취소' && game.status != '예정'}">	  <div class="col-md-6">
 		<div class="border p-3 rounded"
 	       	 th:if="${game.homeTeamColor != null}"
 	         th:style="|background-color: rgba(${T(com.kepg.BaseBallLOCK.common.ColorUtil).toRgba(game.homeTeamColor, 0.3)});|">
@@ -311,7 +319,46 @@
 	      </table>
 	    </div>
 	  </div>
+  </div>
 </div>
+</th:block>
+<th:block layout:fragment="script">
+<script>
+	document.addEventListener('DOMContentLoaded', function () {
+	    const countdownSpan = document.getElementById('countdownText');
+	    if (!countdownSpan) return;
+	
+	    const matchTimeStr = countdownSpan.dataset.datetime;
+	    const matchTime = new Date(matchTimeStr);
+	
+	    function updateCountdown() {
+	        const now = new Date();
+	        const diffMs = matchTime - now;
+	
+	        if (diffMs <= 0) {
+	            countdownSpan.textContent = "곧 시작합니다!";
+	            return;
+	        }
+	
+	        const totalSec = Math.floor(diffMs / 1000);
+	        const days = Math.floor(totalSec / 86400);
+	        const hours = Math.floor((totalSec % 86400) / 3600);
+	        const minutes = Math.floor((totalSec % 3600) / 60);
+	        const seconds = totalSec % 60;
+	
+	        const parts = [];
+	        if (days > 0) parts.push(`${days}일`);
+	        if (hours > 0 || days > 0) parts.push(`${hours}시간`);
+	        if (minutes > 0 || hours > 0 || days > 0) parts.push(`${minutes}분`);
+	        parts.push(`${seconds}초`);
+	
+	        countdownSpan.textContent = `(${parts.join(' ')})`;
+	    }
+	
+	    updateCountdown();
+	    setInterval(updateCountdown, 1000);
+	});
+</script>
 
 </th:block>
 </html>

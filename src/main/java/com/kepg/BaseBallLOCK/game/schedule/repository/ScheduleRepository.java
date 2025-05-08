@@ -65,9 +65,12 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Integer> {
     	                             @Param("awayTeamId") int awayTeamId);
 
     // 경기 날짜 + 양 팀 기준으로 경기 정보 조회
-    Optional<Schedule> findByMatchDateAndHomeTeamIdAndAwayTeamId(Timestamp matchDate,
-                                                                 int homeTeamId,
-                                                                 int awayTeamId);
+    @Query(value = "SELECT * FROM schedule WHERE DATE(matchDate) = DATE(:matchDate) AND homeTeamId = :homeTeamId AND awayTeamId = :awayTeamId", nativeQuery = true)
+    Optional<Schedule> findByMatchDateAndHomeTeamIdAndAwayTeamId(
+        @Param("matchDate") Timestamp matchDate,
+        @Param("homeTeamId") int homeTeamId,
+        @Param("awayTeamId") int awayTeamId
+    );
     
     // scheduleId 기준으로 경기 정보 조회
     Optional<Schedule> findById(int id);
