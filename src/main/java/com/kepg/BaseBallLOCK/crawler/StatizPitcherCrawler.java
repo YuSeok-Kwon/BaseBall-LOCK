@@ -42,7 +42,7 @@ public class StatizPitcherCrawler {
     }
 
     public void crawl() {
-        int[] years = {2021,2022};  // 크롤링할 시즌
+        int[] years = {2025};  // 크롤링할 시즌
         for (int year : years) {
             for (Map.Entry<Integer, String> entry : teamTeIds.entrySet()) {
                 int teamId = entry.getKey();

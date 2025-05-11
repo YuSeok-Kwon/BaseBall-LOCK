@@ -15,8 +15,9 @@ public class SimulationResultDTO {
     private List<InningResultDTO> innings = new ArrayList<>();
     private int userTotalScore;
     private int botTotalScore;
+    private int scheduleId;
 
-    // 추가: 타순별 결과 저장
+    // 타순별 결과 저장
     private Map<String, Map<Integer, List<String>>> outcomes = new HashMap<>();
 
     public SimulationResultDTO() {
@@ -37,4 +38,6 @@ public class SimulationResultDTO {
         }
         teamOutcomes.get(orderNum).add(result);
     }
+    
+    private List<String> gameLog = new ArrayList<>();
 }

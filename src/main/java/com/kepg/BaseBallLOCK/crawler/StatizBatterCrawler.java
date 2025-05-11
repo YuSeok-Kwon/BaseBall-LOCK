@@ -29,8 +29,8 @@ public class StatizBatterCrawler {
 
     public void crawl() {
         String baseUrl = "https://statiz.sporki.com/stats/?m=main&m2=batting&m3=default&so=WAR&ob=DESC&year=%d&po=%d&lt=10100&reg=A&pr=50";
-        int[] years = {2020,2021,2022,2023,2024};
-        int[] positions = {10};
+        int[] years = {2025};
+        int[] positions = {2,3,4,5,6,7,8,9,10};
 
         for (int year : years) {
             for (int po : positions) {

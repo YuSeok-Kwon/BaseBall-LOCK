@@ -11,17 +11,18 @@
       background-position: center;
       background-repeat: no-repeat;
       position: relative;
-      height: 100vh;
+      height: 120vh;
     }
     
     .overlay {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
       background-color: rgba(0, 0, 0, 0.5);
-      z-index: 0;
+      pointer-events: none;
+      z-index: -1;
     }
 
     /* 루 및 주자 */
@@ -39,11 +40,12 @@
       font-size: 3rem;
       transition: top 0.2s ease, left 0.2s ease;
       transform: translate(-50%, -50%);
-      z-index: 2;
+      z-index: 10;
     }
     
 	.play-by-play-wrapper {
-	  max-width: 600px;
+	  width: 1200px;
+	  height: 120px;
 	  margin: 2rem auto;
 	  background-color: rgba(0, 0, 0, 0.6);
 	  padding: 1rem;
@@ -54,7 +56,7 @@
 	}
 	
 	#play-by-play {
-	  max-height: 40px;
+	  height: 80px;
 	  overflow-y: auto; 
 	  font-size: 1.1rem;
 	  color: white;
@@ -71,21 +73,26 @@
 	.card-mini {
 	  font-size: 0.75rem;
 	  padding: 4px 8px;
+	  width : 90px;
 	  border: 1px solid #ccc;
 	  border-radius: 6px;
 	  background-color: #f8f9fa;
-	  z-index: 2;
+	  z-index: 10;
 	  box-shadow: 1px 1px 4px rgba(0,0,0,0.2);
 	}
   </style>
 </head>
 
 <th:block layout:fragment="contents">
-  <div class="overlay"></div>
+  <div class="overlay" 
+       th:attr="data-schedule-id=${scheduleId}, data-user-id=${userId}">
+  </div>
 
-  <div class="container-fluid d-flex flex-column" style="position: relative; z-index: 1;">
-    <div class="text-center mt-4">
-	  <button id="start-game-btn" class="btn btn-warning fw-bold px-4 py-2">🏁 경기 시작</button>
+  <div class="container-fluid d-flex flex-column" style="position: relative;">
+    <div class="text-center mt-5">
+		<div id="game-button-area" class="text-center mt-5">
+		  <button id="start-game-btn" class="btn btn-warning fw-bold px-4 py-2">🏁 경기 시작</button>
+		</div>
 	</div>
     <!-- 스코어보드 -->
     <div id="score-board" class="text-white text-center pt-3">
@@ -113,56 +120,82 @@
         </tbody>
       </table>
     </div>
-    <!-- 중계 텍스트 영역 -->
-    <div class="play-by-play-wrapper">
-       <h5 class="text-white">📺 중계 방송</h5>
-      <div id="play-by-play"></div>
+    
+    <div class="d-flex justify-content-between">
+        <!-- 왼쪽: 유저 라인업 -->
+        <div id="user-lineup-box"
+             class="position-relative"
+             style="width: 1000px; height: 600px; margin-top: 10px; overflow: visible;"></div>
+             
+        <!-- 중계 텍스트 영역 -->
+        <div class="play-by-play-wrapper mx-5">
+           <h5 class="text-white">📺 중계 방송</h5>
+          <div id="play-by-play"></div>
+        </div>
+        
+        <!-- 오른쪽: 봇 라인업 -->
+        <div id="bot-lineup-box"
+             class="position-relative"
+             style="width: 1000px; height: 600px; margin-top: 10px; overflow: visible;"></div>
     </div>
     
     <!-- 경기장 영역 (라인업 + 루 + 주자) -->
-    <div id="field" class="d-flex justify-content-between align-items-start">
-      <!-- 왼쪽: 유저 라인업 -->
-	  <div id="user-lineup-box"
-	       class="position-relative"
-	       style="width: 300px; height: 600px; margin-top: 10px; overflow: hidden;"></div>
+    <div id="field" class="d-flex justify-content-center align-items-top">
+      
       <!-- 중앙: 야구장 구성 -->
       <div id="stadium" class="position-relative" style="width: 400px; height: 400px;">
         <!-- 루 위치 -->
-        <div id="base-home" class="base-point" style="top: 110%; left: 43%;">
+        <div id="base-home" class="base-point" style="top: -30%; left: 43%;">
             <img src="/static/game/home.png" width="35"/>
         </div>
-        <div id="base-1" class="base-point" style="top: 60%; left: 120%;">
+        <div id="base-1" class="base-point" style="top: -65%; left: 86%;">
             <img src="/static/game/base.png" width="35"/>
         </div>
-        <div id="base-2" class="base-point" style="top: 0%; left: 43%;">
+        <div id="base-2" class="base-point" style="top: -100%; left: 43%;">
             <img src="/static/game/base.png" width="35"/>
         </div>
-        <div id="base-3" class="base-point" style="top: 60%; left: -34%;">
+        <div id="base-3" class="base-point" style="top: -65%; left:0%;">
             <img src="/static/game/base.png" width="35"/>
         </div>
 
         <!-- 유저 팀 주자 -->
 		<div id="runner-1" class="runner-icon" style="display:none;">🧍‍♂️</div>
 		<div id="runner-2" class="runner-icon" style="display:none;">🏃‍♂️</div>
-		<div id="runner-3" class="runner-icon" style="display:none;">🏃💨</div>
+		<div id="runner-3" class="runner-icon" style="display:none;">🏃</div>
+		<div id="runner-4" class="runner-icon" style="display:none;">🧍‍♂️</div>
+        <div id="runner-5" class="runner-icon" style="display:none;">🏃‍♂️</div>
+        <div id="runner-6" class="runner-icon" style="display:none;">🏃</div>
 		
 		<!-- 봇 팀 주자 -->
 		<div id="bot-runner-1" class="runner-icon" style="display:none;">🤖</div>
 		<div id="bot-runner-2" class="runner-icon" style="display:none;">👾</div>
-		<div id="bot-runner-3" class="runner-icon" style="display:none;">🛸💥</div>
+		<div id="bot-runner-3" class="runner-icon" style="display:none;">🛸</div>
       </div>
 
-      <!-- 오른쪽: 봇 라인업 -->
-	  <div id="bot-lineup-box"
-           class="position-relative"
-           style="width: 300px; height: 600px; margin-top: 10px; overflow: hidden;"></div>
+      
      </div>
+    <!-- 문제 출제 모달 -->
+	<div class="modal fade" id="eventQuestionModal" tabindex="-1" aria-hidden="true">
+	  <div class="modal-dialog modal-dialog-centered">
+	    <div class="modal-content text-dark">
+	      <div class="modal-header">
+	        <h5 class="modal-title">⚾ 선택 이벤트</h5>
+	      </div>
+	      <div class="modal-body">
+	        <p id="event-question-text"></p>
+	        <div id="event-choice-buttons" class="d-grid gap-2 mt-3"></div>
+	      </div>
+	    </div>
+	  </div>
+	</div>
   </div>
 </th:block>
 
 <th:block layout:fragment="script">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+  integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+  crossorigin="anonymous"></script>
 <script th:inline="javascript">
-    const userId = [[${session.userId}]];
     const difficulty = '[[${difficulty}]]';
 </script>
 <script>
@@ -173,6 +206,13 @@
 	let botRunnerCounter = 1;
 	let userLineup = [];
 	let botLineup = [];
+	let gameQuestions = [];     // 5문제 저장
+	let questionIndex = 0;      // 현재까지 보여준 문제 수
+	let isPaused = false;      // 경기 일시정지
+	
+	const overlay = document.querySelector('.overlay');
+	const scheduleId = overlay.getAttribute('data-schedule-id');
+	const userId = overlay.getAttribute('data-user-id');
 	
 	// 게임 시작 버튼 클릭 시
 	const startBtn = document.getElementById('start-game-btn');
@@ -195,7 +235,52 @@
 	      runSimulation(gameResult);
 	    }
 	  });
+	  
+	  //5문제 불러오기
+	  $.get("/game/game-event/questions", function(questions) {
+		  gameQuestions = questions;
+		});
 	}
+	
+	document.getElementById('start-game-btn').addEventListener('click', function () {
+	  const buttonArea = document.getElementById('game-button-area');
+
+	  // 기존 시작 버튼 제거
+	  buttonArea.innerHTML = '';
+
+	  // 일시정지 버튼
+	  const pauseBtn = document.createElement('button');
+	  pauseBtn.className = 'btn btn-danger fw-bold me-2';
+	  pauseBtn.innerText = '⏸ 게임 일시정지';
+	  pauseBtn.onclick = function () {
+	    isPaused = true;
+	  };
+
+	  // 라인업 구성 버튼
+	  const lineupBtn = document.createElement('button');
+	  lineupBtn.className = 'btn btn-secondary fw-bold me-2';
+	  lineupBtn.innerText = '🧾 라인업 구성하러가기';
+	  lineupBtn.onclick = function () {
+	    window.location.href = '/game/ready-view';
+	  };
+
+	  // 결과보기 버튼
+	  const resultBtn = document.createElement('button');
+		resultBtn.className = 'btn btn-success fw-bold';
+		resultBtn.innerText = '📊 게임 결과보기';
+		resultBtn.onclick = function () {
+		  if (scheduleId && userId) {
+		    window.location.href = `/game/result-view?scheduleId=${scheduleId}&userId=${userId}`;
+		  } else {
+		    alert('게임 정보를 불러올 수 없습니다.');
+		  }
+		};
+
+	  // 버튼 추가
+	  buttonArea.appendChild(pauseBtn);
+	  buttonArea.appendChild(lineupBtn);
+	  buttonArea.appendChild(resultBtn);
+	});
 	
 	// 라인업 카드 렌더링 함수 (기본 또는 봇 여부 구분)
 	function renderLineup(lineup, targetId, isBot) {
@@ -222,11 +307,11 @@
 	      '<div>' + card.position + '</div>' +
 	      '<div class="text-muted">' + card.grade + '등급</div>';
 
-	    div.style.top = (i * 40) + 'px';
+	    div.style.top = (i * 70) + 'px';
+	    div.style.left = (i * 30) + 'px';
 	    if (isBot) {
-	      div.style.right = (i * 20) + 'px'; // 봇은 오른쪽으로
-	    } else {
-	      div.style.left = (i * 20) + 'px';  // 유저는 왼쪽으로
+	      div.style.left = 'auto';
+	      div.style.right = (i * 30) + 'px';
 	    }
 
 	    container.appendChild(div);
@@ -436,9 +521,34 @@
 	
 	// 시뮬레이션 실행 및 진행
 	async function runSimulation(gameResult) {
+	  let userSum = 0;
+	  let botSum = 0;
 	  for (let i = 0; i < gameResult.length; i++) {
 	    const inning = gameResult[i];
 	
+	    // --- 이닝 시작 시 문제 출제 조건
+	    if ([0, 2, 4, 6, 8].includes(i) && questionIndex < gameQuestions.length) {
+	      const q = gameQuestions[questionIndex];
+	      const isPitch = q.eventType === 'pitch';
+	      const isBatting = q.eventType === 'batting';
+	      const isRandom = q.eventType === 'coach' || q.eventType === 'defense';
+	
+	      if (isBatting || (isRandom && Math.random() < 0.5)) {
+	        await new Promise(resolve => {
+	          showEventQuestion(q);
+	          const interval = setInterval(() => {
+	            if (!$('#eventQuestionModal').hasClass('show')) {
+	              clearInterval(interval);
+	              resolve();
+	            }
+	          }, 100);
+	        });
+	        await waitIfPaused();
+	        questionIndex++;
+	      }
+	    }
+	
+	    // 유저 공격
 	    resetRunners();
 	    for (let j = 0; j < inning.userPlays.length; j++) {
 	      const play = inning.userPlays[j];
@@ -446,9 +556,33 @@
 	      handlePlayResult(replaced.split(': ')[1], 'user');
 	      await delayAndLog(replaced);
 	    }
+	    userSum += inning.userScore;
 	    updateScoreBoard(i, inning.userScore, 0);
+	    logPlayByPlay(`${i + 1}회초 종료  🧑 ${userSum} : 🤖 ${botSum}`);
 	    await delayInningBreak();
 	
+	    // --- pitch 또는 랜덤 문제
+	    if ([0, 2, 4, 6, 8].includes(i) && questionIndex < gameQuestions.length) {
+	      const q = gameQuestions[questionIndex];
+	      const isPitch = q.eventType === 'pitch';
+	      const isRandom = q.eventType === 'coach' || q.eventType === 'defense';
+	
+	      if (isPitch || (isRandom && Math.random() < 0.5)) {
+	        await new Promise(resolve => {
+	          showEventQuestion(q);
+	          const interval = setInterval(() => {
+	            if (!$('#eventQuestionModal').hasClass('show')) {
+	              clearInterval(interval);
+	              resolve();
+	            }
+	          }, 100);
+	        });
+	        await waitIfPaused();
+	        questionIndex++;
+	      }
+	    }
+	
+	    // 봇 공격
 	    resetRunners();
 	    for (let j = 0; j < inning.botPlays.length; j++) {
 	      const play = inning.botPlays[j];
@@ -456,7 +590,9 @@
 	      handlePlayResult(replaced.split(': ')[1], 'bot');
 	      await delayAndLog(replaced);
 	    }
+	    botSum += inning.botScore;
 	    updateScoreBoard(i, inning.userScore, inning.botScore);
+	    logPlayByPlay(`${i + 1}회말 종료 🧑 ${userSum} : 🤖 ${botSum}`);
 	    await delayInningBreak();
 	  }
 	
@@ -528,7 +664,64 @@
 	    state[0] = null;
 	  }
 	}
-
+    
+	// 답안 저장
+	function saveEventAnswer(questionId, choiceId, choiceText) {
+	  $.ajax({
+	    url: '/game/game-event/answer',
+	    method: 'POST',
+	    contentType: 'application/json',
+	    data: JSON.stringify({
+	      scheduleId: scheduleId,   // 전역 변수로 받아둬야 함
+	      questionId: questionId,
+	      answerText: choiceText
+	    })
+	  });
+	}
+	
+	// 문제 표시 모달 함수
+	function showEventQuestion(question) {
+	  isPaused = true;
+	
+	  const modalElement = document.getElementById('eventQuestionModal');
+	  const modal = new bootstrap.Modal(modalElement);
+	  document.getElementById('event-question-text').innerText = question.questionText;
+	
+	  const choicesBox = document.getElementById('event-choice-buttons');
+	  choicesBox.innerHTML = '';
+	
+	  const choices = [];
+	  if (question.choice1) choices.push(question.choice1);
+	  if (question.choice2) choices.push(question.choice2);
+	  if (question.choice3) choices.push(question.choice3);
+	  if (question.choice4) choices.push(question.choice4);
+	
+	  for (let i = 0; i < choices.length; i++) {
+	    const choiceText = choices[i];
+	    const btn = document.createElement('button');
+	    btn.className = 'btn btn-outline-primary m-1';
+	    btn.innerText = choiceText;
+	    btn.onclick = function () {
+	      saveEventAnswer(question.id, null, choiceText);
+	      modal.hide();
+	      document.activeElement.blur();
+	      isPaused = false;
+	    };
+	    choicesBox.appendChild(btn);
+	  }
+	
+	  modal.show();
+	}
+	
+	//일시정지
+	async function waitIfPaused() {
+	  while (isPaused) {
+	    await new Promise(function(resolve) {
+	      setTimeout(resolve, 100);
+	    });
+	  }
+	}
+	
 </script>
 </th:block>
 </html>

@@ -33,8 +33,6 @@ public class UserLineupService {
     // 유저 ID로 저장된 라인업을 orderNum 기준 정렬 후 카드 능력치 DTO 리스트로 반환
     public List<PlayerCardOverallDTO> getSavedLineup(Integer userId) {
 
-
-
         List<UserLineup> saved = userLineupRepository.findByUserIdOrderByOrderNum(userId);
         List<PlayerCardOverallDTO> result = new ArrayList<>();
 
