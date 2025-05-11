@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,6 +18,7 @@ import com.kepg.BaseBallLOCK.simulationGame.card.playerCard.dto.PlayerCardOveral
 import com.kepg.BaseBallLOCK.simulationGame.dto.GameReadyCardView;
 import com.kepg.BaseBallLOCK.simulationGame.service.SimulationGameService;
 import com.kepg.BaseBallLOCK.simulationGame.userLineup.dto.UserLineupDTO;
+import com.kepg.BaseBallLOCK.simulationGame.userLineup.service.UserLineupService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,16 +28,26 @@ import lombok.RequiredArgsConstructor;
 public class SimulationGameRestController {
 	
 	private final SimulationGameService simulationGameService;
+	private final UserLineupService userLineupService;
 
 	@PostMapping("/bot/lineup")
-	public ResponseEntity<List<PlayerCardOverallDTO>> getBotLineup(@RequestParam String difficulty) {
+	public ResponseEntity<List<PlayerCardOverallDTO>> getBotLineup(@RequestParam String difficulty, Model model) {
+		
 	    List<PlayerCardOverallDTO> botCards = simulationGameService.generateBotLineupWithStats(difficulty);
+	    
+	    model.addAttribute("difficulty", difficulty);
 	    return ResponseEntity.ok(botCards);
 	}
 	
 	@GetMapping("/user/lineup")
 	public ResponseEntity<List<UserLineupDTO>> getUserLineup(@RequestParam Integer userId) {
 	    List<UserLineupDTO> lineup = simulationGameService.getUserLineup(userId);
+	    return ResponseEntity.ok(lineup);
+	}
+	
+	@GetMapping("/user/lineup-list")
+	public ResponseEntity<List<PlayerCardOverallDTO>> getUserLineupList(@RequestParam Integer userId) {
+	    List<PlayerCardOverallDTO> lineup = userLineupService.getSavedLineup(userId);
 	    return ResponseEntity.ok(lineup);
 	}
 	

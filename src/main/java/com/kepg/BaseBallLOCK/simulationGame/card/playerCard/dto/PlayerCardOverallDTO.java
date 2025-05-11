@@ -21,6 +21,8 @@ public class PlayerCardOverallDTO {
 
     private Integer playerId;
     private Integer season;
+    private String teamName;
+    private String logoName;
     private String playerName;
     private String position;
 
@@ -30,7 +32,7 @@ public class PlayerCardOverallDTO {
     
     private UserLineup lineup;
     
- // 타자용
+    // 타자용
     private Double war;
     private Double avg;
     private Integer hr;
@@ -41,7 +43,7 @@ public class PlayerCardOverallDTO {
     private Integer discipline;  // 선구
     private Integer speed;       // 주루
     
- // 투수용
+    // 투수용
     private Double era;
     private Double whip;
     private Integer wins;

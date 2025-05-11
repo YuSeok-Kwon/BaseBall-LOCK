@@ -119,8 +119,8 @@ public class StatizTeamDetailedstatsCrawler {
 
     private void save(int teamId, int year, String category, double value) {
         teamStatsService.saveOrUpdate(teamId, year, category, value, null);
-        System.out.printf("팀 투수, 타자 세부지표 (teamStats) 저장 완료 - 시즌 %d, 팀 %d (%d위)\n", year, teamId);
-    }
+        System.out.printf("팀 투수, 타자 세부지표 (teamStats) 저장 완료 - 시즌 %d, 팀 %d\n", year, teamId);
+        }
 
     private double parse(Element col) {
         try {

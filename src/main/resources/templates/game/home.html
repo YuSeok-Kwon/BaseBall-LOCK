@@ -2,29 +2,100 @@
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layouts/reviewDefault}">
+<head>
+    <style>
+    
+     body {
+	    background-image: url('/static/game/stadium-bg.png');
+	    background-size: cover;
+	    background-position: center;
+	    background-repeat: no-repeat;
+	    background-attachment: fixed;
 
+	    font-family: 'Pretendard', sans-serif;
+	  }
+	body::before {
+	  content: '';
+	  position: fixed;
+	  top: 0; left: 0; right: 0; bottom: 0;
+	  background: rgba(0, 0, 0, 0.5); /* 어두운 오버레이 */
+	  z-index: -1;
+	}
+    .container {
+      height : 69vh;
+    }
+    .overlay {
+      background-color: rgba(0, 0, 0, 0.4); /* 살짝 어두운 배경 투명도 */
+      border-radius: 15px;
+      padding: 30px;
+    }
+	.game-menu-card {
+	  display: block;
+	  background: linear-gradient(135deg, #f8f9fa, #dee2e6);
+	  color: #212529;
+	  border-radius: 1rem;
+	  padding: 2rem 1rem;
+	  text-decoration: none;
+	  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+	  transition: all 0.3s ease;
+	  position: relative;
+	}
+	
+	.game-menu-card:hover {
+	  transform: translateY(-6px) scale(1.03);
+	  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+	}
+	
+	.game-menu-card .emoji {
+	  font-size: 2.5rem;
+	  margin-bottom: 0.75rem;
+	}
+	
+	.game-menu-card .label {
+	  font-size: 1.1rem;
+	  font-weight: 600;
+	}
+	
+	.game-menu-card.start {
+	  background: linear-gradient(135deg, #ffd700, #ff9800);
+	  color: white;
+	  box-shadow: 0 6px 16px rgba(255,152,0,0.4);
+	}
+	</style>
+</head>
 <th:block layout:fragment="contents">
-    <div class="container text-center mt-5">
-        <h2 class="mb-4">시뮬레이션 게임</h2>
+<div class="container text-center my-5">
+  <div class="overlay">
+  <h2 class="mb-5 fw-bold text-white">⚾ 시뮬레이션 게임 메뉴</h2>
 
-        <div class="row justify-content-center">
-            <div class="col-md-4 mb-3">
-                <a href="/game/cards-view" class="btn btn-outline-primary w-100">내 카드 보러가기</a>
-            </div>
-            <div class="col-md-4 mb-3">
-                <a href="/game/draw-view" class="btn btn-outline-success w-100">카드 뽑기</a>
-            </div>
-            <div class="col-md-4 mb-3">
-                <a href="/game/lineup-view" class="btn btn-outline-success w-100">라인업 구성</a>
-            </div>
-            <div class="col-md-4 mb-3">
-                <a href="/game/ready-view" class="btn btn-outline-warning w-100">시뮬레이션 시작</a>
-            </div>
-        </div>
-        
-        <button onclick="testBotLineup()">BOT 라인업 테스트</button>
-
+  <div class="d-flex row g-4 justify-content-center align-items-center">
+    <div class="col-md-3">
+      <a href="/game/cards-view" class="game-menu-card">
+        <div class="emoji">📇</div>
+        <div class="label">내 카드 보러가기</div>
+      </a>
     </div>
+    <div class="col-md-3">
+      <a href="/game/draw-view" class="game-menu-card">
+        <div class="emoji">🎴</div>
+        <div class="label">카드 뽑기</div>
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="/game/lineup-view" class="game-menu-card">
+        <div class="emoji">🧢</div>
+        <div class="label">라인업 구성</div>
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="/game/ready-view" class="game-menu-card">
+        <div class="emoji">🚀</div>
+        <div class="label">시뮬레이션 시작</div>
+      </a>
+    </div>
+  </div>
+  </div>
+</div>
 </th:block>
 
 

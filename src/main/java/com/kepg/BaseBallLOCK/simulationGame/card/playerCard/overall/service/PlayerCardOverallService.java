@@ -380,11 +380,8 @@ public class PlayerCardOverallService {
         }
     }
        
-	 // 선수 카드 조회
     @Transactional(readOnly = true)
     public PlayerCardOverallDTO getCardByPlayerAndSeason(int playerId, int season) {
-
-
 
         Optional<PlayerCardOverallProjection> optional = playerCardOverallRepository.findByPlayerIdAndSeason(playerId, season);
 
@@ -392,6 +389,7 @@ public class PlayerCardOverallService {
             PlayerCardOverallProjection projection = optional.get();
             PlayerCardOverallDTO dto = new PlayerCardOverallDTO();
 
+            // 기본 능력치 채우기
             dto.setPlayerName(projection.getPlayerName());
             dto.setPlayerId(projection.getPlayerId());
             dto.setSeason(projection.getSeason());
@@ -406,10 +404,46 @@ public class PlayerCardOverallService {
             dto.setStamina(projection.getStamina());
             dto.setOverall(projection.getOverall());
 
+            List<Object[]> stats = batterStatsRepository.findStatsRawByPlayerIdAndSeason(playerId, season);
+            Map<String, Double> statMap = new HashMap<>();
+            for (Object[] row : stats) {
+                String category = (String) row[0];
+                Double value = ((Number) row[1]).doubleValue();
+                statMap.put(category, value);
+            }
+
+            dto.setAvg(statMap.getOrDefault("AVG", null));
+            dto.setOps(statMap.getOrDefault("OPS", null));
+            dto.setWar(statMap.getOrDefault("WAR", null));
+            dto.setHr(statMap.containsKey("HR") ? statMap.get("HR").intValue() : null);
+            dto.setSb(statMap.containsKey("SB") ? statMap.get("SB").intValue() : null);
+
+            if (!stats.isEmpty()) {
+                String position = batterStatsRepository.findPositionByPlayerIdAndSeason(playerId, season);
+                dto.setPosition(position);
+            }
+
+            Optional<Object[]> teamInfoOpt = batterStatsRepository.findTeamAndPosition(playerId, season);
+            if (teamInfoOpt.isPresent()) {
+                Object[] arr = teamInfoOpt.get();
+
+                if (arr.length > 0 && arr[0] instanceof Object[]) {
+                    Object[] inner = (Object[]) arr[0]; // 진짜 값 들어있는 배열
+
+                    dto.setPosition(inner[0] != null ? inner[0].toString() : null);
+                    dto.setTeamName(inner[1] != null ? inner[1].toString() : null);
+                    dto.setLogoName(inner[2] != null ? inner[2].toString() : null);
+                } else if (arr.length >= 3) {
+                    dto.setPosition(arr[0] != null ? arr[0].toString() : null);
+                    dto.setTeamName(arr[1] != null ? arr[1].toString() : null);
+                    dto.setLogoName(arr[2] != null ? arr[2].toString() : null);
+                }
+            }
+            
             return dto;
         }
 
-        return null; // 혹은 throw new EntityNotFoundException(...);
+        return null;
     }
    
 }

@@ -105,5 +105,18 @@ public interface BatterStatsRepository extends JpaRepository<BatterStats, Intege
 	// 시즌 전체 스탯 조회
 	@Query(value = "SELECT * FROM batterStats WHERE season = :season", nativeQuery = true)
 	List<BatterStats> findBySeason(@Param("season") int season);
-
+	
+	// 팀이름,로고이름, 포지션만 조회
+	@Query(value = """
+		    SELECT 
+		        bs.position,
+		        t.name AS teamName,
+		        t.logoName AS logoName
+		    FROM batterStats bs
+		    JOIN player p ON bs.playerId = p.id
+		    JOIN team t ON p.teamId = t.id
+		    WHERE bs.playerId = :playerId AND bs.season = :season AND bs.category = 'WAR'
+		    LIMIT 1
+		""", nativeQuery = true)
+		Optional<Object[]> findTeamAndPosition(@Param("playerId") int playerId, @Param("season") int season);
 }

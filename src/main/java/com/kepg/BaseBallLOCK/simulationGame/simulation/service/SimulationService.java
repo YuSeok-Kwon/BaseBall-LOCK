@@ -24,31 +24,39 @@ public class SimulationService {
 	private final SimulationGameService simulationGameService;
 
     // 전체 경기 시뮬레이션 메서드
-    public SimulationResultDTO playSimulationGame(List<PlayerCardOverallDTO> userLineup, List<PlayerCardOverallDTO> botLineup, String difficulty) {
-    	
-        SimulationResultDTO result = new SimulationResultDTO();
-        int userIdx = 0;
-        int botIdx = 0;
+	public SimulationResultDTO playSimulationGame(List<PlayerCardOverallDTO> userLineup, List<PlayerCardOverallDTO> botLineup, String difficulty) {
+	    SimulationResultDTO result = new SimulationResultDTO();
+	    int userIdx = 0;
+	    int botIdx = 0;
 
-        for (int inning = 1; inning <= 9; inning++) {
-            InningResultDTO inningResult = new InningResultDTO();
-            inningResult.setInningNumber(inning);
+	    for (int inning = 1; inning <= 9; inning++) {
+	        InningResultDTO inningResult = new InningResultDTO();
+	        inningResult.setInningNumber(inning);
 
-            InningOutcome userOutcome = simulateHalfInning(userLineup, botLineup.get(9), userIdx, difficulty);
-            inningResult.setUserPlays(userOutcome.getPlays());
-            inningResult.setUserScore(userOutcome.getScore());
-            userIdx = userOutcome.getNextBatterIndex();
+	        InningOutcome userOutcome = simulateHalfInning(userLineup, botLineup.get(9), userIdx, difficulty);
+	        inningResult.setUserPlays(userOutcome.getPlays());
+	        inningResult.setUserScore(userOutcome.getScore());
+	        userIdx = userOutcome.getNextBatterIndex();
 
-            InningOutcome botOutcome = simulateHalfInning(botLineup, userLineup.get(9), botIdx, difficulty);
-            inningResult.setBotPlays(botOutcome.getPlays());
-            inningResult.setBotScore(botOutcome.getScore());
-            botIdx = botOutcome.getNextBatterIndex();
+	        InningOutcome botOutcome = simulateHalfInning(botLineup, userLineup.get(9), botIdx, difficulty);
+	        inningResult.setBotPlays(botOutcome.getPlays());
+	        inningResult.setBotScore(botOutcome.getScore());
+	        botIdx = botOutcome.getNextBatterIndex();
 
-            result.addInning(inningResult);
-        }
+	        result.addInning(inningResult);
 
-        return result;
-    }
+	        // 로그 누적
+	        for (String log : userOutcome.getPlays()) {
+	            result.getGameLog().add((inning) + "회초 🧑: " + log);
+	        }
+	        for (String log : botOutcome.getPlays()) {
+	            result.getGameLog().add((inning) + "회말 🤖: " + log);
+	        }
+	        result.getGameLog().add(inning + "회 종료 점수 🧑 " + inningResult.getUserScore() + " : 🤖 " + inningResult.getBotScore());
+	    }
+
+	    return result;
+	}
 
     // 이닝 단위 시뮬레이션
     private InningOutcome simulateHalfInning(List<PlayerCardOverallDTO> batters, PlayerCardOverallDTO pitcher, int startIndex, String difficulty) {
@@ -244,5 +252,8 @@ public class SimulationService {
         }
         return null; // or throw new IllegalStateException("투수가 없습니다");
     }
+    
+
+
 
 }

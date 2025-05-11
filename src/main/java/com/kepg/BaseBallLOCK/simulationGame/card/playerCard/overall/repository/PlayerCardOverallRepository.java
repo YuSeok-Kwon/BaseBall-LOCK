@@ -14,7 +14,7 @@ import com.kepg.BaseBallLOCK.simulationGame.card.playerCard.projection.PlayerCar
 public interface PlayerCardOverallRepository extends JpaRepository<PlayerCardOverall, Integer> {
 
     // 특정 시즌의 특정 선수 카드 정보 조회
-	@Query("""
+	@Query(value = """
 		    SELECT 
 		        pco.id AS id,
 		        pco.playerId AS playerId,
@@ -30,11 +30,11 @@ public interface PlayerCardOverallRepository extends JpaRepository<PlayerCardOve
 		        pco.control AS control,
 		        pco.stuff AS stuff,
 		        pco.stamina AS stamina
-		    FROM PlayerCardOverall pco
-		    JOIN Player p ON pco.playerId = p.id
+		    FROM playerCardOverall pco
+		    JOIN player p ON pco.playerId = p.id
 		    WHERE pco.playerId = :playerId AND pco.season = :season
-		    """)
-	Optional<PlayerCardOverallProjection> findByPlayerIdAndSeason(
+		    """, nativeQuery = true)
+		Optional<PlayerCardOverallProjection> findByPlayerIdAndSeason(
 		    @Param("playerId") Integer playerId,
 		    @Param("season") Integer season);
 

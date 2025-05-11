@@ -16,6 +16,8 @@ import com.kepg.BaseBallLOCK.simulationGame.card.playerCard.dto.PlayerCardOveral
 import com.kepg.BaseBallLOCK.simulationGame.card.playerCard.overall.repository.PlayerCardOverallRepository;
 import com.kepg.BaseBallLOCK.simulationGame.card.playerCard.projection.PlayerCardOverallProjection;
 import com.kepg.BaseBallLOCK.simulationGame.dto.GameReadyCardView;
+import com.kepg.BaseBallLOCK.simulationGame.simulation.domain.SimulationGameSchedule;
+import com.kepg.BaseBallLOCK.simulationGame.simulation.repository.SimulationGameScheduleRepository;
 import com.kepg.BaseBallLOCK.simulationGame.userLineup.domain.UserLineup;
 import com.kepg.BaseBallLOCK.simulationGame.userLineup.dto.UserLineupDTO;
 import com.kepg.BaseBallLOCK.simulationGame.userLineup.repository.UserLineupRepository;
@@ -30,6 +32,8 @@ public class SimulationGameService {
     private final BatterStatsRepository batterStatsRepository;
     private final PitcherStatsRepository pitcherStatsRepository;
     private final UserLineupRepository userLineupRepository;
+	private final SimulationGameScheduleRepository simulationGameScheduleRepository;
+
 
     // 봇 라인업 생성
     public List<PlayerCardOverallDTO> generateBotLineupWithStats(String difficulty) {
@@ -209,6 +213,14 @@ public class SimulationGameService {
     // 마지막으로 생성된 BOT 라인업 정보를 반환
     public List<PlayerCardOverallDTO> getLastBotLineup() {
         return lastBotLineup;
+    }
+    
+    public int createSimulationSchedule(int userId, String difficulty) {
+        SimulationGameSchedule schedule = new SimulationGameSchedule();
+        schedule.setUserId(userId);
+        schedule.setDifficulty(difficulty);
+        simulationGameScheduleRepository.save(schedule);
+        return schedule.getId(); // auto_increment 값
     }
 
 }

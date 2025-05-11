@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.kepg.BaseBallLOCK.simulationGame.card.playerCard.dto.PlayerCardOverallDTO;
+import com.kepg.BaseBallLOCK.simulationGame.result.dto.GameResultDTO;
+import com.kepg.BaseBallLOCK.simulationGame.result.service.GameResultService;
 import com.kepg.BaseBallLOCK.simulationGame.service.SimulationGameService;
 import com.kepg.BaseBallLOCK.simulationGame.simulation.dto.SimulationResultDTO;
 import com.kepg.BaseBallLOCK.simulationGame.simulation.service.SimulationService;
@@ -25,6 +27,7 @@ public class SimulationGameController {
 	private final SimulationGameService simulationGameService;
 	private final SimulationService simulationService;
 	private final UserLineupService userLineupService;
+	private final GameResultService gameResultService;
 		
 	@GetMapping("/home-view")
 	public String gameHomeView() {
@@ -43,14 +46,20 @@ public class SimulationGameController {
 		
 		//  유저 라인업 불러오기
         List<PlayerCardOverallDTO> userLineup = userLineupService.getSavedLineup(userId);
-
         //  봇 라인업 생성 (normal 난이도)
         List<PlayerCardOverallDTO> botLineup = simulationGameService.generateBotLineupWithStats(difficulty);
-
+        // scheduleId 저장
+        int scheduleId = simulationGameService.createSimulationSchedule(userId, difficulty);
         //  전체 경기 시뮬레이션 실행
         SimulationResultDTO result = simulationService.playSimulationGame(userLineup, botLineup, difficulty);
+        // 결과 요약 생성
+        GameResultDTO summary = gameResultService.generateGameSummary(scheduleId, userId, result, userLineup, botLineup);
+        // 저장
+        gameResultService.saveGameResult(summary);
+        
 
         model.addAttribute("userId", userId);
+        model.addAttribute("scheduleId", scheduleId);
         model.addAttribute("difficulty", difficulty);
         model.addAttribute("result", result);
         model.addAttribute("userLineup", userLineup);
