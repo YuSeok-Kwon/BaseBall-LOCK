@@ -26,43 +26,37 @@ public interface PitcherStatsRepository extends JpaRepository<PitcherStats, Inte
 
     // 시즌별 각 카테고리별 1위 투수 조회
     @Query(value = """
-    	    WITH ranked_pitchers AS (
+    	    SELECT *
+    	    FROM (
     	        SELECT 
     	            bs.position AS position,
     	            p.name AS playerName,
     	            t.name AS teamName,
     	            t.logoName AS logoName,
-    	            COALESCE(bs.value, 0) AS value,
+    	            COALESCE(bs.value, 0) AS record_value,
     	            bs.category,
-    	            ROW_NUMBER() OVER (
-    	                PARTITION BY bs.position, bs.category 
-    	                ORDER BY 
-    	                    CASE 
-    	                        WHEN bs.category = 'ERA' THEN bs.value
-    	                        WHEN bs.category = 'WHIP' THEN bs.value
-    	                        WHEN bs.category IN ('G', 'IP', 'W', 'HLD', 'SV', 'SO', 'WAR') THEN -bs.value 
-    	                        ELSE bs.value
-    	                    END
-    	            ) AS row_num
+    	            @row_num := IF(@prev_pos = bs.position AND @prev_cat = bs.category, @row_num + 1, 1) AS row_num,
+    	            @prev_pos := bs.position,
+    	            @prev_cat := bs.category
     	        FROM pitcherStats bs
     	        JOIN player p ON bs.playerId = p.id
-    	        JOIN team t ON p.teamId = t.id
+    	        JOIN team t ON p.teamId = t.id,
+    	        (SELECT @row_num := 0, @prev_pos := '', @prev_cat := '') AS vars
     	        WHERE bs.season = :season
     	          AND bs.category IN ('ERA', 'WHIP', 'G', 'IP', 'W', 'HLD', 'SV', 'SO', 'WAR')
     	          AND (bs.category != 'ERA' OR bs.value > 0)
-    	    )
-    	    SELECT 
-    	        position,
-    	        playerName,
-    	        teamName,
-    	        logoName,
-    	        value AS record_value,
-    	        category
-    	    FROM ranked_pitchers
+    	        ORDER BY 
+    	            bs.position, 
+    	            bs.category,
+    	            CASE 
+    	                WHEN bs.category IN ('ERA', 'WHIP') THEN bs.value
+    	                ELSE -bs.value
+    	            END
+    	    ) ranked
     	    WHERE row_num = 1
-    	    ORDER BY position, category;
+    	    ORDER BY position, category
     	""", nativeQuery = true)
-	List<Object[]> findTopPitchersAsTuple(@Param("season") int season);
+    	List<Object[]> findTopPitchersAsTuple(@Param("season") int season);
 
 	// 시즌 전체 투수 스탯 요약
 	@Query("""
