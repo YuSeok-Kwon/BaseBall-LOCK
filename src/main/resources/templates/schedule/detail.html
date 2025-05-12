@@ -13,7 +13,7 @@
 	     class="btn btn-outline-secondary">
 	    &laquo;
 	  </a>
-      <div class="fs-3 fw-bold" th:text="${#temporals.format(game.matchDate.toLocalDateTime(), 'yy년 M월 d일 a H:mm')}">25년 4월 1일 18:30</div>	  <a th:if="${nextMatchId != null}"
+      <div class="fs-3 fw-bold" th:text="${#temporals.format(game.matchDate.toLocalDateTime(), 'yy년 M월 d일 H:mm')}">25년 4월 1일 18:30</div>	  <a th:if="${nextMatchId != null}"
 	     th:href="@{/schedule/detail-view(matchId=${nextMatchId})}"
 	     class="btn btn-outline-secondary">
 	    &raquo;
@@ -81,7 +81,7 @@
 	</div>
     
 	<!-- 경기 상태가 정상인 경우만 출력 -->
-	<div th:if="${game.status != '취소' && game.status != '예정'}">
+	<div th:if="${game.status == '종료'}">
 	
 	  <!-- 메인 경기 박스 -->
 	  <div class="border bg-warning-subtle rounded text-center py-4 px-2 mb-4 shadow-sm">
@@ -201,7 +201,7 @@
  </div> 
 
 		<!-- 홈팀 타자 기록 -->
-		<div class="row mx-4" th:if="${game.status != '취소' && game.status != '예정'}">
+		<div class="row mx-4" th:if="${game.status == '종료'}">
 		 <div class="col-md-6">
 		  <div class="border p-3 rounded"
 	       	   th:if="${game.homeTeamColor != null}"
@@ -261,7 +261,7 @@
 	  </div>
 	
   <!-- 홈팀 투수 기록 -->
-	<div class="row mt-4 mx-4" th:if="${game.status != '취소' && game.status != '예정'}">	  <div class="col-md-6">
+	<div class="row mt-4 mx-4" th:if="${game.status == '종료'}">	  <div class="col-md-6">
 		<div class="border p-3 rounded"
 	       	 th:if="${game.homeTeamColor != null}"
 	         th:style="|background-color: rgba(${T(com.kepg.BaseBallLOCK.common.ColorUtil).toRgba(game.homeTeamColor, 0.3)});|">

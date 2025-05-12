@@ -10,10 +10,11 @@
         
     <!-- 월 이동 -->
     <div class="text-center mb-4 d-flex align-items-center">
-      <a th:href="@{/schedule/result-view(year=${prevYear}, month=${prevMonth})}" class="btn btn-outline-secondary me-2" style="background-color: #FACC15;">&laquo; 이전</a>
-	  <strong class="fs-3 month-title" onclick="openDatePicker(this)">2025년 4월</strong>
+      <a th:href="@{/schedule/result-view(year=${prevYear}, month=${prevMonth})}" class="btn btn-outline-secondary me-2" style="background-color: #FACC15;">&laquo; 이전</a>	  
+	  <strong class="fs-3 month-title" onclick="openDatePicker(this)" 
+              th:text="${year + '년 ' + month + '월'}">2025년 4월</strong>
       <!-- 달력용 input -->
-      <input type="date" id="hiddenDatePicker" style="display: none;" onchange="goToSelectedDate()" />
+      <input type="date" id="hiddenDatePicker" class="d-none" onchange="goToSelectedDate()" />      
       <a th:href="@{/schedule/result-view(year=${nextYear}, month=${nextMonth})}" class="btn btn-outline-secondary ms-2" style="background-color: #FACC15;">다음 &raquo;</a>
     </div>
 

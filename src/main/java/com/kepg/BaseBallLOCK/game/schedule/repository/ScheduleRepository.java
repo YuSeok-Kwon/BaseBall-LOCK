@@ -133,4 +133,7 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Integer> {
         WHERE id = :scheduleId
         """, nativeQuery = true)
     Timestamp findMatchDateById(@Param("scheduleId") int scheduleId);
+    
+    @Query(value = "SELECT id FROM schedule WHERE statizId = :statizId", nativeQuery = true)
+    Integer findIdByStatizId(@Param("statizId") int statizId);
 }

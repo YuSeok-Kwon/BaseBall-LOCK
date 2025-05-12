@@ -2,7 +2,7 @@ package com.kepg.BaseBallLOCK.crawler;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,7 +45,9 @@ public class StatizGameCrawlerToday {
     private final RecordService recordService;
 
     private static final Map<String, Integer> teamNameToId = new HashMap<>();
-    private static final Map<Integer, String> teamIdToStadium = new HashMap<>();
+    private static final Map<String, String> stadiumNameMap = new HashMap<>();
+    private final Map<Integer, String> statizIdToBoxHead = new HashMap<>();
+
 
     static {
         teamNameToId.put("KIA", 1);
@@ -59,16 +61,15 @@ public class StatizGameCrawlerToday {
         teamNameToId.put("롯데", 9);
         teamNameToId.put("키움", 10);
 
-        teamIdToStadium.put(1, "광주 기아챔피언스필드");
-        teamIdToStadium.put(2, "서울 잠실종합운동장");
-        teamIdToStadium.put(3, "대구 삼성라이온즈파크");
-        teamIdToStadium.put(4, "인천 SSG랜더스필드");
-        teamIdToStadium.put(5, "서울 잠실종합운동장");
-        teamIdToStadium.put(6, "대전 한화생명이글스파크");
-        teamIdToStadium.put(7, "창원 NC파크");
-        teamIdToStadium.put(8, "수원 KT위즈파크");
-        teamIdToStadium.put(9, "부산 사직야구장");
-        teamIdToStadium.put(10, "서울 고척스카이돔");
+        stadiumNameMap.put("고척", "서울 고척스카이돔");
+        stadiumNameMap.put("잠실", "서울 잠실종합운동장");
+        stadiumNameMap.put("대구", "대구 삼성라이온즈파크");
+        stadiumNameMap.put("문학", "인천 SSG랜더스필드");
+        stadiumNameMap.put("수원", "수원 KT위즈파크");
+        stadiumNameMap.put("창원", "창원 NC파크");
+        stadiumNameMap.put("광주", "광주 기아챔피언스필드");
+        stadiumNameMap.put("대전", "대전 한화생명이글스파크");
+        stadiumNameMap.put("사직", "부산 사직야구장");
     }
     
     @Scheduled(cron = "0 00 23 * * *") 
@@ -95,16 +96,21 @@ public class StatizGameCrawlerToday {
             String html = driver.getPageSource();
             Document doc = Jsoup.parse(html);
 
-            Elements links = doc.select("div.box_type_boared a[href*=/schedule/?m=summary]");
+            Elements games = doc.select("div.box_type_boared .item_box");
 
-            for (Element link : links) {
+            for (Element game : games) {
+                Element link = game.selectFirst("a[href*=/schedule/?m=summary]");
+                Element boxHeadEl = game.selectFirst(".box_head");
+
+                if (link == null || boxHeadEl == null) continue;
+
                 String href = link.attr("href");
+                String boxHead = boxHeadEl.wholeText().replace('\u00A0', ' ').trim();
+
                 if (href.contains("s_no=")) {
-                    String[] parts = href.split("s_no=");
-                    if (parts.length == 2) {
-                        int statizId = Integer.parseInt(parts[1].trim());
-                        statizIds.add(statizId);
-                    }
+                    int statizId = Integer.parseInt(href.split("s_no=")[1].trim());
+                    statizIds.add(statizId);
+                    statizIdToBoxHead.put(statizId, boxHead); // ✅ boxHead 저장!
                 }
             }
 
@@ -157,12 +163,72 @@ public class StatizGameCrawlerToday {
             LocalDate matchDate = LocalDate.parse(year + "-" + datePart, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             Timestamp matchDateTime = Timestamp.valueOf(matchDate.atStartOfDay());
             
-            // ----------------------- schedule 크롤링 호출 ----------------------
-            updateScheduleFromSummary(doc, homeTeamId, awayTeamId, matchDateTime, statizId);
-            // ----------------------- ----------------- ----------------------
+         // ----------------------- schedule 크롤링 ----------------------
+            String boxHead = statizIdToBoxHead.getOrDefault(statizId, "");
+            
+            String status = "종료";
+            if (boxHead.contains("경기전")) status = "예정";
+            else if (boxHead.contains("경기중")) status = "진행중";
+            else if (boxHead.contains("우천취소")) status = "취소";
+            
+            String stadiumShortName = null;
+            int open = boxHead.indexOf("(");
+            int close = boxHead.indexOf(")");
+            if (open != -1 && close != -1 && close > open) {
+                stadiumShortName = boxHead.substring(open + 1, close).trim(); // "문학"
+            }
+            
+            String stadium = stadiumNameMap.getOrDefault(stadiumShortName, "미정");
+            
+            // 날짜/시간 추출
+            LocalDateTime matchDateTime1 = null;
+            String[] parts = boxHead.split(" ");
+            if (parts.length >= 3) {
+                String mmdd = parts[1];     // "05-01"
+                String hhmm = parts[2];     // "18:30"
+
+                // 연도는 적절히 설정 (예: 현재 연도)
+                int currentYear = LocalDate.now().getYear();
+
+                	matchDateTime1 = LocalDateTime.parse(
+                    currentYear + "-" + mmdd + "T" + hhmm
+                );
+
+            } else {
+                System.out.println("matchDateTime 파싱 실패: boxHead=" + boxHead);
+            }
+            
+            // 점수 파싱
+            Integer awayScore = null;
+            Integer homeScore = null;
+            try {
+                awayScore = Integer.parseInt(awayTds.get(13).selectFirst(".score").ownText().trim());
+                homeScore = Integer.parseInt(homeTds.get(13).selectFirst(".score").ownText().trim());
+            } catch (Exception e) {
+                System.out.println("점수 파싱 실패");
+            }
+
+            // Schedule 저장
+            Schedule schedule = new Schedule();
+            schedule.setMatchDate(matchDateTime1 != null ? Timestamp.valueOf(matchDateTime1) : null);
+            schedule.setHomeTeamId(homeTeamId);
+            schedule.setAwayTeamId(awayTeamId);
+            schedule.setHomeTeamScore(homeScore);
+            schedule.setAwayTeamScore(awayScore);
+            schedule.setStadium(stadium);
+            schedule.setStatus(status);
+            schedule.setStatizId(statizId);
+
+            scheduleService.saveOrUpdate(schedule);
+
+            System.out.printf(
+                "[Schedule 업데이트 완료] statizId=%d, matchDateTime=%s, %d vs %d (%s)\n",
+                statizId, matchDateTime, homeTeamId, awayTeamId, status
+            );         
+
 
             
-            Integer scheduleId = scheduleService.findIdByDateAndTeams(matchDateTime, homeTeamId, awayTeamId);
+            Integer scheduleId = scheduleService.findIdByStatizId(statizId);
             if (scheduleId == null) return;
 
             List<Integer> awayScores = new ArrayList<>();
@@ -398,66 +464,5 @@ public class StatizGameCrawlerToday {
                 }
             }
         }
-    }
-    
-    // schedule 정보 저장
-    private void updateScheduleFromSummary(Document doc, int homeTeamId, int awayTeamId, Timestamp matchDateTime, int statizId) {
-        String status = "종료";
-        String stadium = null;
-
-        try {
-            Element callout = doc.selectFirst(".callout_box .txt");
-            if (callout != null) {
-                String calloutText = callout.text(); // e.g., "경기종료, 05-06, 18:30, 광주 기아챔피언스필드"
-                String[] tokens = calloutText.split(",");
-
-                if (tokens.length >= 3) {
-                    status = tokens[0].trim(); // 예: 경기종료 or 경기전
-                    String timeStr = tokens[2].trim(); // 예: "18:30"
-                    String stadiumStr = tokens[3].trim(); // 예: "광주 기아챔피언스필드"
-                    stadium = stadiumStr;
-
-                    LocalTime gameTime = LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HH:mm"));
-                    matchDateTime = Timestamp.valueOf(matchDateTime.toLocalDateTime().toLocalDate().atTime(gameTime));
-                }
-            }
-        } catch (Exception e) {
-            System.out.println("경기 시간/구장 파싱 실패");
-        }
-
-        // 스코어 테이블 정보로 점수 파싱
-        Element scoreTable = doc.selectFirst("div.box_type_boared > div.item_box.w100 .table_type03 table");
-        Integer homeScore = null;
-        Integer awayScore = null;
-
-        if (scoreTable != null) {
-            Elements rows = scoreTable.select("tbody > tr");
-            if (rows.size() >= 2) {
-                Elements awayTds = rows.get(0).select("td");
-                Elements homeTds = rows.get(1).select("td");
-
-                try {
-                    awayScore = Integer.parseInt(awayTds.get(13).selectFirst(".score").ownText().trim());
-                    homeScore = Integer.parseInt(homeTds.get(13).selectFirst(".score").ownText().trim());
-                } catch (Exception e) {
-                    System.out.println("점수 파싱 실패");
-                }
-            }
-        }
-
-        Schedule schedule = new Schedule();
-        schedule.setMatchDate(matchDateTime);
-        schedule.setHomeTeamId(homeTeamId);
-        schedule.setAwayTeamId(awayTeamId);
-        schedule.setHomeTeamScore(homeScore);
-        schedule.setAwayTeamScore(awayScore);
-        schedule.setStatizId(statizId);
-        schedule.setStadium(stadium != null ? stadium : teamIdToStadium.getOrDefault(homeTeamId, "미정"));
-        schedule.setStatus(status);
-
-        scheduleService.saveOrUpdate(schedule);
-
-        System.out.printf("[Schedule 업데이트 완료] %s %d vs %d (%s)\n",
-                matchDateTime.toString(), homeTeamId, awayTeamId, status);
     }
 }

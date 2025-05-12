@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.jsoup.Jsoup;
@@ -26,19 +27,35 @@ public class StatizScheduleCrawler {
 
     private final ScheduleService scheduleService;
 
-    private static final Map<String, Integer> teamNameToId = Map.of(
-            "KIA", 1, "두산", 2, "삼성", 3, "SSG", 4,
-            "LG", 5, "한화", 6, "NC", 7, "KT", 8,
-            "롯데", 9, "키움", 10
-    );
+    private static final Map<String, Integer> teamNameToId = new HashMap<>();
+    private static final Map<String, String> stadiumNameMap = new HashMap<>();
 
-    private static final Map<Integer, String> teamIdToStadium = Map.of(
-            1, "광주 기아챔피언스필드", 2, "서울 잠실종합운동장", 3, "대구 삼성라이온즈파크",
-            4, "인천 SSG랜더스필드", 5, "서울 잠실종합운동장", 6, "대전 한화생명이글스파크",
-            7, "창원 NC파크", 8, "수원 KT위즈파크", 9, "부산 사직야구장",
-            10, "서울 고척스카이돔"
-    );
+    static {
+        teamNameToId.put("KIA", 1);
+        teamNameToId.put("두산", 2);
+        teamNameToId.put("삼성", 3);
+        teamNameToId.put("SSG", 4);
+        teamNameToId.put("LG", 5);
+        teamNameToId.put("한화", 6);
+        teamNameToId.put("NC", 7);
+        teamNameToId.put("KT", 8);
+        teamNameToId.put("롯데", 9);
+        teamNameToId.put("키움", 10);
 
+        stadiumNameMap.put("고척", "서울 고척스카이돔");
+        stadiumNameMap.put("잠실", "서울 잠실종합운동장");
+        stadiumNameMap.put("대구", "대구 삼성라이온즈파크");
+        stadiumNameMap.put("문학", "인천 SSG랜더스필드");
+        stadiumNameMap.put("수원", "수원 KT위즈파크");
+        stadiumNameMap.put("창원", "창원 NC파크");
+        stadiumNameMap.put("광주", "광주 기아챔피언스필드");
+        stadiumNameMap.put("대전", "대전 한화생명이글스파크");
+        stadiumNameMap.put("사직", "부산 사직야구장");
+        stadiumNameMap.put("포항", "포항야구장");
+        stadiumNameMap.put("울산", "울산 문수야구장");
+        stadiumNameMap.put("청주", "청주야구장");
+    }
+    
     public void crawlGameRange(LocalDate startDate, LocalDate endDate) {
         LocalDate currentDate = startDate;
         while (!currentDate.isAfter(endDate)) {
@@ -111,8 +128,15 @@ public class StatizScheduleCrawler {
                     int homeTeamId = teamNameToId.getOrDefault(homeTeam, 0);
                     if (homeTeamId == 0 || awayTeamId == 0) continue;
 
-                    // 경기장 (homeTeamId 기준으로만 설정)
-                    String stadium = teamIdToStadium.getOrDefault(homeTeamId, "미정");
+                    // 경기장
+                    String stadiumShortName = null;
+                    int open = boxHead.indexOf("(");
+                    int close = boxHead.indexOf(")");
+                    if (open != -1 && close != -1 && close > open) {
+                        stadiumShortName = boxHead.substring(open + 1, close).trim(); // 예: "문학"
+                    }
+                    
+                    String stadium = stadiumNameMap.getOrDefault(stadiumShortName, "미정");
 
                     // 상태
                     String status = boxHead.contains("경기전") ? "예정" : (boxHead.contains("경기종료") ? "종료" : "경기취소");

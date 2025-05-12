@@ -45,20 +45,20 @@ public class ScheduleService {
     // 주어진 경기 일정이 존재하면 업데이트, 없으면 새로 저장
     @Transactional
     public void saveOrUpdate(Schedule newSchedule) {
-    	Timestamp matchDate = Timestamp.valueOf(
-    		    newSchedule.getMatchDate().toLocalDateTime().toLocalDate().atStartOfDay()
-    		);
-    	Optional<Schedule> optional = scheduleRepository.findByMatchDateAndHomeTeamIdAndAwayTeamId(
-    	    matchDate,  // 수정된 날짜만 있는 Timestamp 사용
-    	    newSchedule.getHomeTeamId(),
-    	    newSchedule.getAwayTeamId()
-    	);
+        Integer existingId = scheduleRepository.findIdByStatizId(newSchedule.getStatizId());
 
-        Schedule schedule = optional.orElse(newSchedule);
+        Schedule schedule;
+        if (existingId != null) {
+            schedule = scheduleRepository.findById(existingId).orElse(newSchedule);
+        } else {
+            schedule = newSchedule;
+        }
+
         schedule.setMatchDate(newSchedule.getMatchDate());
         schedule.setStadium(newSchedule.getStadium());
         schedule.setStatus(newSchedule.getStatus());
         schedule.setStatizId(newSchedule.getStatizId());
+
         if ("종료".equals(newSchedule.getStatus())) {
             schedule.setHomeTeamScore(newSchedule.getHomeTeamScore());
             schedule.setAwayTeamScore(newSchedule.getAwayTeamScore());
@@ -137,7 +137,7 @@ public class ScheduleService {
         return String.format("%d승 %d패 %d무", wins, losses, draws);
     }
 
-    // 특정 팀 vs 상대 팀의 2025년 전적을 "X승 Y패 Z무" 형식으로 반환
+    // 특정 월의 경기 일정을 날짜별로 그룹핑하여 반환 (스케줄 카드용)
     public Map<LocalDate, List<ScheduleCardView>> getGroupedScheduleByMonth(int year, int month) {
         Timestamp start = Timestamp.valueOf(YearMonth.of(year, month).atDay(1).atStartOfDay());
         Timestamp end = Timestamp.valueOf(YearMonth.of(year, month).atEndOfMonth().atTime(23, 59, 59));
@@ -172,16 +172,16 @@ public class ScheduleService {
     
     // 오늘 날짜 우선으로 Map정리
     public Map<LocalDate, List<ScheduleCardView>> sortScheduleWithTodayFirst(Map<LocalDate, List<ScheduleCardView>> originalMap, LocalDate today) {
-        Map<LocalDate, List<ScheduleCardView>> sortedMap = new LinkedHashMap<>();
-
-        // 1. 오늘 날짜 먼저 넣기
-        if (originalMap.containsKey(today)) {
-            sortedMap.put(today, originalMap.get(today));
+        // 오늘 없으면 그냥 반환 (정렬하지 않음)
+        if (!originalMap.containsKey(today)) {
+            return originalMap;
         }
 
-        // 2. 나머지 날짜들 중 오늘이 아닌 날짜를 오름차순으로 정렬하여 넣기
+        Map<LocalDate, List<ScheduleCardView>> sortedMap = new LinkedHashMap<>();
+        sortedMap.put(today, originalMap.get(today));
+
         List<LocalDate> keys = new ArrayList<>(originalMap.keySet());
-        Collections.sort(keys); // 날짜 오름차순 정렬
+        Collections.sort(keys);
 
         for (LocalDate date : keys) {
             if (!date.equals(today)) {
@@ -292,6 +292,7 @@ public class ScheduleService {
 
         return GameDetailCardView.builder()
                 .matchDate(schedule.getMatchDate())
+                .status(status)
                 .stadium(schedule.getStadium())
                 .homeTeamName(homeTeam.getName())
                 .awayTeamName(awayTeam.getName())
@@ -393,6 +394,8 @@ public class ScheduleService {
     	return scheduleRepository.findMatchDateById(scheduleId);
     }
 	
-	
+    public Integer findIdByStatizId(int statizId) {
+        return scheduleRepository.findIdByStatizId(statizId);
+    }
 
 }
