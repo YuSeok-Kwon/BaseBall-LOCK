@@ -1,7 +1,7 @@
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layouts/noheader}">
+      layout:decorate="~{layouts/noheadefooter}">
 <head>
   <style>
     html, body {
@@ -29,26 +29,23 @@
 	
 	.main-wrapper {
 	  flex: 1;
-      display: flex;
-	  position: relative;
+	  display: flex;
 	  flex-direction: column;
-      justify-content: space-between;
-	  width: 100%;
-	  min-height: 100%;
-	  overflow: hidden;
-	  padding-bottom: 80px;
+	  justify-content: space-between; /* 상단 내용 + 하단 footer 사이 여백 */
+	  min-height: 100vh;
+	  position: relative;
 	}
 	
 	.overlay {
-	  position: absolute;
+	  position: fixed; /* ← absolute 말고 fixed! */
 	  top: 0;
 	  left: 0;
 	  width: 100%;
-	  height: 100%;
+	  height: 100vh; /* 뷰포트 기준으로 덮음 */
 	  background-color: rgba(0,0,0,0.6);
 	  z-index: 0;
 	}
-	
+
 	.content.container,
 	.content.container-fluid {
 	  padding-left: 0 !important;
@@ -70,9 +67,6 @@
 	  box-sizing: border-box;
 	}
 	
-	footer {
-  flex-shrink: 0;
-}
 	/* 크기를 줄인 카드 레이아웃 */
 	.pokemon-card {
 	  width: 100%;
@@ -131,12 +125,13 @@
 	  transform: rotateY(180deg);
 	}
 	#user-lineup,
-	#bot-lineup {
-	  display: grid !important;
-	  grid-template-columns: repeat(10, 1fr);
-	  gap: 1px;
-	  justify-items: center;
-	}
+#bot-lineup {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  justify-items: center;
+  width: 100%;
+}
 	
 	#user-lineup > div,
 	#bot-lineup > div {
@@ -294,7 +289,7 @@
 	
 	  // 뒷면 구성
 	  var back = document.createElement('div');
-	  back.className = 'card-back grade-' + card.grade;
+	  back.className = 'card-back grade-' + card.grade ;
 	  back.innerHTML = getBackStatHTML(card);
 	
 	  // 마우스 방향에 따라 카드 회전

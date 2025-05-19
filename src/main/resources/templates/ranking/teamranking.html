@@ -179,28 +179,31 @@
 	}
 	
 	// 팀 순위 카드 렌더링
-	function renderTeamRankingList(list) {
-	  var html = '<table class="table text-center">';
-	  html += '<thead><tr><th>순위</th><th>팀</th><th>경기</th><th>승</th><th>패</th><th>무</th><th>승률</th><th>승차</th></tr></thead><tbody>';
-	
-	  for (var i = 0; i < list.length; i++) {
-	    var team = list[i];
-	    html += '<tr>' +
-	      '<td>' + team.ranking + '</td>' +
-	      '<td class="d-flex align-items-center gap-2"><img src="' + getLogoPath(team.logoName) + '" style="width:28px;height:28px;">' +
-	      '<span>' + team.teamName + '</span></td>' +
-	      '<td>' + team.games + '</td>' +
-	      '<td>' + team.wins + '</td>' +
-	      '<td>' + team.losses + '</td>' +
-	      '<td>' + team.draws + '</td>' +
-	      '<td>' + team.winRate + '</td>' +
-	      '<td>' + team.gamesBehind + '</td>' +
-	      '</tr>';
-	  }
-	
-	  html += '</tbody></table>';
-	  return html;
-	}
+function renderTeamRankingList(list) {
+  var html = '<div class="table-responsive">'; // 스크롤용 wrapper 시작
+  html += '<table class="table text-center">';
+  html += '<thead><tr><th>순위</th><th>팀</th><th>경기</th><th>승</th><th>패</th><th>무</th><th>승률</th><th>승차</th></tr></thead><tbody>';
+
+  for (var i = 0; i < list.length; i++) {
+    var team = list[i];
+    html += '<tr>' +
+      '<td>' + team.ranking + '</td>' +
+      '<td><div class="d-flex align-items-center gap-2 text-nowrap">' +
+      '<img src="' + getLogoPath(team.logoName) + '" style="width:28px;height:28px;">' +
+      '<span>' + team.teamName + '</span>' +
+      '</div></td>' +
+      '<td>' + team.games + '</td>' +
+      '<td>' + team.wins + '</td>' +
+      '<td>' + team.losses + '</td>' +
+      '<td>' + team.draws + '</td>' +
+      '<td>' + team.winRate + '</td>' +
+      '<td>' + team.gamesBehind + '</td>' +
+      '</tr>';
+  }
+
+  html += '</tbody></table></div>'; // 테이블 + wrapper 닫기
+  return html;
+}
 	
 	// 타자 통계 카드 렌더링
 	function renderTopBatterList(list, categoryNameMap) {

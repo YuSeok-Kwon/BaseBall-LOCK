@@ -5,7 +5,7 @@ spring:
     name: BaseBallLOCK
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://3.38.93.185:3306/BaseBallLOCK
+    url: jdbc:mysql://localhost:3306/BaseBallLOCK
     username: root
     password: ${mysql.password}
   thymeleaf:
