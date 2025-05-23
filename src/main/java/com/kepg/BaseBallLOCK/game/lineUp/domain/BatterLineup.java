@@ -42,7 +42,7 @@ public class BatterLineup {
     @Column(length = 10)
     private String position;
     
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "playerId", insertable = false, updatable = false)
     @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     private Player player;

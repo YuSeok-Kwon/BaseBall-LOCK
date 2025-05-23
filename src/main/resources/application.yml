@@ -1,6 +1,6 @@
 spring:
   config:
-    import: security-variable.yml
+    import: "classpath:security-variable.yml"
   application:
     name: BaseBallLOCK
   datasource:
@@ -24,4 +24,7 @@ spring:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
 
 server:
-  port: 8081
+  port: 8080
+logging:
+  level:
+    p6spy: off

@@ -31,13 +31,13 @@
 	  flex: 1;
 	  display: flex;
 	  flex-direction: column;
-	  justify-content: space-between; /* 상단 내용 + 하단 footer 사이 여백 */
+	  justify-content: space-between;
 	  min-height: 100vh;
 	  position: relative;
 	}
 	
 	.overlay {
-	  position: fixed; /* ← absolute 말고 fixed! */
+	  position: fixed;
 	  top: 0;
 	  left: 0;
 	  width: 100%;
@@ -173,7 +173,7 @@
 		
 		  <!-- 시작 버튼 -->
 		  <div class="text-center mt-2 mb-5">
-		    <a href="/game/play-view" class="btn btn-light btn-sm ms-3">게임 시작</a>
+            <button id="start-game" class="btn btn-light btn-sm ms-3">게임 시작</button>
 		  </div>
 		  
 		</div>
@@ -185,47 +185,50 @@
     const userId = [[${session.userId}]];
 </script>
 <script>
-	//페이지 로드 시 실행: 난이도 선택 및 라인업 초기 로드
-	$(document).ready(function () {
-	  var difficulty = $('#difficulty-select').val();
-	
-	  // 서버에서 라인업을 불러오고 봇 팀과 함께 구성
-	  function loadLineups() {
-	    $.ajax({
-	      url: '/game/user/lineup',
-	      method: 'GET',
-	      data: { userId: userId },
-	      success: function (userLineup) {
-	        $.ajax({
-	          url: '/game/ready?difficulty=' + encodeURIComponent(difficulty),
-	          method: 'POST',
-	          contentType: 'application/json',
-	          data: JSON.stringify(userLineup),
-	          success: function (data) {
-	            renderCardLineup(data.user, $('#user-lineup')[0]);
-	            renderCardLineup(data.bot, $('#bot-lineup')[0]);
-	            renderSummaryStats(data.user, $('#user-summary')[0]);
-	            renderSummaryStats(data.bot, $('#bot-summary')[0]);
-	          },
-	          error: function () {
-	            console.error('상대 라인업 생성 실패');
-	          }
-	        });
-	      },
-	      error: function () {
-	        console.error('유저 라인업 불러오기 실패');
-	      }
-	    });
-	  }
-	
-	  // 난이도 선택 변경 시 라인업 재로딩
-	  $('#difficulty-select').on('change', function () {
-	    difficulty = $(this).val();
-	    loadLineups();
+  let selectedDifficulty = 'normal';
+
+  //페이지 로드 시 실행: 난이도 선택 및 라인업 초기 로드
+  $(document).ready(function () {
+    selectedDifficulty = $('#difficulty-select').val();
+    loadLineups();
+  });
+
+  $('#difficulty-select').on('change', function () {
+    selectedDifficulty = $(this).val();
+    loadLineups();
+  });
+
+  $('#start-game').click(function () {
+    window.location.href = '/game/play-view?difficulty=' + encodeURIComponent(selectedDifficulty);
+  });
+
+  function loadLineups() {
+	  $.ajax({
+	    url: '/game/user/lineup',
+	    method: 'GET',
+	    data: { userId: userId },
+	    success: function (userLineup) {
+	      $.ajax({
+	        url: '/game/ready?difficulty=' + encodeURIComponent(selectedDifficulty),
+	        method: 'POST',
+	        contentType: 'application/json',
+	        data: JSON.stringify(userLineup),
+	        success: function (data) {
+	          renderCardLineup(data.user, $('#user-lineup')[0]);
+	          renderCardLineup(data.bot, $('#bot-lineup')[0]);
+	          renderSummaryStats(data.user, $('#user-summary')[0]);
+	          renderSummaryStats(data.bot, $('#bot-summary')[0]);
+	        },
+	        error: function () {
+	          console.error('봇 라인업 생성 실패');
+	        }
+	      });
+	    },
+	    error: function () {
+	      console.error('유저 라인업 불러오기 실패');
+	    }
 	  });
-	
-	  loadLineups();
-	});
+	}
 	
 	
 	// 라인업 카드 리스트를 화면에 출력
@@ -415,5 +418,12 @@
 	    '<p class="mb-3">투수 → 컨트롤 ' + avg.control + ' / 구위 ' + avg.stuff +
 	    ' / 지구력 ' + avg.stamina + '</p>';
 	}
+	
+	// 시작 버튼 클릭 시
+	$('#start-game').click(function () {
+	    const difficulty = $('#difficulty-select').val();
+	    const params = new URLSearchParams({ difficulty });
+	    window.location.href = '/game/play-view?' + params.toString();
+	});
 </script>
 </th:block>

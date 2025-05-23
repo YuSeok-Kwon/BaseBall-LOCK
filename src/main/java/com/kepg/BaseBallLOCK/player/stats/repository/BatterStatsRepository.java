@@ -18,32 +18,34 @@ public interface BatterStatsRepository extends JpaRepository<BatterStats, Intege
     Optional<String> findStatValueByPlayerIdCategoryAndSeason(@Param("playerId") int playerId, @Param("category") String category, @Param("season") int season);
 
 	// 포지션별 WAR 1위 타자 조회
-	@Query(value = """
-	    WITH ranked_players AS (
-	        SELECT 
-	            bs.position AS position,
-	            p.name AS playerName,
-	            t.name AS teamName,
-	            t.logoName AS logoName,
-	            COALESCE(bs.value, 0) AS war,
-	            ROW_NUMBER() OVER (PARTITION BY bs.position ORDER BY COALESCE(bs.value, 0) DESC) AS row_num
-	        FROM BatterStats bs
-	        JOIN Player p ON bs.playerId = p.id
-	        JOIN Team t ON p.teamId = t.id
-	        WHERE bs.season = :season
-	          AND bs.category = 'WAR'
-	    )
-	    SELECT 
-	        position,
-	        playerName,
-	        teamName,
-	        logoName,
-	        war
-	    FROM ranked_players
-	    WHERE row_num = 1
-	    ORDER BY position
-	    """, nativeQuery = true)
-	List<Object[]> findTopBattersByPosition(@Param("season") int season);
+    @Query(value = """
+    	    SELECT
+    	        ranked.position,
+    	        ranked.playerName,
+    	        ranked.teamName,
+    	        ranked.logoName,
+    	        ranked.war
+    	    FROM (
+    	        SELECT
+    	            bs.position AS position,
+    	            p.name AS playerName,
+    	            t.name AS teamName,
+    	            t.logoName AS logoName,
+    	            COALESCE(bs.value, 0) AS war,
+    	            @rank := IF(@prev_pos = bs.position, @rank + 1, 1) AS row_num,
+    	            @prev_pos := bs.position
+    	        FROM batterStats bs
+    	        JOIN player p ON bs.playerId = p.id
+    	        JOIN team t ON p.teamId = t.id
+    	        CROSS JOIN (SELECT @rank := 0, @prev_pos := NULL) vars
+    	        WHERE bs.season = :season
+    	          AND bs.category = 'WAR'
+    	        ORDER BY bs.position, COALESCE(bs.value, 0) DESC
+    	    ) AS ranked
+    	    WHERE ranked.row_num = 1
+    	    ORDER BY ranked.position
+    	    """, nativeQuery = true)
+    	List<Object[]> findTopBattersByPosition(@Param("season") int season);
 
 	// 시즌별 전체 타자 스탯 요약
 	@Query(value = """

@@ -2,6 +2,27 @@
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layouts/reviewDefault}">
+      
+<head>
+    <style>
+    .calendar-table {
+	  width: 100%;
+	  table-layout: fixed;
+	}
+	.calendar-table th, .calendar-table td {
+	  padding: 0.75rem;
+	  overflow: hidden;
+	  text-overflow: ellipsis;
+	  white-space: nowrap;
+	}
+	.custom-cell {
+	  position: relative;
+	  height: 140px;
+	  overflow: hidden;
+	  white-space: normal;
+	}
+    </style>
+</head>
 
 <th:block layout:fragment="contents" >
 <div class="container-fluid py-5 d-flex flex-column justify-content-center" 
@@ -14,7 +35,8 @@
   </div>
 	
   	<!-- 달력 테이블 -->
-	<table class="table text-center bg-white mx-auto" th:style="'min-width: 1200px; border: 1px solid ' + ${teamColor}">
+  	<div class="table-responsive">
+    <table class="table table-bordered table-hover table-striped text-center calendar-table">
 	  <thead class="table-light">
 	    <tr>
 	      <th th:style="'border: 1px solid ' + ${teamColor}">월</th>
@@ -32,8 +54,8 @@
 	    <tr th:each="week : ${calendar}">
 	      <!-- 요일별 셀 -->
 	      <th:block th:each="day : ${week}">
-	        <td class="align-top position-relative text-center"
-	            th:style="'height: 140px; min-height: 140px; width: 200px; min-width: 200px; background-color: white; border: 1px solid ' + ${teamColor}">
+	        <td class="align-top position-relative text-center bg-white custom-cell"
+                th:style="'border: 1px solid ' + ${teamColor}">
 	          <div th:if="${day != null}">
 	            <!-- 날짜 -->
 	            <div class="fw-bold text-center" th:text="${day.dayOfMonth}"></div>
@@ -125,6 +147,7 @@
 	    </tr>
 	  </tbody>
 	</table>
+	</div>
 </div>
 </th:block>
 

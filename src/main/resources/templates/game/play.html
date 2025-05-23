@@ -196,7 +196,12 @@
   integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
   crossorigin="anonymous"></script>
 <script th:inline="javascript">
-    const difficulty = '[[${difficulty}]]';
+	const difficulty = /*[[${difficulty}]]*/ "normal";
+	const scheduleId = /*[[${scheduleId}]]*/ 0;
+	const userId = /*[[${userId}]]*/ 0;
+    const userLineup = JSON.parse(/*[[${userLineup}]]*/ "[]");
+    const botLineup = JSON.parse(/*[[${botLineup}]]*/ "[]");
+    const gameResult = JSON.parse(/*[[${result}]]*/ "[]");
 </script>
 <script>
 	//경기 상태 변수 초기화
@@ -204,15 +209,11 @@
 	let botBaseState = [null, null, null];
 	let runnerCounter = 1;
 	let botRunnerCounter = 1;
-	let userLineup = [];
-	let botLineup = [];
 	let gameQuestions = [];     // 5문제 저장
 	let questionIndex = 0;      // 현재까지 보여준 문제 수
 	let isPaused = false;      // 경기 일시정지
 	
 	const overlay = document.querySelector('.overlay');
-	const scheduleId = overlay.getAttribute('data-schedule-id');
-	const userId = overlay.getAttribute('data-user-id');
 	
 	// 게임 시작 버튼 클릭 시
 	const startBtn = document.getElementById('start-game-btn');
@@ -220,21 +221,9 @@
 	
 	// 게임 시작 요청 및 라인업 불러오기
 	function startGameAndLoadLineups() {
-	  $.ajax({
-	    url: '/game/lineup',
-	    type: 'POST',
-	    contentType: 'application/json',
-	    data: JSON.stringify({ userId: userId, difficulty: difficulty }),
-	    success: function (data) {
-	      userLineup = data.userLineup;
-	      botLineup = data.botLineup;
-	      const gameResult = data.results;
-	
-	      renderLineup(userLineup, 'user-lineup-box');
-	      renderLineup(botLineup, 'bot-lineup-box', true);
-	      runSimulation(gameResult);
-	    }
-	  });
+	  renderLineup(userLineup, 'user-lineup-box');
+	  renderLineup(botLineup, 'bot-lineup-box', true);
+	  runSimulation(gameResult);
 	  
 	  //5문제 불러오기
 	  $.get("/game/game-event/questions", function(questions) {
@@ -285,6 +274,10 @@
 	// 라인업 카드 렌더링 함수 (기본 또는 봇 여부 구분)
 	function renderLineup(lineup, targetId, isBot) {
 	  const container = document.getElementById(targetId);
+	  if (!container) {
+		    console.error("renderLineup 타겟 요소를 찾을 수 없습니다:", targetId);
+		    return;
+		  }
 	  container.innerHTML = '';
 
 	  const positionOrder = {

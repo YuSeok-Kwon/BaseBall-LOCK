@@ -14,9 +14,12 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Component;
 
 import com.kepg.BaseBallLOCK.game.highlight.dto.GameHighlightDTO;
@@ -75,73 +78,72 @@ public class StatizGameCrawler {
     
     // statizId 추출할 날짜 범위 지정
     public void crawlGameRange(LocalDate startDate, LocalDate endDate) {
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--headless", "--no-sandbox", "--disable-dev-shm-usage");
+        WebDriver driver = new ChromeDriver(options);
+
         LocalDate currentDate = startDate;
 
         while (!currentDate.isAfter(endDate)) {
-            List<Integer> statizIds = getStatizIdsFromDailyPage(currentDate);
+            List<Integer> statizIds = getStatizIdsFromDailyPage(driver, currentDate);
 
             System.out.println("[일자] " + currentDate + " → 추출된 경기 수: " + statizIds.size());
             for (int i = 0; i < statizIds.size(); i++) {
                 int statizId = statizIds.get(i);
                 System.out.println("▶ [" + (i + 1) + "/" + statizIds.size() + "] statizId = " + statizId);
-                processGame(statizId);
+                try {
+                    processGame(driver, statizId);
+                } catch (Exception e) {
+                    System.out.println("[오류 발생] statizId: " + statizId);
+                    e.printStackTrace();
+                }
             }
 
             currentDate = currentDate.plusDays(1);
         }
+
+        driver.quit();
     }
     
     // 날짜별 statizId 추출
-    public List<Integer> getStatizIdsFromDailyPage(LocalDate date) {
-//    	List<Integer> statizIds = getStatizIdsFromDailyPage(LocalDate.now()); // 직접 실행용
+    public List<Integer> getStatizIdsFromDailyPage(WebDriver driver, LocalDate date) {
         List<Integer> statizIds = new ArrayList<>();
-        WebDriver driver = null;
 
         try {
             String dateStr = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             String url = "https://statiz.sporki.com/schedule/?m=daily&date=" + dateStr;
-
-            ChromeOptions options = new ChromeOptions();
-            options.addArguments("--headless", "--no-sandbox", "--disable-dev-shm-usage");
-            driver = new ChromeDriver(options);
             driver.get(url);
-            Thread.sleep(3000);
+
+            WebDriverWait wait = new WebDriverWait(driver, java.time.Duration.ofSeconds(5));
+            wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("div.games a[href*='summary']")));
 
             String html = driver.getPageSource();
             Document doc = Jsoup.parse(html);
 
-            Elements games = doc.select("div.box_type_boared .item_box");
+            Elements links = doc.select("div.games a[href*='summary']");
 
-            for (Element game : games) {
-                Element link = game.selectFirst("a[href*=/schedule/?m=summary]");
-                Element boxHeadEl = game.selectFirst(".box_head");
-
-                if (link == null || boxHeadEl == null) continue;
-
+            for (Element link : links) {
                 String href = link.attr("href");
-                String boxHead = boxHeadEl.wholeText().replace('\u00A0', ' ').trim();
-
                 if (href.contains("s_no=")) {
-                    int statizId = Integer.parseInt(href.split("s_no=")[1].trim());
-                    statizIds.add(statizId);
-                    statizIdToBoxHead.put(statizId, boxHead);
+                    String[] parts = href.split("s_no=");
+                    if (parts.length == 2) {
+                        int statizId = Integer.parseInt(parts[1].trim());
+                        statizIds.add(statizId);
+                    }
                 }
             }
 
-            System.out.println("[statizId 추출 완료] " + statizIds);
+            System.out.println("statizId 추출 완료 " + statizIds);
 
         } catch (Exception e) {
             System.out.println("statizId 추출 중 오류 발생");
             e.printStackTrace();
-        } finally {
-            if (driver != null) driver.quit();
         }
 
         return statizIds;
     }
     
-    public void processGame(int statizId) {
-        WebDriver driver = null;
+    public void processGame(WebDriver driver, int statizId) {
 
         try {
             System.out.println("\n[시작] statizId = " + statizId);

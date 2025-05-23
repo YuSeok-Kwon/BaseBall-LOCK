@@ -20,6 +20,7 @@ import com.kepg.BaseBallLOCK.simulationGame.service.SimulationGameService;
 import com.kepg.BaseBallLOCK.simulationGame.userLineup.dto.UserLineupDTO;
 import com.kepg.BaseBallLOCK.simulationGame.userLineup.service.UserLineupService;
 
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -54,11 +55,13 @@ public class SimulationGameRestController {
 	@PostMapping("/ready")
 	public ResponseEntity<Map<String, List<GameReadyCardView>>> getReadyView(
 	        @RequestBody List<UserLineupDTO> userLineup,
-	        @RequestParam String difficulty) {
+	        @RequestParam String difficulty,
+	        HttpSession session) {
 
 	    List<GameReadyCardView> userCards = simulationGameService.mergeCardInfo(userLineup);
 	    List<PlayerCardOverallDTO> botLineup = simulationGameService.generateBotLineupWithStats(difficulty);
-
+	    session.setAttribute("botLineup", botLineup);
+	    
 	    List<GameReadyCardView> botCards = new ArrayList<>();
 
 	    for (int i = 0; i < botLineup.size(); i++) {
@@ -82,7 +85,8 @@ public class SimulationGameRestController {
 	    Map<String, List<GameReadyCardView>> result = new HashMap<>();
 	    result.put("user", userCards);
 	    result.put("bot", botCards);
-
+	    
+	    
 	    return ResponseEntity.ok(result);
 	}
 }

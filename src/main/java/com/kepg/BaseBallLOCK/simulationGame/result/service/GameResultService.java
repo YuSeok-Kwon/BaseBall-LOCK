@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class GameResultService {
 	
 	private final GameResultRepository gameResultRepository;
@@ -73,7 +75,7 @@ public class GameResultService {
 	    List<String> highlights = filterImportantLogs(allLogs);
 	    dto.setGameLog(highlights);
 
-	    // 💡 라인업 정보 보강
+	    //  라인업 정보 보강
 	    for (int i = 0; i < userLineup.size(); i++) {
 	        PlayerCardOverallDTO player = userLineup.get(i);
 	        PlayerCardOverallDTO full = playerCardOverallService.getCardByPlayerAndSeason(player.getPlayerId(), player.getSeason());
@@ -82,13 +84,12 @@ public class GameResultService {
 	        }
 	    }
 
-	    for (int i = 0; i < botLineup.size(); i++) {
-	        PlayerCardOverallDTO player = botLineup.get(i);
+	    List<PlayerCardOverallDTO> updatedBotLineup = new ArrayList<>();
+	    for (PlayerCardOverallDTO player : botLineup) {
 	        PlayerCardOverallDTO full = playerCardOverallService.getCardByPlayerAndSeason(player.getPlayerId(), player.getSeason());
-	        if (full != null) {
-	            botLineup.set(i, full);
-	        }
+	        updatedBotLineup.add(full != null ? full : player);
 	    }
+	    dto.setBotLineup(updatedBotLineup);
 
 	    // MVP 선정
 	    List<PlayerPerformanceDTO> performances = collectPerformances(allLogs);

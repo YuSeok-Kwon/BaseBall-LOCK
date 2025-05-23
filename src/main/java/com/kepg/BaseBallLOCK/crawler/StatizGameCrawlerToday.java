@@ -110,7 +110,7 @@ public class StatizGameCrawlerToday {
                 if (href.contains("s_no=")) {
                     int statizId = Integer.parseInt(href.split("s_no=")[1].trim());
                     statizIds.add(statizId);
-                    statizIdToBoxHead.put(statizId, boxHead); // ✅ boxHead 저장!
+                    statizIdToBoxHead.put(statizId, boxHead); 
                 }
             }
 

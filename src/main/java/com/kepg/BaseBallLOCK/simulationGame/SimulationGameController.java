@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.google.gson.Gson;
 import com.kepg.BaseBallLOCK.simulationGame.card.playerCard.dto.PlayerCardOverallDTO;
 import com.kepg.BaseBallLOCK.simulationGame.result.dto.GameResultDTO;
 import com.kepg.BaseBallLOCK.simulationGame.result.service.GameResultService;
@@ -41,30 +42,29 @@ public class SimulationGameController {
 	}
 	
 	@GetMapping("/play-view")
-	public String showResult(@RequestParam(defaultValue = "normal") String difficulty, Model model, HttpSession session) {		
-		int userId = (Integer)session.getAttribute("userId");
-		
-		//  유저 라인업 불러오기
-        List<PlayerCardOverallDTO> userLineup = userLineupService.getSavedLineup(userId);
-        //  봇 라인업 생성 (normal 난이도)
-        List<PlayerCardOverallDTO> botLineup = simulationGameService.generateBotLineupWithStats(difficulty);
-        // scheduleId 저장
-        int scheduleId = simulationGameService.createSimulationSchedule(userId, difficulty);
-        //  전체 경기 시뮬레이션 실행
-        SimulationResultDTO result = simulationService.playSimulationGame(userLineup, botLineup, difficulty);
-        // 결과 요약 생성
-        GameResultDTO summary = gameResultService.generateGameSummary(scheduleId, userId, result, userLineup, botLineup);
-        // 저장
-        gameResultService.saveGameResult(summary);
-        
+	public String showResult(@RequestParam(defaultValue = "normal") String difficulty, Model model, HttpSession session) {
+	    int userId = (Integer) session.getAttribute("userId");
 
-        model.addAttribute("userId", userId);
-        model.addAttribute("scheduleId", scheduleId);
-        model.addAttribute("difficulty", difficulty);
-        model.addAttribute("result", result);
-        model.addAttribute("userLineup", userLineup);
-        model.addAttribute("botLineup", botLineup);
+	    List<PlayerCardOverallDTO> userLineup = userLineupService.getSavedLineup(userId);
 
-        return "game/play";
+	    List<PlayerCardOverallDTO> botLineup = (List<PlayerCardOverallDTO>) session.getAttribute("botLineup");    
+	    
+	    int scheduleId = simulationGameService.createSimulationSchedule(userId, difficulty);
+	    SimulationResultDTO result = simulationService.playSimulationGame(userLineup, botLineup, difficulty);
+	    GameResultDTO summary = gameResultService.generateGameSummary(scheduleId, userId, result, userLineup, botLineup);
+	    gameResultService.saveGameResult(summary);
+
+	    model.addAttribute("userId", userId);
+	    model.addAttribute("scheduleId", scheduleId);
+	    model.addAttribute("difficulty", difficulty);
+	    model.addAttribute("botLineup", botLineup);
+	    
+	    Gson gson = new Gson();
+
+	    model.addAttribute("botLineup", gson.toJson(botLineup));
+	    model.addAttribute("userLineup", gson.toJson(userLineup));
+	    model.addAttribute("result", gson.toJson(result.getInnings()));
+
+	    return "game/play";
 	}
 }

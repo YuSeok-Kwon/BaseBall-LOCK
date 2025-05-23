@@ -51,7 +51,7 @@ public class BatterRecord {
 
     private Integer bb;
     
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "playerId", insertable = false, updatable = false)
     @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     private Player player;
